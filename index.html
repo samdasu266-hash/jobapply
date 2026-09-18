@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지원 전형 일정</title>
+<style>
+:root{
+  --bg:#F5F6F8;
+  --card:#FFFFFF;
+  --ink:#16191D;
+  --ink-2:#5A6069;
+  --ink-3:#8A9099;
+  --line:#E3E6EA;
+  --line-2:#EFF1F4;
+  --sun:#C25A47;
+  --today:#16191D;
+  --radius:12px;
+}
+:root:not([data-theme="light"]){
+  @media (prefers-color-scheme: dark){
+    --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#7B818A;
+    --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#7B818A;
+  --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+}
+
+*{box-sizing:border-box;}
+html,body{max-width:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+  font-size:14px; line-height:1.5;
+  padding:28px 16px 80px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:900px;margin:0 auto;}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+h1{font-size:26px;font-weight:700;letter-spacing:-0.02em;margin:0;}
+.today-label{color:var(--ink-3);font-size:13px;margin-top:4px;}
+.btn{
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  padding:9px 16px; border-radius:9px; font-size:13.5px; font-weight:600;
+  cursor:pointer; font-family:inherit;
+}
+.btn:hover{border-color:var(--ink-3);}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+.btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink);}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px;}
+.btn.danger{color:#C2412F;}
+
+/* ---------- section ---------- */
+section{margin-bottom:26px;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.sec-head h2{font-size:14px;font-weight:700;margin:0;color:var(--ink-2);}
+.hint{font-size:12.5px;color:var(--ink-3);}
+
+/* ---------- upcoming ---------- */
+.upcoming{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;}
+.up-card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:13px 14px; border-left-width:4px; position:relative;
+}
+.up-dday{font-size:12px;font-weight:700;letter-spacing:0.01em;}
+.up-title{font-size:15px;font-weight:700;margin:5px 0 2px;letter-spacing:-0.01em;word-break:keep-all;}
+.up-inst{font-size:12.5px;color:var(--ink-2);word-break:keep-all;}
+.up-date{font-size:12px;color:var(--ink-3);margin-top:6px;}
+.up-empty{color:var(--ink-3);font-size:13.5px;padding:14px 0;}
+
+/* ---------- pipeline ---------- */
+.pipes{display:flex;flex-direction:column;gap:8px;}
+.pipe{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;
+}
+.pipe.inactive{opacity:.55;}
+.pipe-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
+.swatch{width:10px;height:10px;border-radius:3px;flex:none;}
+.pipe-name{font-weight:700;font-size:14px;letter-spacing:-0.01em;}
+.pipe.inactive .pipe-name{text-decoration:line-through;text-decoration-thickness:1.5px;}
+.badge{
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--line);color:var(--ink-3);
+}
+.badge.rejected{color:#C2412F;border-color:#E8C4BD;}
+.badge.withdrawn{color:var(--ink-3);}
+.steps{display:flex;flex-wrap:wrap;gap:6px;}
+.step{
+  font-size:12px;padding:4px 10px;border-radius:7px;
+  border:1px solid var(--line);color:var(--ink-2);white-space:nowrap;
+}
+.step.done{background:var(--line-2);color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1px;}
+.step.next{border-color:currentColor;font-weight:700;}
+
+/* ---------- filters ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+  cursor:pointer;user-select:none;font-family:inherit;
+}
+.chip .swatch{width:8px;height:8px;border-radius:50%;}
+.chip.off{opacity:.4;}
+.chip.gone .chip-text{text-decoration:line-through;}
+.toggle{
+  margin-left:auto;display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--ink-2);cursor:pointer;user-select:none;
+}
+.toggle input{accent-color:var(--ink);width:15px;height:15px;}
+
+/* ---------- calendar ---------- */
+.month{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 14px 10px;margin-bottom:14px;}
+.month h3{font-size:16px;font-weight:700;margin:0 0 10px;letter-spacing:-0.01em;}
+.wdrow{display:grid;grid-template-columns:repeat(7,1fr);}
+.wd{font-size:11.5px;color:var(--ink-3);text-align:center;padding:0 0 6px;font-weight:600;}
+.wd.sun{color:var(--sun);}
+.week{display:grid;grid-template-columns:repeat(7,1fr);row-gap:3px;padding-bottom:7px;}
+.week + .week{border-top:1px solid var(--line-2);padding-top:5px;}
+.dc{grid-row:1;font-size:11.5px;font-weight:700;color:var(--ink-2);padding:0 4px 4px;min-height:16px;}
+.dc.out{color:var(--ink-3);opacity:.35;}
+.dc.sun{color:var(--sun);}
+.dc.today span{
+  display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;
+  background:var(--today);color:var(--card);border-radius:50%;font-size:11px;
+}
+.bar{
+  font-size:11.5px;font-weight:700;color:#fff;
+  padding:4px 8px;margin:0 2px;border-radius:7px;
+  line-height:1.3;word-break:keep-all;white-space:normal;
+  display:flex;align-items:center;min-height:22px;
+}
+.bar.cont-l{border-top-left-radius:2px;border-bottom-left-radius:2px;margin-left:0;}
+.bar.cont-r{border-top-right-radius:2px;border-bottom-right-radius:2px;margin-right:0;}
+.bar.muted{background:transparent !important;color:var(--ink-3);border:1px dashed var(--line);text-decoration:line-through;text-decoration-thickness:1px;}
+.bar.hidden{display:none;}
+
+/* ---------- drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:40;}
+.scrim.open{opacity:1;pointer-events:auto;}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(420px,100%);
+  background:var(--card);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .22s ease;z-index:50;
+  overflow-y:auto;padding:22px 20px 60px;
+}
+.drawer.open{transform:translateX(0);}
+@media (prefers-reduced-motion:reduce){.drawer,.scrim{transition:none;}}
+.drawer h2{font-size:18px;margin:0 0 4px;}
+.drawer h4{font-size:12.5px;color:var(--ink-3);margin:24px 0 9px;font-weight:700;}
+.close{position:absolute;top:18px;right:18px;}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.field label{font-size:12px;color:var(--ink-2);font-weight:600;}
+input[type=text],input[type=date],select{
+  font-family:inherit;font-size:13.5px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);
+  width:100%;
+}
+input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+.mgr-item{
+  display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line-2);
+}
+.mgr-item .nm{flex:1;font-weight:600;font-size:13.5px;word-break:keep-all;}
+.mgr-item select{width:auto;padding:5px 8px;font-size:12.5px;}
+.ev-item{
+  display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:13px;
+}
+.ev-item .d{color:var(--ink-3);font-size:12px;white-space:nowrap;}
+.ev-item .t{flex:1;word-break:keep-all;}
+.swatch-pick{display:flex;gap:6px;flex-wrap:wrap;}
+.swatch-pick button{
+  width:26px;height:26px;border-radius:7px;border:2px solid transparent;cursor:pointer;
+}
+.swatch-pick button[aria-pressed="true"]{border-color:var(--ink);}
+.save-note{font-size:11.5px;color:var(--ink-3);margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1>지원 전형 일정</h1>
+      <div class="today-label" id="todayLabel"></div>
+    </div>
+    <button class="btn primary" id="openDrawer">기관·일정 관리</button>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2>다가오는 일정</h2><span class="hint" id="upHint"></span></div>
+    <div class="upcoming" id="upcoming"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>기관별 진행 현황</h2></div>
+    <div class="pipes" id="pipes"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>달력</h2></div>
+    <div class="filters" id="filters"></div>
+    <div id="calendar" style="margin-top:12px;"></div>
+  </section>
+
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="기관 및 일정 관리">
+  <button class="btn sm close" id="closeDrawer">닫기</button>
+  <h2>관리</h2>
+  <div class="hint">여기서 바꾸면 자동 저장됩니다.</div>
+
+  <h4>기관</h4>
+  <div id="instList"></div>
+  <div class="field" style="margin-top:12px;">
+    <label for="newInstName">새 기관 이름</label>
+    <input type="text" id="newInstName" placeholder="예: 국립암센터">
+  </div>
+  <div class="field">
+    <label>색상</label>
+    <div class="swatch-pick" id="swatchPick"></div>
+  </div>
+  <button class="btn" id="addInst">기관 추가</button>
+
+  <h4>일정 추가</h4>
+  <div class="field">
+    <label for="evInst">기관</label>
+    <select id="evInst"></select>
+  </div>
+  <div class="field">
+    <label for="evLabel">내용</label>
+    <input type="text" id="evLabel" list="labelPresets" placeholder="예: 면접">
+    <datalist id="labelPresets">
+      <option value="서류마감"></option>
+      <option value="서류결과"></option>
+      <option value="필기결과"></option>
+      <option value="인적성검사"></option>
+      <option value="면접"></option>
+      <option value="면접결과"></option>
+      <option value="최종발표"></option>
+      <option value="입사일"></option>
+    </datalist>
+  </div>
+  <div class="row2">
+    <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
+    <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
+  </div>
+  <button class="btn" id="addEvent">일정 추가</button>
+
+  <h4>등록된 일정</h4>
+  <div id="evList"></div>
+
+  <div class="save-note" id="saveNote">저장 준비 중…</div>
+</aside>
+
+<script>
+(function(){
+"use strict";
+
+var TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+var PALETTE = ["#2E6F5E","#B05418","#2F5F92","#7A4BA0","#9A7411","#4A5560","#1F7A6B","#A03A52","#3D6BA8","#6B7A1F"];
+
+var DEFAULT_STATE = {
+  institutions:[
+    {id:"neca",   name:"NECA (보의연)",            color:"#2E6F5E", status:"active"},
+    {id:"nikom",  name:"NIKOM (한의약진흥원)",     color:"#B05418", status:"active"},
+    {id:"kofih",  name:"KOFIH (보건의료재단)",     color:"#2F5F92", status:"active"},
+    {id:"konibp", name:"KONIBP (생명윤리정책원)",  color:"#7A4BA0", status:"active"},
+    {id:"koda",   name:"KODA (장기조직기증원)",    color:"#9A7411", status:"active"},
+    {id:"hira",   name:"심평원",                   color:"#4A5560", status:"active"}
+  ],
+  events:[
+    {id:"e1",  inst:"neca",   label:"필기결과",   start:"2026-09-21", end:"2026-09-21"},
+    {id:"e2",  inst:"neca",   label:"면접",       start:"2026-10-06", end:"2026-10-08"},
+    {id:"e3",  inst:"nikom",  label:"서류결과",   start:"2026-09-21", end:"2026-09-21"},
+    {id:"e4",  inst:"nikom",  label:"인적성검사", start:"2026-09-23", end:"2026-09-29"},
+    {id:"e5",  inst:"nikom",  label:"면접",       start:"2026-10-01", end:"2026-10-02"},
+    {id:"e6",  inst:"nikom",  label:"면접결과",   start:"2026-10-08", end:"2026-10-08"},
+    {id:"e7",  inst:"kofih",  label:"서류결과",   start:"2026-09-22", end:"2026-09-22"},
+    {id:"e8",  inst:"kofih",  label:"면접",       start:"2026-10-01", end:"2026-10-02"},
+    {id:"e9",  inst:"hira",   label:"서류결과",   start:"2026-09-30", end:"2026-09-30"},
+    {id:"e10", inst:"konibp", label:"서류결과",   start:"2026-10-06", end:"2026-10-06"},
+    {id:"e11", inst:"konibp", label:"면접",       start:"2026-10-08", end:"2026-10-12"},
+    {id:"e12", inst:"konibp", label:"면접결과",   start:"2026-10-13", end:"2026-10-13"},
+    {id:"e13", inst:"koda",   label:"서류결과",   start:"2026-10-07", end:"2026-10-07"},
+    {id:"e14", inst:"koda",   label:"인적성검사", start:"2026-10-07", end:"2026-10-12"},
+    {id:"e15", inst:"koda",   label:"면접",       start:"2026-10-15", end:"2026-10-16"},
+    {id:"e16", inst:"koda",   label:"최종발표",   start:"2026-10-22", end:"2026-10-22"}
+  ]
+};
+
+var state = null;
+var hidden = {};          // instId -> true (filter off)
+var hideInactive = true;
+var pickedColor = PALETTE[0];
+var dbHandle = null;
+
+/* ---------- storage ---------- */
+var LS = "jobtracker.v1";
+
+function loadLocal(){
+  try{ var r = localStorage.getItem(LS); return r ? JSON.parse(r) : null; }catch(e){ return null; }
+}
+function saveLocal(){
+  try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){}
+}
+var saveTimer = null;
+function persist(){
+  saveLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    if(!dbHandle) return;
+    dbHandle.doc("tracker/state").set({data:state}).then(function(){
+      note("저장됨");
+    }).catch(function(){ note("이 기기에만 저장됨"); });
+  }, 350);
+}
+function note(t){ var n=document.getElementById("saveNote"); if(n) n.textContent = t; }
+
+function waitClaude(){
+  return new Promise(function(res){
+    var n=0;
+    (function tick(){
+      if(window.claude && window.claude.use) return res(window.claude);
+      if(++n > 50) return res(null);
+      setTimeout(tick, 200);
+    })();
+  });
+}
+
+async function initDb(){
+  var c = await waitClaude();
+  if(!c){ note("이 기기에만 저장됨"); return; }
+  var db = null;
+  try{ db = await c.use("db"); }catch(e){}
+  if(!db){ note("이 기기에만 저장됨"); return; }
+  dbHandle = db;
+  try{
+    var snap = await db.doc("tracker/state").get();
+    if(snap && snap.data && snap.data.data){
+      state = snap.data.data;
+      saveLocal();
+      renderAll();
+      note("저장됨");
+    }else{
+      await db.doc("tracker/state").set({data:state});
+      note("저장됨");
+    }
+  }catch(e){ note("이 기기에만 저장됨"); }
+}
+
+/* ---------- date utils ---------- */
+function pd(s){ var p=s.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+function fmt(d){
+  var m=("0"+(d.getMonth()+1)).slice(-2), dd=("0"+d.getDate()).slice(-2);
+  return d.getFullYear()+"-"+m+"-"+dd;
+}
+function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function diffDays(a,b){ return Math.round((b-a)/86400000); }
+var WD = ["일","월","화","수","목","금","토"];
+function kdate(d){ return (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")"; }
+
+/* ---------- lookups ---------- */
+function inst(id){
+  for(var i=0;i<state.institutions.length;i++) if(state.institutions[i].id===id) return state.institutions[i];
+  return {id:id,name:"(삭제됨)",color:"#999",status:"withdrawn"};
+}
+function isActive(id){ return inst(id).status === "active"; }
+function visible(id){
+  if(hidden[id]) return false;
+  if(hideInactive && !isActive(id)) return false;
+  return true;
+}
+function uid(p){ return p + Math.random().toString(36).slice(2,8); }
+
+/* ---------- render: upcoming ---------- */
+function renderUpcoming(){
+  var box = document.getElementById("upcoming");
+  var list = state.events.filter(function(e){
+    return isActive(e.inst) && pd(e.end) >= TODAY;
+  }).sort(function(a,b){ return pd(a.start) - pd(b.start); }).slice(0,6);
+
+  box.innerHTML = "";
+  if(!list.length){
+    box.innerHTML = '<div class="up-empty">다가오는 일정이 없습니다.</div>';
+    document.getElementById("upHint").textContent = "";
+    return;
+  }
+  document.getElementById("upHint").textContent = "진행 중인 기관만";
+
+  list.forEach(function(e){
+    var it = inst(e.inst);
+    var s = pd(e.start), en = pd(e.end);
+    var d = diffDays(TODAY, s);
+    var dday = d > 0 ? "D-"+d : (d === 0 ? "오늘" : (pd(e.end) >= TODAY ? "진행 중" : ""));
+    var range = (e.start === e.end) ? kdate(s) : kdate(s)+" – "+kdate(en);
+
+    var el = document.createElement("div");
+    el.className = "up-card";
+    el.style.borderLeftColor = it.color;
+    el.innerHTML =
+      '<div class="up-dday" style="color:'+it.color+'"></div>'+
+      '<div class="up-title"></div>'+
+      '<div class="up-inst"></div>'+
+      '<div class="up-date"></div>';
+    el.querySelector(".up-dday").textContent = dday;
+    el.querySelector(".up-title").textContent = e.label;
+    el.querySelector(".up-inst").textContent = it.name;
+    el.querySelector(".up-date").textContent = range;
+    box.appendChild(el);
+  });
+}
+
+/* ---------- render: pipelines ---------- */
+function renderPipes(){
+  var box = document.getElementById("pipes");
+  box.innerHTML = "";
+  state.institutions.forEach(function(it){
+    var evs = state.events.filter(function(e){ return e.inst === it.id; })
+      .sort(function(a,b){ return pd(a.start) - pd(b.start); });
+
+    var row = document.createElement("div");
+    row.className = "pipe" + (it.status !== "active" ? " inactive" : "");
+
+    var head = document.createElement("div");
+    head.className = "pipe-head";
+    var sw = document.createElement("span"); sw.className="swatch"; sw.style.background=it.color;
+    var nm = document.createElement("span"); nm.className="pipe-name"; nm.textContent = it.name;
+    head.appendChild(sw); head.appendChild(nm);
+    if(it.status !== "active"){
+      var b = document.createElement("span");
+      b.className = "badge " + (it.status === "rejected" ? "rejected" : "withdrawn");
+      b.textContent = it.status === "rejected" ? "탈락" : "포기";
+      head.appendChild(b);
+    }
+    row.appendChild(head);
+
+    var steps = document.createElement("div");
+    steps.className = "steps";
+    if(!evs.length){
+      var em = document.createElement("span"); em.className="hint"; em.textContent="등록된 일정 없음";
+      steps.appendChild(em);
+    }
+    var nextMarked = false;
+    evs.forEach(function(e){
+      var s = document.createElement("span");
+      var past = pd(e.end) < TODAY;
+      var cls = "step";
+      if(past) cls += " done";
+      else if(!nextMarked && it.status === "active"){ cls += " next"; nextMarked = true; s.style.color = it.color; }
+      s.className = cls;
+      s.textContent = e.label + " " + kdate(pd(e.start));
+      steps.appendChild(s);
+    });
+    row.appendChild(steps);
+    box.appendChild(row);
+  });
+}
+
+/* ---------- render: filters ---------- */
+function renderFilters(){
+  var box = document.getElementById("filters");
+  box.innerHTML = "";
+  state.institutions.forEach(function(it){
+    var c = document.createElement("button");
+    c.type = "button";
+    c.className = "chip" + (hidden[it.id] ? " off" : "") + (it.status !== "active" ? " gone" : "");
+    c.setAttribute("aria-pressed", hidden[it.id] ? "false" : "true");
+    c.innerHTML = '<span class="swatch" style="background:'+it.color+'"></span><span class="chip-text"></span>';
+    c.querySelector(".chip-text").textContent = it.name;
+    c.addEventListener("click", function(){
+      if(hidden[it.id]) delete hidden[it.id]; else hidden[it.id] = true;
+      renderFilters(); renderCalendar();
+    });
+    box.appendChild(c);
+  });
+
+  var t = document.createElement("label");
+  t.className = "toggle";
+  t.innerHTML = '<input type="checkbox"> 탈락·포기 기관 숨기기';
+  var cb = t.querySelector("input");
+  cb.checked = hideInactive;
+  cb.addEventListener("change", function(){ hideInactive = cb.checked; renderCalendar(); });
+  box.appendChild(t);
+}
+
+/* ---------- render: calendar ---------- */
+function monthRange(){
+  var ds = state.events.map(function(e){ return pd(e.start); })
+    .concat(state.events.map(function(e){ return pd(e.end); }));
+  ds.push(TODAY);
+  var min = new Date(Math.min.apply(null, ds));
+  var max = new Date(Math.max.apply(null, ds));
+  return [new Date(min.getFullYear(), min.getMonth(), 1), new Date(max.getFullYear(), max.getMonth(), 1)];
+}
+
+function renderCalendar(){
+  var box = document.getElementById("calendar");
+  box.innerHTML = "";
+  var r = monthRange(), cur = r[0], last = r[1];
+  var guard = 0;
+  while(cur <= last && guard++ < 36){
+    box.appendChild(buildMonth(cur.getFullYear(), cur.getMonth()));
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+}
+
+function buildMonth(y, m){
+  var wrap = document.createElement("div");
+  wrap.className = "month";
+  var h = document.createElement("h3");
+  h.textContent = y + "년 " + (m+1) + "월";
+  wrap.appendChild(h);
+
+  var wr = document.createElement("div");
+  wr.className = "wdrow";
+  WD.forEach(function(w,i){
+    var d = document.createElement("div");
+    d.className = "wd" + (i===0 ? " sun" : "");
+    d.textContent = w;
+    wr.appendChild(d);
+  });
+  wrap.appendChild(wr);
+
+  var first = new Date(y, m, 1);
+  var gridStart = addDays(first, -first.getDay());
+  var monthEnd = new Date(y, m+1, 0);
+
+  var evs = state.events.filter(function(e){ return visible(e.inst); });
+
+  var wStart = new Date(gridStart);
+  while(wStart <= monthEnd){
+    var wEnd = addDays(wStart, 6);
+    wrap.appendChild(buildWeek(wStart, wEnd, m, evs));
+    wStart = addDays(wStart, 7);
+  }
+  return wrap;
+}
+
+function buildWeek(wStart, wEnd, month, evs){
+  var week = document.createElement("div");
+  week.className = "week";
+
+  for(var i=0;i<7;i++){
+    var d = addDays(wStart, i);
+    var c = document.createElement("div");
+    var cls = "dc";
+    if(d.getMonth() !== month) cls += " out";
+    if(d.getDay() === 0) cls += " sun";
+    if(fmt(d) === fmt(TODAY)) cls += " today";
+    c.className = cls;
+    var sp = document.createElement("span");
+    sp.textContent = d.getDate();
+    c.appendChild(sp);
+    week.appendChild(c);
+  }
+
+  // segments in this week
+  var segs = [];
+  evs.forEach(function(e){
+    var s = pd(e.start), en = pd(e.end);
+    if(en < wStart || s > wEnd) return;
+    var ss = s < wStart ? wStart : s;
+    var ee = en > wEnd ? wEnd : en;
+    segs.push({
+      ev:e,
+      col: diffDays(wStart, ss) + 1,
+      span: diffDays(ss, ee) + 1,
+      contL: s < wStart,
+      contR: en > wEnd,
+      sortKey: s.getTime()
+    });
+  });
+
+  segs.sort(function(a,b){
+    if(a.col !== b.col) return a.col - b.col;
+    if(b.span !== a.span) return b.span - a.span;
+    return a.sortKey - b.sortKey;
+  });
+
+  var lanes = [];
+  segs.forEach(function(sg){
+    var li = 0;
+    while(true){
+      if(!lanes[li]) lanes[li] = [];
+      var clash = lanes[li].some(function(o){
+        return !(sg.col + sg.span - 1 < o.col || sg.col > o.col + o.span - 1);
+      });
+      if(!clash){ lanes[li].push(sg); sg.lane = li; break; }
+      li++;
+    }
+  });
+
+  var maxLane = 0;
+  segs.forEach(function(s){ if(s.lane > maxLane) maxLane = s.lane; });
+  week.style.gridTemplateRows = "auto" + " auto".repeat(lanes.length ? maxLane+1 : 0);
+
+  segs.forEach(function(sg){
+    var it = inst(sg.ev.inst);
+    var b = document.createElement("div");
+    var cls = "bar";
+    if(sg.contL) cls += " cont-l";
+    if(sg.contR) cls += " cont-r";
+    if(it.status !== "active") cls += " muted";
+    b.className = cls;
+    b.style.gridRow = String(sg.lane + 2);
+    b.style.gridColumn = sg.col + " / span " + sg.span;
+    if(it.status === "active") b.style.background = it.color;
+    b.textContent = sg.ev.label;
+    b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "");
+    week.appendChild(b);
+  });
+
+  return week;
+}
+
+/* ---------- drawer ---------- */
+function renderDrawer(){
+  // institutions
+  var il = document.getElementById("instList");
+  il.innerHTML = "";
+  state.institutions.forEach(function(it){
+    var row = document.createElement("div");
+    row.className = "mgr-item";
+    row.innerHTML =
+      '<span class="swatch" style="background:'+it.color+'"></span>'+
+      '<span class="nm"></span>'+
+      '<select>'+
+        '<option value="active">진행중</option>'+
+        '<option value="rejected">탈락</option>'+
+        '<option value="withdrawn">포기</option>'+
+      '</select>'+
+      '<button class="btn sm danger">삭제</button>';
+    row.querySelector(".nm").textContent = it.name;
+    var sel = row.querySelector("select");
+    sel.value = it.status;
+    sel.addEventListener("change", function(){
+      it.status = sel.value; persist(); renderAll();
+    });
+    row.querySelector("button").addEventListener("click", function(){
+      if(!confirm(it.name + " 기관과 등록된 일정을 모두 삭제할까요?")) return;
+      state.institutions = state.institutions.filter(function(x){ return x.id !== it.id; });
+      state.events = state.events.filter(function(e){ return e.inst !== it.id; });
+      persist(); renderAll();
+    });
+    il.appendChild(row);
+  });
+
+  // event institution select
+  var sel = document.getElementById("evInst");
+  var prev = sel.value;
+  sel.innerHTML = "";
+  state.institutions.forEach(function(it){
+    var o = document.createElement("option");
+    o.value = it.id; o.textContent = it.name;
+    sel.appendChild(o);
+  });
+  if(prev) sel.value = prev;
+
+  // event list
+  var el = document.getElementById("evList");
+  el.innerHTML = "";
+  state.events.slice().sort(function(a,b){ return pd(a.start) - pd(b.start); }).forEach(function(e){
+    var it = inst(e.inst);
+    var row = document.createElement("div");
+    row.className = "ev-item";
+    row.innerHTML =
+      '<span class="swatch" style="background:'+it.color+'"></span>'+
+      '<span class="d"></span><span class="t"></span>'+
+      '<button class="btn sm danger">삭제</button>';
+    row.querySelector(".d").textContent = e.start === e.end
+      ? kdate(pd(e.start))
+      : kdate(pd(e.start))+"–"+kdate(pd(e.end));
+    row.querySelector(".t").textContent = e.label;
+    row.querySelector("button").addEventListener("click", function(){
+      state.events = state.events.filter(function(x){ return x.id !== e.id; });
+      persist(); renderAll();
+    });
+    el.appendChild(row);
+  });
+}
+
+function renderSwatches(){
+  var box = document.getElementById("swatchPick");
+  box.innerHTML = "";
+  PALETTE.forEach(function(c){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.style.background = c;
+    b.setAttribute("aria-pressed", c === pickedColor ? "true" : "false");
+    b.setAttribute("aria-label", "색상 " + c);
+    b.addEventListener("click", function(){ pickedColor = c; renderSwatches(); });
+    box.appendChild(b);
+  });
+}
+
+function renderAll(){
+  renderUpcoming();
+  renderPipes();
+  renderFilters();
+  renderCalendar();
+  renderDrawer();
+}
+
+/* ---------- events ---------- */
+function openDrawer(v){
+  document.getElementById("drawer").classList.toggle("open", v);
+  document.getElementById("scrim").classList.toggle("open", v);
+}
+document.getElementById("openDrawer").addEventListener("click", function(){ openDrawer(true); });
+document.getElementById("closeDrawer").addEventListener("click", function(){ openDrawer(false); });
+document.getElementById("scrim").addEventListener("click", function(){ openDrawer(false); });
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") openDrawer(false); });
+
+document.getElementById("addInst").addEventListener("click", function(){
+  var f = document.getElementById("newInstName");
+  var n = f.value.trim();
+  if(!n){ f.focus(); return; }
+  state.institutions.push({id:uid("i"), name:n, color:pickedColor, status:"active"});
+  f.value = "";
+  pickedColor = PALETTE[state.institutions.length % PALETTE.length];
+  renderSwatches();
+  persist(); renderAll();
+});
+
+document.getElementById("addEvent").addEventListener("click", function(){
+  var i = document.getElementById("evInst").value;
+  var l = document.getElementById("evLabel").value.trim();
+  var s = document.getElementById("evStart").value;
+  var e = document.getElementById("evEnd").value || s;
+  if(!i || !l || !s){ alert("기관, 내용, 시작일은 필요합니다."); return; }
+  if(pd(e) < pd(s)){ alert("종료일이 시작일보다 빠릅니다."); return; }
+  state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e});
+  document.getElementById("evLabel").value = "";
+  document.getElementById("evStart").value = "";
+  document.getElementById("evEnd").value = "";
+  persist(); renderAll();
+});
+
+/* ---------- boot ---------- */
+state = loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE));
+document.getElementById("todayLabel").textContent =
+  "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
+renderSwatches();
+renderAll();
+initDb();
+
+})();
+</script>
+</body>
+</html>
