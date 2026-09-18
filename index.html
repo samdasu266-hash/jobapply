@@ -73,6 +73,7 @@ section{margin-bottom:26px;}
 .up-title{font-size:15px;font-weight:700;margin:5px 0 2px;letter-spacing:-0.01em;word-break:keep-all;}
 .up-inst{font-size:12.5px;color:var(--ink-2);word-break:keep-all;}
 .up-date{font-size:12px;color:var(--ink-3);margin-top:6px;}
+.up-memo{font-size:12px;color:var(--ink-2);margin-top:5px;word-break:keep-all;}
 .up-empty{color:var(--ink-3);font-size:13.5px;padding:14px 0;}
 
 /* ---------- pipeline ---------- */
@@ -211,6 +212,10 @@ input[type=text],input[type=date],select{
 input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
+.bulk-row{display:flex;align-items:center;gap:9px;padding:3px 0;}
+.bulk-row .bl{flex:0 0 76px;font-size:12.5px;color:var(--ink-2);font-weight:600;}
+.bulk-row input{flex:1;}
+
 .mgr-item{
   display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line-2);
 }
@@ -304,10 +309,23 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
     <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
   </div>
+  <div class="field">
+    <label for="evMemo">메모 (선택)</label>
+    <input type="text" id="evMemo" placeholder="예: 서울 본사 3층, 정장 착용">
+  </div>
   <div style="display:flex;gap:8px;">
     <button class="btn" id="addEvent">일정 추가</button>
     <button class="btn" id="cancelEdit" hidden>취소</button>
   </div>
+
+  <h4>전형 단계 일괄 추가</h4>
+  <div class="hint">아는 날짜만 채우면 그 단계만 추가됩니다.</div>
+  <div class="field" style="margin-top:10px;">
+    <label for="bulkInst">기관</label>
+    <select id="bulkInst"></select>
+  </div>
+  <div id="bulkRows"></div>
+  <button class="btn" id="addBulk" style="margin-top:10px;">채운 날짜만 추가</button>
 
   <h4>등록된 일정</h4>
   <div id="evList"></div>
@@ -348,6 +366,8 @@ var HOLIDAYS = {
   "2027-02-09":"대체공휴일",
   "2027-03-01":"삼일절"
 };
+
+var STAGES = ["서류마감","서류결과","인적성검사","필기결과","면접","면접결과","최종발표"];
 
 var DEFAULT_STATE = {
   institutions:[
@@ -411,7 +431,9 @@ function saveLocal(){
   try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){}
 }
 var saveTimer = null;
+var dirty = false;      // 원격 데이터가 도착하기 전에 편집이 있었는지
 function persist(){
+  dirty = true;
   saveLocal();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
@@ -444,10 +466,16 @@ async function initDb(){
   try{
     var snap = await db.doc("tracker/state").get();
     if(snap && snap.data && snap.data.data){
-      state = migrate(snap.data.data);
-      saveLocal();
-      renderAll();
-      note("저장됨");
+      // 원격 도착 전에 편집했다면 그 편집을 살리고 원격을 갱신한다
+      if(dirty){
+        await db.doc("tracker/state").set({data:state});
+        note("저장됨");
+      }else{
+        state = migrate(snap.data.data);
+        saveLocal();
+        renderAll();
+        note("저장됨");
+      }
     }else{
       await db.doc("tracker/state").set({data:state});
       note("저장됨");
@@ -508,11 +536,13 @@ function renderUpcoming(){
       '<div class="up-dday" style="color:'+it.color+'"></div>'+
       '<div class="up-title"></div>'+
       '<div class="up-inst"></div>'+
-      '<div class="up-date"></div>';
+      '<div class="up-date"></div>'+
+      '<div class="up-memo"></div>';
     el.querySelector(".up-dday").textContent = dday;
     el.querySelector(".up-title").textContent = e.label;
     el.querySelector(".up-inst").textContent = it.name;
     el.querySelector(".up-date").textContent = range;
+    el.querySelector(".up-memo").textContent = e.memo || "";
     box.appendChild(el);
   });
 }
@@ -763,7 +793,9 @@ function buildWeek(wStart, wEnd, month, evs){
     b.style.gridColumn = sg.col + " / span " + sg.span;
     if(it.status === "active") b.style.setProperty("--bar-c", it.color);
     b.textContent = sg.ev.label;
-    b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "");
+    b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start
+      + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
+      + (sg.ev.memo ? "\n" + sg.ev.memo : "");
     week.appendChild(b);
   });
 
@@ -802,16 +834,8 @@ function renderDrawer(){
     il.appendChild(row);
   });
 
-  // event institution select
-  var sel = document.getElementById("evInst");
-  var prev = sel.value;
-  sel.innerHTML = "";
-  state.institutions.forEach(function(it){
-    var o = document.createElement("option");
-    o.value = it.id; o.textContent = it.name;
-    sel.appendChild(o);
-  });
-  if(prev) sel.value = prev;
+  fillInstSelect(document.getElementById("evInst"));
+  fillInstSelect(document.getElementById("bulkInst"));
 
   // event list
   var el = document.getElementById("evList");
@@ -836,6 +860,30 @@ function renderDrawer(){
       persist(); renderAll();
     });
     el.appendChild(row);
+  });
+}
+
+function fillInstSelect(sel){
+  var prev = sel.value;
+  sel.innerHTML = "";
+  state.institutions.forEach(function(it){
+    var o = document.createElement("option");
+    o.value = it.id; o.textContent = it.name;
+    sel.appendChild(o);
+  });
+  if(prev) sel.value = prev;
+}
+
+function renderBulkRows(){
+  var box = document.getElementById("bulkRows");
+  box.innerHTML = "";
+  STAGES.forEach(function(s){
+    var row = document.createElement("div");
+    row.className = "bulk-row";
+    row.innerHTML = '<span class="bl"></span><input type="date">';
+    row.querySelector(".bl").textContent = s;
+    row.querySelector("input").dataset.stage = s;
+    box.appendChild(row);
   });
 }
 
@@ -889,6 +937,7 @@ function startEdit(e){
   document.getElementById("evLabel").value = e.label;
   document.getElementById("evStart").value = e.start;
   document.getElementById("evEnd").value = e.end === e.start ? "" : e.end;
+  document.getElementById("evMemo").value = e.memo || "";
   document.getElementById("addEvent").textContent = "수정 저장";
   document.getElementById("cancelEdit").hidden = false;
   document.getElementById("evLabel").focus();
@@ -898,25 +947,46 @@ function endEdit(){
   document.getElementById("evLabel").value = "";
   document.getElementById("evStart").value = "";
   document.getElementById("evEnd").value = "";
+  document.getElementById("evMemo").value = "";
   document.getElementById("addEvent").textContent = "일정 추가";
   document.getElementById("cancelEdit").hidden = true;
 }
 document.getElementById("cancelEdit").addEventListener("click", endEdit);
+
+document.getElementById("addBulk").addEventListener("click", function(){
+  var instId = document.getElementById("bulkInst").value;
+  if(!instId){ alert("기관을 선택하세요."); return; }
+  var inputs = document.querySelectorAll("#bulkRows input");
+  var added = 0;
+  Array.prototype.forEach.call(inputs, function(inp){
+    if(!inp.value) return;
+    state.events.push({
+      id:uid("e"), inst:instId, label:inp.dataset.stage,
+      start:inp.value, end:inp.value, memo:""
+    });
+    inp.value = "";
+    added++;
+  });
+  if(!added){ alert("날짜를 하나 이상 입력하세요."); return; }
+  persist(); renderAll();
+  note(added + "개 단계를 추가했습니다");
+});
 
 document.getElementById("addEvent").addEventListener("click", function(){
   var i = document.getElementById("evInst").value;
   var l = document.getElementById("evLabel").value.trim();
   var s = document.getElementById("evStart").value;
   var e = document.getElementById("evEnd").value || s;
+  var mo = document.getElementById("evMemo").value.trim();
   if(!i || !l || !s){ alert("기관, 내용, 시작일은 필요합니다."); return; }
   if(pd(e) < pd(s)){ alert("종료일이 시작일보다 빠릅니다."); return; }
 
   if(editingId){
     state.events.forEach(function(x){
-      if(x.id === editingId){ x.inst=i; x.label=l; x.start=s; x.end=e; }
+      if(x.id === editingId){ x.inst=i; x.label=l; x.start=s; x.end=e; x.memo=mo; }
     });
   }else{
-    state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e});
+    state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e, memo:mo});
   }
   endEdit();
   persist(); renderAll();
@@ -963,6 +1033,7 @@ loadUI();
 document.getElementById("todayLabel").textContent =
   "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
 renderSwatches();
+renderBulkRows();
 renderAll();
 initDb();
 
