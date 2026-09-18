@@ -227,7 +227,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 }
 .mgr-item .nm{flex:1;font-weight:600;font-size:13.5px;word-break:keep-all;}
 .mgr-item select{width:auto;padding:5px 8px;font-size:12.5px;}
-.mgr-url{flex:1 0 100%;font-size:12px !important;padding:6px 8px !important;}
+.mgr-field{flex:1 0 100%;font-size:12px !important;padding:6px 8px !important;}
 .ev-item{
   display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:13px;
 }
@@ -290,6 +290,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <div class="field" style="margin-top:12px;">
     <label for="newInstName">새 기관 이름</label>
     <input type="text" id="newInstName" placeholder="예: 국립암센터">
+  </div>
+  <div class="field">
+    <label for="newInstPlace">기본 장소 (선택)</label>
+    <input type="text" id="newInstPlace" placeholder="예: 서울 서초구 헌릉로 13">
   </div>
   <div class="field">
     <label for="newInstUrl">채용 페이지 링크 (선택)</label>
@@ -535,6 +539,32 @@ function uid(p){ return p + Math.random().toString(36).slice(2,8); }
 function safeUrl(u){ return u && /^https?:\/\//i.test(u) ? u : ""; }
 function kakaoMapUrl(q){ return "https://map.kakao.com/link/search/" + encodeURIComponent(q); }
 
+// 일정에 장소가 없으면 기관 기본 장소를 쓴다
+function eventPlace(e){ return e.place || inst(e.inst).place || ""; }
+
+function isWorkday(d){
+  var wd = d.getDay();
+  return wd !== 0 && wd !== 6 && !HOLIDAYS[fmt(d)];
+}
+
+// 참석이 필요한 일정은 주말·공휴일에 진행하지 않으므로 그 날을 뺀 구간으로 쪼갠다.
+// 구간이 전부 휴일이면 원래 구간을 그대로 둔다 (달력에서 사라지지 않도록).
+function workRanges(e){
+  var s = pd(e.start), en = pd(e.end);
+  if(!needsAttendance(e.label)) return [[s, en]];
+  var out = [], cur = null;
+  for(var d = new Date(s); d <= en; d = addDays(d, 1)){
+    if(isWorkday(d)){
+      if(cur) cur[1] = new Date(d);
+      else cur = [new Date(d), new Date(d)];
+    }else if(cur){
+      out.push(cur); cur = null;
+    }
+  }
+  if(cur) out.push(cur);
+  return out.length ? out : [[s, en]];
+}
+
 function usedColors(){
   var m = {};
   state.institutions.forEach(function(it){ m[it.color] = true; });
@@ -584,12 +614,13 @@ function renderUpcoming(){
     el.querySelector(".up-inst").textContent = it.name;
     el.querySelector(".up-date").textContent = range;
     el.querySelector(".up-memo").textContent = e.memo || "";
-    if(e.place){
+    var place = eventPlace(e);
+    if(place){
       var mp = document.createElement("a");
-      mp.href = kakaoMapUrl(e.place);
+      mp.href = kakaoMapUrl(place);
       mp.target = "_blank";
       mp.rel = "noopener noreferrer";
-      mp.textContent = e.place;
+      mp.textContent = place;
       mp.title = "카카오맵에서 보기";
       el.querySelector(".up-place").appendChild(mp);
     }
@@ -598,8 +629,10 @@ function renderUpcoming(){
 }
 
 /* ---------- render: conflicts ---------- */
-// 결과·발표일은 참석이 필요 없으므로 겹쳐도 충돌이 아니다
-function needsAttendance(label){ return !/결과|발표|마감|공고/.test(label); }
+// 정해진 시각에 어딘가 가 있어야 하는 일정만 참석으로 본다.
+// 결과·발표는 알림일 뿐이고, 인적성검사는 온라인이라 기간 내 아무 때나 응시한다.
+// 이 판정이 일정 겹침 경고와 달력의 주말·공휴일 제외 양쪽에 쓰인다.
+function needsAttendance(label){ return !/결과|발표|마감|공고|인적성/.test(label); }
 
 function findConflicts(){
   var evs = state.events.filter(function(e){
@@ -820,17 +853,19 @@ function buildWeek(wStart, wEnd, month, evs){
   // segments in this week
   var segs = [];
   evs.forEach(function(e){
-    var s = pd(e.start), en = pd(e.end);
-    if(en < wStart || s > wEnd) return;
-    var ss = s < wStart ? wStart : s;
-    var ee = en > wEnd ? wEnd : en;
-    segs.push({
-      ev:e,
-      col: diffDays(wStart, ss) + 1,
-      span: diffDays(ss, ee) + 1,
-      contL: s < wStart,
-      contR: en > wEnd,
-      sortKey: s.getTime()
+    workRanges(e).forEach(function(r){
+      var s = r[0], en = r[1];
+      if(en < wStart || s > wEnd) return;
+      var ss = s < wStart ? wStart : s;
+      var ee = en > wEnd ? wEnd : en;
+      segs.push({
+        ev:e,
+        col: diffDays(wStart, ss) + 1,
+        span: diffDays(ss, ee) + 1,
+        contL: s < wStart,
+        contR: en > wEnd,
+        sortKey: s.getTime()
+      });
     });
   });
 
@@ -871,7 +906,7 @@ function buildWeek(wStart, wEnd, month, evs){
     b.textContent = sg.ev.label;
     b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start
       + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
-      + (sg.ev.place ? "\n" + sg.ev.place : "")
+      + (eventPlace(sg.ev) ? "\n" + eventPlace(sg.ev) : "")
       + (sg.ev.memo ? "\n" + sg.ev.memo : "");
     week.appendChild(b);
   });
@@ -896,12 +931,18 @@ function renderDrawer(){
         '<option value="withdrawn">포기</option>'+
       '</select>'+
       '<button class="btn sm danger">삭제</button>'+
-      '<input type="text" class="mgr-url" placeholder="채용 페이지 링크 (선택)">';
+      '<input type="text" class="mgr-field mgr-place" placeholder="기본 장소 (선택)">'+
+      '<input type="text" class="mgr-field mgr-url" placeholder="채용 페이지 링크 (선택)">';
     row.querySelector(".nm").textContent = it.name;
     var sel = row.querySelector("select");
     sel.value = it.status;
     sel.addEventListener("change", function(){
       it.status = sel.value; persist(); renderAll();
+    });
+    var placeIn = row.querySelector(".mgr-place");
+    placeIn.value = it.place || "";
+    placeIn.addEventListener("change", function(){
+      it.place = placeIn.value.trim(); persist(); renderAll();
     });
     var urlIn = row.querySelector(".mgr-url");
     urlIn.value = it.url || "";
@@ -973,6 +1014,11 @@ function fillInstSelect(sel, withNew){
 function syncNewInstField(){
   var sel = document.getElementById("evInst");
   document.getElementById("evNewInstField").hidden = sel.value !== "__new__";
+
+  // 기관에 기본 장소가 있으면 비워둬도 된다는 걸 자리표시자로 알린다
+  var it = state.institutions.filter(function(x){ return x.id === sel.value; })[0];
+  document.getElementById("evPlace").placeholder =
+    (it && it.place) ? "비워두면 " + it.place : "예: 서울 서초구 헌릉로 13";
 }
 
 function renderBulkRows(){
@@ -1035,13 +1081,18 @@ document.addEventListener("keydown", function(e){ if(e.key === "Escape") openDra
 document.getElementById("addInst").addEventListener("click", function(){
   var f = document.getElementById("newInstName");
   var uf = document.getElementById("newInstUrl");
+  var pf = document.getElementById("newInstPlace");
   var n = f.value.trim();
   var u = uf.value.trim();
   if(!n){ f.focus(); return; }
   if(u && !safeUrl(u)){ alert("링크는 http:// 또는 https:// 로 시작해야 합니다."); return; }
-  state.institutions.push({id:uid("i"), name:n, color:pickedColor, status:"active", url:u});
+  state.institutions.push({
+    id:uid("i"), name:n, color:pickedColor, status:"active",
+    url:u, place:pf.value.trim()
+  });
   f.value = "";
   uf.value = "";
+  pf.value = "";
   pickedColor = freeColor();
   renderSwatches();
   persist(); renderAll();
@@ -1114,7 +1165,7 @@ document.getElementById("addEvent").addEventListener("click", function(){
       i = hit.id;
     }else{
       i = uid("i");
-      state.institutions.push({id:i, name:nm, color:freeColor(), status:"active", url:""});
+      state.institutions.push({id:i, name:nm, color:freeColor(), status:"active", url:"", place:""});
     }
   }
   if(!i){ alert("기관을 선택하세요."); return; }
