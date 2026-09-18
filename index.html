@@ -216,6 +216,9 @@ input[type=text],input[type=date],select{
 }
 input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.with-btn{display:flex;gap:6px;align-items:center;}
+.with-btn input{flex:1;min-width:0;}
+.with-btn .btn{flex:none;white-space:nowrap;}
 
 .bulk-row{display:flex;align-items:center;gap:9px;padding:3px 0;}
 .bulk-row .bl{flex:0 0 76px;font-size:12.5px;color:var(--ink-2);font-weight:600;}
@@ -293,7 +296,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   </div>
   <div class="field">
     <label for="newInstPlace">기본 장소 (선택)</label>
-    <input type="text" id="newInstPlace" placeholder="예: 서울 서초구 헌릉로 13">
+    <div class="with-btn">
+      <input type="text" id="newInstPlace" placeholder="예: 서울 서초구 헌릉로 13">
+      <button class="btn sm" type="button" id="newInstPlaceFind">지도</button>
+    </div>
   </div>
   <div class="field">
     <label for="newInstUrl">채용 페이지 링크 (선택)</label>
@@ -321,8 +327,9 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <datalist id="labelPresets">
       <option value="서류마감"></option>
       <option value="서류결과"></option>
-      <option value="필기결과"></option>
       <option value="인적성검사"></option>
+      <option value="필기시험"></option>
+      <option value="필기결과"></option>
       <option value="면접"></option>
       <option value="면접결과"></option>
       <option value="최종발표"></option>
@@ -335,7 +342,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   </div>
   <div class="field">
     <label for="evPlace">장소 (선택)</label>
-    <input type="text" id="evPlace" placeholder="예: 서울 서초구 헌릉로 13">
+    <div class="with-btn">
+      <input type="text" id="evPlace" placeholder="예: 서울 서초구 헌릉로 13">
+      <button class="btn sm" type="button" id="evPlaceFind">지도</button>
+    </div>
   </div>
   <div class="field">
     <label for="evMemo">메모 (선택)</label>
@@ -412,7 +422,7 @@ var HOLIDAYS = {
   "2027-03-01":"삼일절"
 };
 
-var STAGES = ["서류마감","서류결과","인적성검사","필기결과","면접","면접결과","최종발표"];
+var STAGES = ["서류마감","서류결과","인적성검사","필기시험","필기결과","면접","면접결과","최종발표"];
 
 var DEFAULT_STATE = {
   institutions:[
@@ -1121,6 +1131,23 @@ document.getElementById("addInst").addEventListener("click", function(){
 });
 
 document.getElementById("evInst").addEventListener("change", syncNewInstField);
+
+// 입력칸이 비어 있으면 기관 이름으로 카카오맵 검색을 연다
+function openMapSearch(inputId, fallback){
+  var v = document.getElementById(inputId).value.trim() || fallback;
+  if(!v){ alert("기관 이름이나 주소를 먼저 입력하세요."); return; }
+  window.open(kakaoMapUrl(v), "_blank", "noopener");
+}
+
+document.getElementById("newInstPlaceFind").addEventListener("click", function(){
+  openMapSearch("newInstPlace", document.getElementById("newInstName").value.trim());
+});
+
+document.getElementById("evPlaceFind").addEventListener("click", function(){
+  var sel = document.getElementById("evInst");
+  var it = state.institutions.filter(function(x){ return x.id === sel.value; })[0];
+  openMapSearch("evPlace", it ? it.name : document.getElementById("evNewInst").value.trim());
+});
 
 function startEdit(e){
   editingId = e.id;
