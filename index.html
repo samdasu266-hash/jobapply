@@ -478,11 +478,13 @@ function migrate(s){
   });
   return s;
 }
+// 저장된 화면 설정이 있었는지 알려준다 (없으면 기본값을 적용해야 하므로)
 function loadUI(){
   try{
     var u = JSON.parse(localStorage.getItem(LS_UI));
-    if(u){ hidden = u.hidden || {}; hideInactive = u.hideInactive !== false; }
+    if(u){ hidden = u.hidden || {}; hideInactive = u.hideInactive !== false; return true; }
   }catch(e){}
+  return false;
 }
 function saveUI(){
   try{ localStorage.setItem(LS_UI, JSON.stringify({hidden:hidden, hideInactive:hideInactive})); }catch(e){}
@@ -560,10 +562,14 @@ function inst(id){
   return {id:id,name:"(삭제됨)",color:"#999",status:"withdrawn"};
 }
 function isActive(id){ return inst(id).status === "active"; }
-function visible(id){
-  if(hidden[id]) return false;
-  if(hideInactive && !isActive(id)) return false;
-  return true;
+// 칩이 유일한 기준이다. '탈락·포기 숨기기'는 칩을 한꺼번에 끄는 동작일 뿐이라,
+// 그 뒤에 탈락 기관 칩을 눌러 개별로 다시 켤 수 있다.
+function visible(id){ return !hidden[id]; }
+
+function hideInactiveNow(){
+  state.institutions.forEach(function(it){
+    if(it.status !== "active") hidden[it.id] = true;
+  });
 }
 function uid(p){ return p + Math.random().toString(36).slice(2,8); }
 
@@ -797,7 +803,14 @@ function renderFilters(){
   t.innerHTML = '<input type="checkbox"> 탈락·포기 기관 숨기기';
   var cb = t.querySelector("input");
   cb.checked = hideInactive;
-  cb.addEventListener("change", function(){ hideInactive = cb.checked; saveUI(); renderCalendar(); });
+  cb.addEventListener("change", function(){
+    hideInactive = cb.checked;
+    state.institutions.forEach(function(it){
+      if(it.status === "active") return;
+      if(hideInactive) hidden[it.id] = true; else delete hidden[it.id];
+    });
+    saveUI(); renderFilters(); renderCalendar();
+  });
   box.appendChild(t);
 }
 
@@ -969,7 +982,10 @@ function renderDrawer(){
     var sel = row.querySelector("select");
     sel.value = it.status;
     sel.addEventListener("change", function(){
-      it.status = sel.value; persist(); renderAll();
+      it.status = sel.value;
+      // 방금 탈락·포기로 바뀌었고 숨기기가 켜져 있으면 바로 접어둔다
+      if(hideInactive && it.status !== "active"){ hidden[it.id] = true; saveUI(); }
+      persist(); renderAll();
     });
     var placeIn = row.querySelector(".mgr-place");
     placeIn.value = it.place || "";
@@ -1267,7 +1283,8 @@ document.getElementById("importFile").addEventListener("change", function(ev){
 /* ---------- boot ---------- */
 state = migrate(loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE)));
 saveLocal();
-loadUI();
+// 저장된 설정이 없는 첫 방문에만 기본값(탈락·포기 접기)을 적용한다
+if(!loadUI()) hideInactiveNow();
 document.getElementById("todayLabel").textContent =
   "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
 renderSwatches();
