@@ -140,10 +140,24 @@ section{margin-bottom:26px;}
 }
 .dc.out .hol-name{opacity:.5;}
 .bar{
-  font-size:11.5px;font-weight:700;color:#fff;
-  padding:4px 8px;margin:0 2px;border-radius:7px;
+  font-size:11.5px;font-weight:700;
+  background:var(--card);
+  border:1.5px solid var(--bar-c,var(--line));
+  color:var(--bar-c,var(--ink));
+  padding:3px 7px;margin:0 2px;border-radius:7px;
   line-height:1.3;word-break:keep-all;white-space:normal;overflow:hidden;
   display:flex;align-items:center;min-height:22px;
+}
+/* 기관 색은 흰 글씨용이라 어두운 배경에서는 그대로 쓰면 대비가 부족하다 */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .bar{
+    color:color-mix(in srgb, var(--bar-c,#8B9199), white 52%);
+    border-color:color-mix(in srgb, var(--bar-c,#8B9199), white 30%);
+  }
+}
+:root[data-theme="dark"] .bar{
+  color:color-mix(in srgb, var(--bar-c,#8B9199), white 52%);
+  border-color:color-mix(in srgb, var(--bar-c,#8B9199), white 30%);
 }
 .bar.cont-l{border-top-left-radius:2px;border-bottom-left-radius:2px;margin-left:0;}
 .bar.cont-r{border-top-right-radius:2px;border-bottom-right-radius:2px;margin-right:0;}
@@ -165,6 +179,7 @@ section{margin-bottom:26px;}
   .month{padding:10px 8px 8px;}
   .bar{
     font-size:9px;padding:2px 3px;margin:0 1px;border-radius:5px;min-height:18px;
+    border-width:1px;
     white-space:nowrap;text-overflow:ellipsis;display:block;line-height:14px;
   }
   .dc{font-size:10.5px;padding:0 2px 3px;}
@@ -746,7 +761,7 @@ function buildWeek(wStart, wEnd, month, evs){
     b.className = cls;
     b.style.gridRow = String(sg.lane + 2);
     b.style.gridColumn = sg.col + " / span " + sg.span;
-    if(it.status === "active") b.style.background = it.color;
+    if(it.status === "active") b.style.setProperty("--bar-c", it.color);
     b.textContent = sg.ev.label;
     b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "");
     week.appendChild(b);
