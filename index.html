@@ -17,6 +17,7 @@
   --line:#E3E6EA;
   --line-2:#EFF1F4;
   --sun:#C25A47;
+  --ok:#2E7D62;
   --today:#16191D;
   --radius:12px;
 }
@@ -24,11 +25,13 @@
   @media (prefers-color-scheme: dark){
     --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
     --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+    --sun:#E08270; --ok:#5FBFA0;
   }
 }
 :root[data-theme="dark"]{
   --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
   --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+  --sun:#E08270; --ok:#5FBFA0;
 }
 
 *{box-sizing:border-box;}
@@ -150,6 +153,30 @@ section{margin-bottom:26px;}
 .bar.muted{background:transparent !important;color:var(--ink-3);border:1px dashed var(--line);text-decoration:line-through;text-decoration-thickness:1px;}
 .bar.hidden{display:none;}
 
+/* ---------- postings ---------- */
+.po-item{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:8px;
+  display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;
+}
+.po-item.urgent{border-left:4px solid var(--sun);}
+.po-item.gone{opacity:.5;}
+.po-dday{font-size:12.5px;font-weight:700;min-width:44px;color:var(--ink-2);}
+.po-item.urgent .po-dday{color:var(--sun);}
+.po-main{flex:1;min-width:190px;}
+.po-title{font-size:14.5px;font-weight:700;letter-spacing:-0.01em;word-break:keep-all;}
+.po-title a{color:inherit;text-underline-offset:2px;}
+.po-inst{font-size:12.5px;color:var(--ink-2);margin-top:2px;word-break:keep-all;}
+.po-due{font-size:12px;color:var(--ink-3);margin-top:5px;}
+.po-status{
+  font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;
+  border:1px solid var(--line);color:var(--ink-3);white-space:nowrap;
+}
+.po-status.plan{color:var(--sun);}
+.po-status.done{color:var(--ok);}
+.po-empty{color:var(--ink-3);font-size:13.5px;padding:12px 0;}
+.po-act{display:flex;gap:6px;flex-wrap:wrap;}
+
 /* ---------- conflicts ---------- */
 .cf-item{
   background:var(--card);border:1px solid var(--line);border-left:4px solid var(--sun);
@@ -236,6 +263,11 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   </section>
 
   <section>
+    <div class="sec-head"><h2>지원할만한 공고</h2><span class="hint" id="poHint"></span></div>
+    <div id="postings"></div>
+  </section>
+
+  <section>
     <div class="sec-head"><h2>기관별 진행 현황</h2></div>
     <div class="pipes" id="pipes"></div>
   </section>
@@ -296,6 +328,39 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 
   <h4>등록된 일정</h4>
   <div id="evList"></div>
+
+  <h4>공고 추가</h4>
+  <div class="field">
+    <label for="poInst">기관명</label>
+    <input type="text" id="poInst" placeholder="예: 한국보건산업진흥원">
+  </div>
+  <div class="field">
+    <label for="poTitle">공고명</label>
+    <input type="text" id="poTitle" placeholder="예: 2026년 하반기 일반직 신입 채용">
+  </div>
+  <div class="row2">
+    <div class="field"><label for="poDue">서류 마감일</label><input type="date" id="poDue"></div>
+    <div class="field">
+      <label for="poStatus">상태</label>
+      <select id="poStatus">
+        <option value="관심">관심</option>
+        <option value="지원예정">지원예정</option>
+        <option value="지원완료">지원완료</option>
+        <option value="미지원">미지원</option>
+      </select>
+    </div>
+  </div>
+  <div class="field">
+    <label for="poUrl">공고 링크 (선택)</label>
+    <input type="text" id="poUrl" placeholder="https://job.alio.go.kr/...">
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" id="addPosting">공고 추가</button>
+    <button class="btn" id="cancelPosting" hidden>취소</button>
+  </div>
+
+  <h4>등록된 공고</h4>
+  <div id="poList"></div>
 
   <h4>백업</h4>
   <div style="display:flex;gap:8px;">
@@ -360,7 +425,8 @@ var DEFAULT_STATE = {
     {id:"e14", inst:"koda",   label:"인적성검사", start:"2026-10-07", end:"2026-10-12"},
     {id:"e15", inst:"koda",   label:"면접",       start:"2026-10-15", end:"2026-10-16"},
     {id:"e16", inst:"koda",   label:"최종발표",   start:"2026-10-22", end:"2026-10-22"}
-  ]
+  ],
+  postings:[]
 };
 
 var state = null;
@@ -369,6 +435,7 @@ var hideInactive = true;
 var pickedColor = PALETTE[0];
 var dbHandle = null;
 var editingId = null;
+var editingPoId = null;
 
 /* ---------- storage ---------- */
 var LS = "jobtracker.v1";
@@ -381,6 +448,7 @@ function migrate(s){
   if(s && s.institutions) s.institutions.forEach(function(it){
     if(COLOR_FIX[it.color]) it.color = COLOR_FIX[it.color];
   });
+  if(s && !Array.isArray(s.postings)) s.postings = [];
   return s;
 }
 function loadUI(){
@@ -498,6 +566,72 @@ function renderUpcoming(){
     el.querySelector(".up-title").textContent = e.label;
     el.querySelector(".up-inst").textContent = it.name;
     el.querySelector(".up-date").textContent = range;
+    box.appendChild(el);
+  });
+}
+
+/* ---------- render: postings ---------- */
+var PO_CLASS = {"지원예정":"plan", "지원완료":"done"};
+
+function byDue(a,b){
+  if(!a.due) return 1;
+  if(!b.due) return -1;
+  return pd(a.due) - pd(b.due);
+}
+function safeUrl(u){ return u && /^https?:\/\//i.test(u) ? u : ""; }
+
+function renderPostings(){
+  var box = document.getElementById("postings");
+  var hint = document.getElementById("poHint");
+  box.innerHTML = "";
+
+  if(!state.postings.length){
+    box.innerHTML = '<div class="po-empty">등록된 공고가 없습니다. 관리에서 추가하세요.</div>';
+    hint.textContent = "";
+    return;
+  }
+  var open = state.postings.filter(function(p){
+    return p.due && pd(p.due) >= TODAY && p.status !== "미지원" && p.status !== "지원완료";
+  }).length;
+  hint.textContent = open ? "마감 전 " + open + "건" : "";
+
+  state.postings.slice().sort(byDue).forEach(function(p){
+    var d = p.due ? diffDays(TODAY, pd(p.due)) : null;
+    var done = p.status === "미지원" || p.status === "지원완료";
+    var el = document.createElement("div");
+    var cls = "po-item";
+    if(done || (d !== null && d < 0)) cls += " gone";
+    else if(d !== null && d <= 7) cls += " urgent";
+    el.className = cls;
+    el.innerHTML =
+      '<div class="po-dday"></div>'+
+      '<div class="po-main">'+
+        '<div class="po-title"></div>'+
+        '<div class="po-inst"></div>'+
+        '<div class="po-due"></div>'+
+      '</div>'+
+      '<span class="po-status"></span>';
+
+    el.querySelector(".po-dday").textContent =
+      d === null ? "—" : (d > 0 ? "D-"+d : (d === 0 ? "오늘" : "마감"));
+
+    var t = el.querySelector(".po-title");
+    var u = safeUrl(p.url);
+    if(u){
+      var a = document.createElement("a");
+      a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = p.title;
+      t.appendChild(a);
+    }else{
+      t.textContent = p.title;
+    }
+    el.querySelector(".po-inst").textContent = p.inst;
+    el.querySelector(".po-due").textContent = p.due ? "마감 " + kdate(pd(p.due)) : "마감일 미정";
+
+    var st = el.querySelector(".po-status");
+    st.textContent = p.status;
+    if(PO_CLASS[p.status]) st.classList.add(PO_CLASS[p.status]);
+
     box.appendChild(el);
   });
 }
@@ -824,6 +958,76 @@ function renderDrawer(){
   });
 }
 
+function renderPoList(){
+  var el = document.getElementById("poList");
+  el.innerHTML = "";
+  if(!state.postings.length){
+    el.innerHTML = '<div class="hint">없음</div>';
+    return;
+  }
+  state.postings.slice().sort(byDue).forEach(function(p){
+    var row = document.createElement("div");
+    row.className = "ev-item";
+    row.innerHTML =
+      '<span class="d"></span><span class="t"></span>'+
+      '<span class="po-act">'+
+        '<button class="btn sm promote">기관 추가</button>'+
+        '<button class="btn sm edit">수정</button>'+
+        '<button class="btn sm danger">삭제</button>'+
+      '</span>';
+    row.querySelector(".d").textContent = p.due ? kdate(pd(p.due)) : "미정";
+    row.querySelector(".t").textContent = p.inst + " · " + p.title;
+    row.querySelector(".promote").addEventListener("click", function(){ promote(p); });
+    row.querySelector(".edit").addEventListener("click", function(){ startPoEdit(p); });
+    row.querySelector(".danger").addEventListener("click", function(){
+      state.postings = state.postings.filter(function(x){ return x.id !== p.id; });
+      if(editingPoId === p.id) endPoEdit();
+      persist(); renderAll();
+    });
+    el.appendChild(row);
+  });
+}
+
+// 공고를 기관 파이프라인으로 옮긴다
+function promote(p){
+  if(state.institutions.some(function(it){ return it.name === p.inst; })){
+    alert("이미 등록된 기관입니다.");
+    return;
+  }
+  if(!confirm(p.inst + "을(를) 기관으로 추가할까요?")) return;
+  var id = uid("i");
+  state.institutions.push({
+    id:id, name:p.inst,
+    color:PALETTE[state.institutions.length % PALETTE.length],
+    status:"active"
+  });
+  if(p.due) state.events.push({id:uid("e"), inst:id, label:"서류마감", start:p.due, end:p.due});
+  p.status = "지원완료";
+  persist(); renderAll();
+}
+
+function startPoEdit(p){
+  editingPoId = p.id;
+  document.getElementById("poInst").value = p.inst;
+  document.getElementById("poTitle").value = p.title;
+  document.getElementById("poDue").value = p.due || "";
+  document.getElementById("poStatus").value = p.status;
+  document.getElementById("poUrl").value = p.url || "";
+  document.getElementById("addPosting").textContent = "수정 저장";
+  document.getElementById("cancelPosting").hidden = false;
+  document.getElementById("poTitle").focus();
+}
+function endPoEdit(){
+  editingPoId = null;
+  document.getElementById("poInst").value = "";
+  document.getElementById("poTitle").value = "";
+  document.getElementById("poDue").value = "";
+  document.getElementById("poStatus").value = "관심";
+  document.getElementById("poUrl").value = "";
+  document.getElementById("addPosting").textContent = "공고 추가";
+  document.getElementById("cancelPosting").hidden = true;
+}
+
 function renderSwatches(){
   var box = document.getElementById("swatchPick");
   box.innerHTML = "";
@@ -841,10 +1045,12 @@ function renderSwatches(){
 function renderAll(){
   renderUpcoming();
   renderConflicts();
+  renderPostings();
   renderPipes();
   renderFilters();
   renderCalendar();
   renderDrawer();
+  renderPoList();
 }
 
 /* ---------- events ---------- */
@@ -904,6 +1110,28 @@ document.getElementById("addEvent").addEventListener("click", function(){
     state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e});
   }
   endEdit();
+  persist(); renderAll();
+});
+
+document.getElementById("cancelPosting").addEventListener("click", endPoEdit);
+
+document.getElementById("addPosting").addEventListener("click", function(){
+  var i = document.getElementById("poInst").value.trim();
+  var t = document.getElementById("poTitle").value.trim();
+  var due = document.getElementById("poDue").value;
+  var st = document.getElementById("poStatus").value;
+  var url = document.getElementById("poUrl").value.trim();
+  if(!i || !t){ alert("기관명과 공고명은 필요합니다."); return; }
+  if(url && !safeUrl(url)){ alert("링크는 http:// 또는 https:// 로 시작해야 합니다."); return; }
+
+  if(editingPoId){
+    state.postings.forEach(function(x){
+      if(x.id === editingPoId){ x.inst=i; x.title=t; x.due=due; x.status=st; x.url=url; }
+    });
+  }else{
+    state.postings.push({id:uid("p"), inst:i, title:t, due:due, status:st, url:url});
+  }
+  endPoEdit();
   persist(); renderAll();
 });
 
