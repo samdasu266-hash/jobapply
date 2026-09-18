@@ -462,7 +462,9 @@ var editingId = null;
 
 /* ---------- storage ---------- */
 var LS = "jobtracker.v1";
-var LS_UI = "jobtracker.ui.v1";
+// v1은 '탈락·포기 숨기기'가 칩과 별개로 동작하던 시절의 설정이라 그대로 쓰면
+// 탈락 기관이 노출된다. 키를 올려 기본값부터 다시 잡는다.
+var LS_UI = "jobtracker.ui.v2";
 
 function loadLocal(){
   try{ var r = localStorage.getItem(LS); return r ? JSON.parse(r) : null; }catch(e){ return null; }
@@ -475,6 +477,11 @@ function migrate(s){
       if(!it.place) it.place = info.place;
       if(!it.url) it.url = info.url;
     }
+  });
+  // 가져온 파일 등으로 종료일이 시작일보다 빠른 일정이 들어올 수 있다.
+  // YYYY-MM-DD 는 문자열 비교가 곧 날짜 비교다.
+  if(s && s.events) s.events.forEach(function(e){
+    if(e.start && e.end && e.end < e.start) e.end = e.start;
   });
   return s;
 }
@@ -559,12 +566,13 @@ function kdate(d){ return (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")
 /* ---------- lookups ---------- */
 function inst(id){
   for(var i=0;i<state.institutions.length;i++) if(state.institutions[i].id===id) return state.institutions[i];
-  return {id:id,name:"(삭제됨)",color:"#999",status:"withdrawn"};
+  return {id:id,name:"(삭제됨)",color:"#999",status:"withdrawn",missing:true};
 }
 function isActive(id){ return inst(id).status === "active"; }
 // 칩이 유일한 기준이다. '탈락·포기 숨기기'는 칩을 한꺼번에 끄는 동작일 뿐이라,
 // 그 뒤에 탈락 기관 칩을 눌러 개별로 다시 켤 수 있다.
-function visible(id){ return !hidden[id]; }
+// 기관이 사라진 일정은 끌 칩도 없으므로 아예 내보내지 않는다.
+function visible(id){ var it = inst(id); return !it.missing && !hidden[id]; }
 
 function hideInactiveNow(){
   state.institutions.forEach(function(it){
@@ -672,6 +680,20 @@ function renderUpcoming(){
 // 이 판정이 일정 겹침 경고와 달력의 주말·공휴일 제외 양쪽에 쓰인다.
 function needsAttendance(label){ return !/결과|발표|마감|공고|인적성/.test(label); }
 
+// 달력이 주말·공휴일을 빼고 그리므로 겹침도 같은 기준으로 봐야 한다.
+// 전체 기간으로 비교하면 실제로는 못 겹치는 날짜를 경고하게 된다.
+function overlapOf(a, b){
+  var ra = workRanges(a), rb = workRanges(b);
+  for(var i=0;i<ra.length;i++){
+    for(var j=0;j<rb.length;j++){
+      var s = ra[i][0] > rb[j][0] ? ra[i][0] : rb[j][0];
+      var e = ra[i][1] < rb[j][1] ? ra[i][1] : rb[j][1];
+      if(s <= e) return [s, e];
+    }
+  }
+  return null;
+}
+
 function findConflicts(){
   var evs = state.events.filter(function(e){
     return isActive(e.inst) && pd(e.end) >= TODAY && needsAttendance(e.label);
@@ -681,9 +703,8 @@ function findConflicts(){
     for(var j=i+1;j<evs.length;j++){
       var a = evs[i], b = evs[j];
       if(a.inst === b.inst) continue;
-      var as = pd(a.start), ae = pd(a.end), bs = pd(b.start), be = pd(b.end);
-      if(ae < bs || be < as) continue;
-      out.push({a:a, b:b, from:(as > bs ? as : bs), to:(ae < be ? ae : be)});
+      var hit = overlapOf(a, b);
+      if(hit) out.push({a:a, b:b, from:hit[0], to:hit[1]});
     }
   }
   return out.sort(function(x,y){ return x.from - y.from; });
