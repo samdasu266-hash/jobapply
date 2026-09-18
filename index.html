@@ -379,6 +379,23 @@ var PALETTE = ["#2E6F5E","#96491B","#2F5F92","#7A4BA0","#9C4370","#4A5560","#3F7
 // 저장된 데이터에 남아있는 구버전 색을 새 팔레트로 옮긴다
 var COLOR_FIX = {"#B05418":"#96491B","#9A7411":"#9C4370","#1F7A6B":"#3F7A33","#A03A52":"#17707D","#3D6BA8":"#4A4E9E"};
 
+// 기본 기관의 주소와 채용 페이지. 주소는 카카오맵, 링크는 각 기관 사이트에서 확인한 값.
+// 비어 있을 때만 채우므로 직접 입력한 값은 덮어쓰지 않는다.
+var INST_INFO = {
+  neca:   {place:"서울 광진구 능동로 400",
+           url:"https://neca.applyin.co.kr/jobs/"},
+  nikom:  {place:"서울 중구 정동길 14",
+           url:"https://nikom.or.kr/nikom/board/index.do?menu_idx=62&manage_idx=45"},
+  kofih:  {place:"서울 광진구 능동로 400",
+           url:"https://www.kofih.org/web/lay1/bbs/S1T11C30/A/20/list.do"},
+  konibp: {place:"서울 광진구 능동로 400",
+           url:"https://nibp.kr/board?bbsOid=21&menuCd=BOARD21"},
+  koda:   {place:"서울 서대문구 충정로 36",
+           url:"https://www.koda1458.kr/communication/recruitments"},
+  hira:   {place:"강원특별자치도 원주시 혁신로 60",
+           url:"https://www.hira.or.kr/re/recruit/recruitAdList.do?pgmid=HIRAA040078000000"}
+};
+
 // 출처: Google "대한민국의 휴일" 캘린더. 종일 일정 종료일은 제외 기준이라 하루 빼서 읽은 값.
 var HOLIDAYS = {
   "2026-09-24":"추석 연휴",
@@ -443,6 +460,11 @@ function loadLocal(){
 function migrate(s){
   if(s && s.institutions) s.institutions.forEach(function(it){
     if(COLOR_FIX[it.color]) it.color = COLOR_FIX[it.color];
+    var info = INST_INFO[it.id];
+    if(info){
+      if(!it.place) it.place = info.place;
+      if(!it.url) it.url = info.url;
+    }
   });
   return s;
 }
