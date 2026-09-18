@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <title>지원 전형 일정</title>
 <style>
 :root{
@@ -10,7 +13,7 @@
   --card:#FFFFFF;
   --ink:#16191D;
   --ink-2:#5A6069;
-  --ink-3:#8A9099;
+  --ink-3:#696F77;
   --line:#E3E6EA;
   --line-2:#EFF1F4;
   --sun:#C25A47;
@@ -19,12 +22,12 @@
 }
 :root:not([data-theme="light"]){
   @media (prefers-color-scheme: dark){
-    --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#7B818A;
+    --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
     --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#7B818A;
+  --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
   --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
 }
 
@@ -124,21 +127,49 @@ section{margin-bottom:26px;}
 .week + .week{border-top:1px solid var(--line-2);padding-top:5px;}
 .dc{grid-row:1;font-size:11.5px;font-weight:700;color:var(--ink-2);padding:0 4px 4px;min-height:16px;}
 .dc.out{color:var(--ink-3);opacity:.35;}
-.dc.sun{color:var(--sun);}
+.dc.sun,.dc.holi{color:var(--sun);}
 .dc.today span{
   display:inline-block;min-width:19px;height:19px;line-height:19px;text-align:center;
   background:var(--today);color:var(--card);border-radius:50%;font-size:11px;
 }
+.dc.today.holi span{background:var(--sun);}
+.hol-name{
+  display:block;font-size:9px;font-weight:600;color:var(--sun);
+  line-height:1.2;margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dc.out .hol-name{opacity:.5;}
 .bar{
   font-size:11.5px;font-weight:700;color:#fff;
   padding:4px 8px;margin:0 2px;border-radius:7px;
-  line-height:1.3;word-break:keep-all;white-space:normal;
+  line-height:1.3;word-break:keep-all;white-space:normal;overflow:hidden;
   display:flex;align-items:center;min-height:22px;
 }
 .bar.cont-l{border-top-left-radius:2px;border-bottom-left-radius:2px;margin-left:0;}
 .bar.cont-r{border-top-right-radius:2px;border-bottom-right-radius:2px;margin-right:0;}
 .bar.muted{background:transparent !important;color:var(--ink-3);border:1px dashed var(--line);text-decoration:line-through;text-decoration-thickness:1px;}
 .bar.hidden{display:none;}
+
+/* ---------- conflicts ---------- */
+.cf-item{
+  background:var(--card);border:1px solid var(--line);border-left:4px solid var(--sun);
+  border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;
+}
+.cf-date{font-size:12px;font-weight:700;color:var(--sun);}
+.cf-body{font-size:13px;margin-top:4px;word-break:keep-all;}
+
+/* ---------- mobile ---------- */
+@media (max-width:560px){
+  body{padding:20px 10px 60px;}
+  h1{font-size:22px;}
+  .month{padding:10px 8px 8px;}
+  .bar{
+    font-size:9px;padding:2px 3px;margin:0 1px;border-radius:5px;min-height:18px;
+    white-space:nowrap;text-overflow:ellipsis;display:block;line-height:14px;
+  }
+  .dc{font-size:10.5px;padding:0 2px 3px;}
+  .hol-name{font-size:8px;}
+}
 
 /* ---------- drawer ---------- */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:40;}
@@ -199,6 +230,11 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div class="upcoming" id="upcoming"></div>
   </section>
 
+  <section id="conflictSec" hidden>
+    <div class="sec-head"><h2>일정 겹침</h2><span class="hint">참석이 필요한 일정만</span></div>
+    <div id="conflicts"></div>
+  </section>
+
   <section>
     <div class="sec-head"><h2>기관별 진행 현황</h2></div>
     <div class="pipes" id="pipes"></div>
@@ -253,10 +289,20 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
     <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
   </div>
-  <button class="btn" id="addEvent">일정 추가</button>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" id="addEvent">일정 추가</button>
+    <button class="btn" id="cancelEdit" hidden>취소</button>
+  </div>
 
   <h4>등록된 일정</h4>
   <div id="evList"></div>
+
+  <h4>백업</h4>
+  <div style="display:flex;gap:8px;">
+    <button class="btn sm" id="exportBtn">내보내기</button>
+    <button class="btn sm" id="importBtn">가져오기</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
 
   <div class="save-note" id="saveNote">저장 준비 중…</div>
 </aside>
@@ -267,15 +313,34 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 
 var TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
-var PALETTE = ["#2E6F5E","#B05418","#2F5F92","#7A4BA0","#9A7411","#4A5560","#1F7A6B","#A03A52","#3D6BA8","#6B7A1F"];
+var PALETTE = ["#2E6F5E","#96491B","#2F5F92","#7A4BA0","#9C4370","#4A5560","#3F7A33","#17707D","#4A4E9E","#6B7A1F"];
+
+// 저장된 데이터에 남아있는 구버전 색을 새 팔레트로 옮긴다
+var COLOR_FIX = {"#B05418":"#96491B","#9A7411":"#9C4370","#1F7A6B":"#3F7A33","#A03A52":"#17707D","#3D6BA8":"#4A4E9E"};
+
+// 출처: Google "대한민국의 휴일" 캘린더. 종일 일정 종료일은 제외 기준이라 하루 빼서 읽은 값.
+var HOLIDAYS = {
+  "2026-09-24":"추석 연휴",
+  "2026-09-25":"추석",
+  "2026-09-26":"추석 연휴",
+  "2026-10-03":"개천절",
+  "2026-10-05":"대체공휴일",
+  "2026-10-09":"한글날",
+  "2026-12-25":"크리스마스",
+  "2027-01-01":"새해첫날",
+  "2027-02-07":"설날",
+  "2027-02-08":"설날 연휴",
+  "2027-02-09":"대체공휴일",
+  "2027-03-01":"삼일절"
+};
 
 var DEFAULT_STATE = {
   institutions:[
     {id:"neca",   name:"NECA (보의연)",            color:"#2E6F5E", status:"active"},
-    {id:"nikom",  name:"NIKOM (한의약진흥원)",     color:"#B05418", status:"active"},
+    {id:"nikom",  name:"NIKOM (한의약진흥원)",     color:"#96491B", status:"active"},
     {id:"kofih",  name:"KOFIH (보건의료재단)",     color:"#2F5F92", status:"active"},
     {id:"konibp", name:"KONIBP (생명윤리정책원)",  color:"#7A4BA0", status:"active"},
-    {id:"koda",   name:"KODA (장기조직기증원)",    color:"#9A7411", status:"active"},
+    {id:"koda",   name:"KODA (장기조직기증원)",    color:"#9C4370", status:"active"},
     {id:"hira",   name:"심평원",                   color:"#4A5560", status:"active"}
   ],
   events:[
@@ -303,12 +368,29 @@ var hidden = {};          // instId -> true (filter off)
 var hideInactive = true;
 var pickedColor = PALETTE[0];
 var dbHandle = null;
+var editingId = null;
 
 /* ---------- storage ---------- */
 var LS = "jobtracker.v1";
+var LS_UI = "jobtracker.ui.v1";
 
 function loadLocal(){
   try{ var r = localStorage.getItem(LS); return r ? JSON.parse(r) : null; }catch(e){ return null; }
+}
+function migrate(s){
+  if(s && s.institutions) s.institutions.forEach(function(it){
+    if(COLOR_FIX[it.color]) it.color = COLOR_FIX[it.color];
+  });
+  return s;
+}
+function loadUI(){
+  try{
+    var u = JSON.parse(localStorage.getItem(LS_UI));
+    if(u){ hidden = u.hidden || {}; hideInactive = u.hideInactive !== false; }
+  }catch(e){}
+}
+function saveUI(){
+  try{ localStorage.setItem(LS_UI, JSON.stringify({hidden:hidden, hideInactive:hideInactive})); }catch(e){}
 }
 function saveLocal(){
   try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){}
@@ -347,7 +429,7 @@ async function initDb(){
   try{
     var snap = await db.doc("tracker/state").get();
     if(snap && snap.data && snap.data.data){
-      state = snap.data.data;
+      state = migrate(snap.data.data);
       saveLocal();
       renderAll();
       note("저장됨");
@@ -401,7 +483,7 @@ function renderUpcoming(){
     var it = inst(e.inst);
     var s = pd(e.start), en = pd(e.end);
     var d = diffDays(TODAY, s);
-    var dday = d > 0 ? "D-"+d : (d === 0 ? "오늘" : (pd(e.end) >= TODAY ? "진행 중" : ""));
+    var dday = d > 0 ? "D-"+d : (d === 0 ? "오늘" : "진행 중");
     var range = (e.start === e.end) ? kdate(s) : kdate(s)+" – "+kdate(en);
 
     var el = document.createElement("div");
@@ -416,6 +498,46 @@ function renderUpcoming(){
     el.querySelector(".up-title").textContent = e.label;
     el.querySelector(".up-inst").textContent = it.name;
     el.querySelector(".up-date").textContent = range;
+    box.appendChild(el);
+  });
+}
+
+/* ---------- render: conflicts ---------- */
+// 결과·발표일은 참석이 필요 없으므로 겹쳐도 충돌이 아니다
+function needsAttendance(label){ return !/결과|발표|마감|공고/.test(label); }
+
+function findConflicts(){
+  var evs = state.events.filter(function(e){
+    return isActive(e.inst) && pd(e.end) >= TODAY && needsAttendance(e.label);
+  });
+  var out = [];
+  for(var i=0;i<evs.length;i++){
+    for(var j=i+1;j<evs.length;j++){
+      var a = evs[i], b = evs[j];
+      if(a.inst === b.inst) continue;
+      var as = pd(a.start), ae = pd(a.end), bs = pd(b.start), be = pd(b.end);
+      if(ae < bs || be < as) continue;
+      out.push({a:a, b:b, from:(as > bs ? as : bs), to:(ae < be ? ae : be)});
+    }
+  }
+  return out.sort(function(x,y){ return x.from - y.from; });
+}
+
+function renderConflicts(){
+  var sec = document.getElementById("conflictSec");
+  var box = document.getElementById("conflicts");
+  var list = findConflicts();
+  box.innerHTML = "";
+  sec.hidden = !list.length;
+  if(!list.length) return;
+  list.forEach(function(c){
+    var el = document.createElement("div");
+    el.className = "cf-item";
+    el.innerHTML = '<div class="cf-date"></div><div class="cf-body"></div>';
+    el.querySelector(".cf-date").textContent =
+      fmt(c.from) === fmt(c.to) ? kdate(c.from) : kdate(c.from)+" – "+kdate(c.to);
+    el.querySelector(".cf-body").textContent =
+      inst(c.a.inst).name+" "+c.a.label+"  ×  "+inst(c.b.inst).name+" "+c.b.label;
     box.appendChild(el);
   });
 }
@@ -479,7 +601,7 @@ function renderFilters(){
     c.querySelector(".chip-text").textContent = it.name;
     c.addEventListener("click", function(){
       if(hidden[it.id]) delete hidden[it.id]; else hidden[it.id] = true;
-      renderFilters(); renderCalendar();
+      saveUI(); renderFilters(); renderCalendar();
     });
     box.appendChild(c);
   });
@@ -489,7 +611,7 @@ function renderFilters(){
   t.innerHTML = '<input type="checkbox"> 탈락·포기 기관 숨기기';
   var cb = t.querySelector("input");
   cb.checked = hideInactive;
-  cb.addEventListener("change", function(){ hideInactive = cb.checked; renderCalendar(); });
+  cb.addEventListener("change", function(){ hideInactive = cb.checked; saveUI(); renderCalendar(); });
   box.appendChild(t);
 }
 
@@ -552,15 +674,25 @@ function buildWeek(wStart, wEnd, month, evs){
 
   for(var i=0;i<7;i++){
     var d = addDays(wStart, i);
+    var key = fmt(d);
+    var hol = HOLIDAYS[key];
     var c = document.createElement("div");
     var cls = "dc";
     if(d.getMonth() !== month) cls += " out";
     if(d.getDay() === 0) cls += " sun";
-    if(fmt(d) === fmt(TODAY)) cls += " today";
+    if(hol) cls += " holi";
+    if(key === fmt(TODAY)) cls += " today";
     c.className = cls;
     var sp = document.createElement("span");
     sp.textContent = d.getDate();
     c.appendChild(sp);
+    if(hol){
+      var hn = document.createElement("span");
+      hn.className = "hol-name";
+      hn.textContent = hol;
+      hn.title = hol;
+      c.appendChild(hn);
+    }
     week.appendChild(c);
   }
 
@@ -676,13 +808,16 @@ function renderDrawer(){
     row.innerHTML =
       '<span class="swatch" style="background:'+it.color+'"></span>'+
       '<span class="d"></span><span class="t"></span>'+
+      '<button class="btn sm edit">수정</button>'+
       '<button class="btn sm danger">삭제</button>';
     row.querySelector(".d").textContent = e.start === e.end
       ? kdate(pd(e.start))
       : kdate(pd(e.start))+"–"+kdate(pd(e.end));
     row.querySelector(".t").textContent = e.label;
-    row.querySelector("button").addEventListener("click", function(){
+    row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
+    row.querySelector(".danger").addEventListener("click", function(){
       state.events = state.events.filter(function(x){ return x.id !== e.id; });
+      if(editingId === e.id) endEdit();
       persist(); renderAll();
     });
     el.appendChild(row);
@@ -705,6 +840,7 @@ function renderSwatches(){
 
 function renderAll(){
   renderUpcoming();
+  renderConflicts();
   renderPipes();
   renderFilters();
   renderCalendar();
@@ -732,6 +868,26 @@ document.getElementById("addInst").addEventListener("click", function(){
   persist(); renderAll();
 });
 
+function startEdit(e){
+  editingId = e.id;
+  document.getElementById("evInst").value = e.inst;
+  document.getElementById("evLabel").value = e.label;
+  document.getElementById("evStart").value = e.start;
+  document.getElementById("evEnd").value = e.end === e.start ? "" : e.end;
+  document.getElementById("addEvent").textContent = "수정 저장";
+  document.getElementById("cancelEdit").hidden = false;
+  document.getElementById("evLabel").focus();
+}
+function endEdit(){
+  editingId = null;
+  document.getElementById("evLabel").value = "";
+  document.getElementById("evStart").value = "";
+  document.getElementById("evEnd").value = "";
+  document.getElementById("addEvent").textContent = "일정 추가";
+  document.getElementById("cancelEdit").hidden = true;
+}
+document.getElementById("cancelEdit").addEventListener("click", endEdit);
+
 document.getElementById("addEvent").addEventListener("click", function(){
   var i = document.getElementById("evInst").value;
   var l = document.getElementById("evLabel").value.trim();
@@ -739,15 +895,56 @@ document.getElementById("addEvent").addEventListener("click", function(){
   var e = document.getElementById("evEnd").value || s;
   if(!i || !l || !s){ alert("기관, 내용, 시작일은 필요합니다."); return; }
   if(pd(e) < pd(s)){ alert("종료일이 시작일보다 빠릅니다."); return; }
-  state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e});
-  document.getElementById("evLabel").value = "";
-  document.getElementById("evStart").value = "";
-  document.getElementById("evEnd").value = "";
+
+  if(editingId){
+    state.events.forEach(function(x){
+      if(x.id === editingId){ x.inst=i; x.label=l; x.start=s; x.end=e; }
+    });
+  }else{
+    state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e});
+  }
+  endEdit();
   persist(); renderAll();
 });
 
+document.getElementById("exportBtn").addEventListener("click", function(){
+  var blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "jobtracker-" + fmt(new Date()) + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+});
+
+document.getElementById("importBtn").addEventListener("click", function(){
+  document.getElementById("importFile").click();
+});
+
+document.getElementById("importFile").addEventListener("change", function(ev){
+  var f = ev.target.files && ev.target.files[0];
+  ev.target.value = "";
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var d;
+    try{ d = JSON.parse(rd.result); }catch(err){ alert("올바른 백업 파일이 아닙니다."); return; }
+    if(!d || !Array.isArray(d.institutions) || !Array.isArray(d.events)){
+      alert("올바른 백업 파일이 아닙니다."); return;
+    }
+    if(!confirm("현재 데이터를 모두 덮어씁니다. 계속할까요?")) return;
+    state = migrate(d);
+    endEdit();
+    persist(); renderAll();
+    note("가져왔습니다");
+  };
+  rd.readAsText(f);
+});
+
 /* ---------- boot ---------- */
-state = loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE));
+state = migrate(loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE)));
+saveLocal();
+loadUI();
 document.getElementById("todayLabel").textContent =
   "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
 renderSwatches();
