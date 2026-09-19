@@ -178,26 +178,34 @@ await boot(p, {
 eq('평일에 겹치면 경고한다', (await texts(p, '.cf-body')).length, 1);
 
 /* ─────────────────────────────────────────────── */
-section('지난 단계 접기');
+section('전형 단계 접기');
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 'p1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20' },
   { id: 'p2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01', result: '합격' },
   { id: 'f1', inst: 'a', label: '면접',     start: '2026-10-06', end: '2026-10-08' },
+  { id: 'f2', inst: 'a', label: '최종발표', start: '2026-10-20', end: '2026-10-20' },
 ]});
-eq('지난 단계는 접혀 있다', await texts(p, '.pipe .step'), ['지난 2단계', '면접 10/6(화)']);
-await p.click('.step.past-toggle'); await p.waitForTimeout(250);
-eq('펼치면 지난 단계가 나온다', (await texts(p, '.pipe .step')).length, 4);
-ok('접어둬도 결과 기록은 남아 있다',
+eq('기본은 다음 단계 하나와 +N', await texts(p, '.pipe .step'), ['면접 10/6(화)', '+3']);
+await p.click('.step.more'); await p.waitForTimeout(250);
+eq('펼치면 전 단계가 나온다', (await texts(p, '.pipe .step')).length, 5);
+ok('접혀 있던 결과 기록이 살아 있다',
    (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류결과')));
-// 지난 단계에 결과를 적는 동안 접히면 쓸 수 없다
+// 접힌 단계에 결과를 적는 동안 다시 접히면 연달아 기록할 수 없다
 await p.evaluate(() => [...document.querySelectorAll('.pipe .step')]
   .find(s => s.textContent.includes('서류마감')).dataset.probe = '1');
 await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
 await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(350);
-ok('지난 단계에 결과를 적어도 펼침이 유지된다',
-   (await p.textContent('.step.past-toggle')).includes('접기'));
-await p.click('.step.past-toggle'); await p.waitForTimeout(250);
+ok('결과를 적어도 펼침이 유지된다', (await p.textContent('.step.more')) === '접기');
+await p.click('.step.more'); await p.waitForTimeout(250);
 eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
+
+// 전부 지난 기관은 마지막 단계를 보여준다 (빈 줄이 되지 않게)
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'q1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20' },
+  { id: 'q2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01' },
+]});
+eq('앞으로 남은 단계가 없으면 마지막 단계를 보여준다',
+   await texts(p, '.pipe .step'), ['서류결과 9/1(화)', '+1']);
 
 /* ─────────────────────────────────────────────── */
 section('필터');
