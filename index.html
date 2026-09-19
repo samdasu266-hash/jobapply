@@ -103,7 +103,7 @@ section{margin-bottom:26px;}
 .step{font-family:inherit;cursor:pointer;}
 .step:hover{border-color:var(--ink-3);}
 .step:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
-.step.past-toggle{color:var(--ink-3);border-style:dashed;}
+.step.more{color:var(--ink-3);border-style:dashed;}
 .step.pass{border-color:var(--ok);color:var(--ok);background:transparent;text-decoration:none;font-weight:700;}
 .step.fail{border-color:var(--sun);color:var(--sun);background:transparent;text-decoration:line-through;text-decoration-thickness:1px;}
 
@@ -937,25 +937,30 @@ function renderPipes(){
       steps.appendChild(s);
     }
 
-    // 지난 단계를 다 펼쳐두면 기관이 늘수록 페이지가 길어진다. 접어두되
-    // 결과 기록은 남아 있어야 하므로 지우지 않고 토글로 꺼내 본다.
-    var passed = evs.filter(function(e){ return pd(e.end) < TODAY; });
-    var ahead  = evs.filter(function(e){ return pd(e.end) >= TODAY; });
-    if(passed.length){
+    // 전 단계를 다 펼쳐두면 기관이 늘수록 페이지가 길어진다. 기본은 다음
+    // 단계 하나만 두고 나머지는 '+N'으로 접는다. 지난 단계도 결과 기록이
+    // 남아 있으므로 지우지 않고 같은 토글로 함께 꺼내 본다.
+    var open = !!pipeOpen[it.id];
+    var ahead = evs.filter(function(e){ return pd(e.end) >= TODAY; });
+    var show = open ? evs : (evs.length ? [ahead.length ? ahead[0] : evs[evs.length-1]] : []);
+
+    function moreToggle(label){
       var t = document.createElement("button");
       t.type = "button";
-      t.className = "step past-toggle";
-      t.textContent = pipeOpen[it.id] ? "지난 단계 접기" : "지난 " + passed.length + "단계";
-      t.title = "지난 전형 단계 보기";
+      t.className = "step more";
+      t.textContent = label;
+      t.title = open ? "전형 단계 접기" : "전형 단계 모두 보기";
       t.addEventListener("click", function(ev){
         ev.stopPropagation();
-        pipeOpen[it.id] = !pipeOpen[it.id];
+        pipeOpen[it.id] = !open;
         renderPipes();
       });
-      steps.appendChild(t);
-      if(pipeOpen[it.id]) passed.forEach(function(e){ addStep(e, true); });
+      return t;
     }
-    ahead.forEach(function(e){ addStep(e, false); });
+
+    if(open) steps.appendChild(moreToggle("접기"));
+    show.forEach(function(e){ addStep(e, pd(e.end) < TODAY); });
+    if(!open && evs.length > show.length) steps.appendChild(moreToggle("+" + (evs.length - show.length)));
 
     row.appendChild(steps);
     box.appendChild(row);
