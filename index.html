@@ -100,6 +100,29 @@ section{margin-bottom:26px;}
 }
 .step.done{background:var(--line-2);color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1px;}
 .step.next{border-color:currentColor;font-weight:700;}
+.step{font-family:inherit;cursor:pointer;}
+.step:hover{border-color:var(--ink-3);}
+.step:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+.step.pass{border-color:var(--ok);color:var(--ok);background:transparent;text-decoration:none;font-weight:700;}
+.step.fail{border-color:var(--sun);color:var(--sun);background:transparent;text-decoration:line-through;text-decoration-thickness:1px;}
+
+/* ---------- 합격/불합격 선택 메뉴 ---------- */
+.rmenu{
+  position:fixed;z-index:60;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,.16);
+  padding:5px;display:flex;flex-direction:column;gap:2px;min-width:132px;
+}
+.rmenu .rhead{font-size:11.5px;color:var(--ink-3);padding:5px 11px 4px;word-break:keep-all;}
+.rmenu button{
+  border:0;background:transparent;color:var(--ink);font-family:inherit;
+  font-size:13px;font-weight:600;text-align:left;padding:8px 11px;
+  border-radius:7px;cursor:pointer;white-space:nowrap;
+}
+.rmenu button:hover{background:var(--line-2);}
+.rmenu button.pass{color:var(--ok);}
+.rmenu button.fail{color:var(--sun);}
+.rmenu button[aria-pressed="true"]{background:var(--line-2);}
 
 /* ---------- filters ---------- */
 .filters{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
@@ -245,6 +268,17 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .pipe-link{font-size:11.5px;color:var(--ink-3);text-underline-offset:2px;}
 .up-place{font-size:12px;margin-top:4px;word-break:keep-all;}
 .up-place a{color:var(--ink-2);text-underline-offset:2px;}
+.up-card{cursor:pointer;}
+.up-card:hover{border-color:var(--ink-3);}
+.up-card.pass{border-color:var(--ok);}
+.up-card.fail{border-color:var(--sun);}
+.up-result{
+  position:absolute;top:11px;right:12px;
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+  border:1px solid currentColor;
+}
+.up-result.pass{color:var(--ok);}
+.up-result.fail{color:var(--sun);}
 .save-note{font-size:11.5px;color:var(--ink-3);margin-top:16px;}
 </style>
 </head>
@@ -280,6 +314,13 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div id="calendar" style="margin-top:12px;"></div>
   </section>
 
+</div>
+
+<div class="rmenu" id="rmenu" hidden>
+  <div class="rhead" id="rmenuHead"></div>
+  <button type="button" class="pass" data-r="합격">합격</button>
+  <button type="button" class="fail" data-r="불합격">불합격</button>
+  <button type="button" data-r="">미정으로</button>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -646,8 +687,10 @@ function renderUpcoming(){
     var range = (e.start === e.end) ? kdate(s) : kdate(s)+" – "+kdate(en);
 
     var el = document.createElement("div");
-    el.className = "up-card";
+    el.className = "up-card"
+      + (e.result === "합격" ? " pass" : e.result === "불합격" ? " fail" : "");
     el.style.borderLeftColor = it.color;
+    el.title = "눌러서 합격·불합격 기록";
     el.innerHTML =
       '<div class="up-dday" style="color:'+it.color+'"></div>'+
       '<div class="up-title"></div>'+
@@ -670,6 +713,13 @@ function renderUpcoming(){
       mp.title = "카카오맵에서 보기";
       el.querySelector(".up-place").appendChild(mp);
     }
+    if(e.result){
+      var rb = document.createElement("span");
+      rb.className = "up-result " + (e.result === "합격" ? "pass" : "fail");
+      rb.textContent = e.result;
+      el.appendChild(rb);
+    }
+    bindResultMenu(el, e);
     box.appendChild(el);
   });
 }
@@ -770,13 +820,19 @@ function renderPipes(){
     }
     var nextMarked = false;
     evs.forEach(function(e){
-      var s = document.createElement("span");
+      var s = document.createElement("button");
+      s.type = "button";
       var past = pd(e.end) < TODAY;
       var cls = "step";
-      if(past) cls += " done";
+      if(e.result === "합격") cls += " pass";
+      else if(e.result === "불합격") cls += " fail";
+      else if(past) cls += " done";
       else if(!nextMarked && it.status === "active"){ cls += " next"; nextMarked = true; s.style.color = it.color; }
       s.className = cls;
-      s.textContent = e.label + " " + kdate(pd(e.start));
+      s.textContent = (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
+        + e.label + " " + kdate(pd(e.start));
+      s.title = "눌러서 합격·불합격 기록";
+      bindResultMenu(s, e);
       steps.appendChild(s);
     });
     row.appendChild(steps);
@@ -972,6 +1028,7 @@ function buildWeek(wStart, wEnd, month, evs){
     b.textContent = sg.ev.label;
     b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start
       + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
+      + (sg.ev.result ? " · " + sg.ev.result : "")
       + (eventPlace(sg.ev) ? "\n" + eventPlace(sg.ev) : "")
       + (sg.ev.memo ? "\n" + sg.ev.memo : "");
     week.appendChild(b);
@@ -1052,7 +1109,8 @@ function renderDrawer(){
     row.querySelector(".d").textContent = e.start === e.end
       ? kdate(pd(e.start))
       : kdate(pd(e.start))+"–"+kdate(pd(e.end));
-    row.querySelector(".t").textContent = e.label;
+    row.querySelector(".t").textContent =
+      (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label;
     row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
     row.querySelector(".danger").addEventListener("click", function(){
       state.events = state.events.filter(function(x){ return x.id !== e.id; });
@@ -1137,6 +1195,60 @@ function renderAll(){
   renderDrawer();
 }
 
+/* ---------- 합격/불합격 ---------- */
+var rmenuFor = null;
+
+function openResultMenu(x, y, e){
+  rmenuFor = e;
+  var m = document.getElementById("rmenu");
+  document.getElementById("rmenuHead").textContent = inst(e.inst).name + " · " + e.label;
+  Array.prototype.forEach.call(m.querySelectorAll("button"), function(b){
+    b.setAttribute("aria-pressed", (e.result || "") === b.dataset.r ? "true" : "false");
+  });
+  m.hidden = false;
+  // 열고 나서 크기를 재야 화면 밖으로 나가는 걸 막을 수 있다
+  var r = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(x, window.innerWidth - r.width - 8)) + "px";
+  m.style.top  = Math.max(8, Math.min(y, window.innerHeight - r.height - 8)) + "px";
+}
+
+function closeResultMenu(){
+  document.getElementById("rmenu").hidden = true;
+  rmenuFor = null;
+}
+
+function setResult(e, r){
+  e.result = r;
+  // 한 단계에서 떨어지면 그 기관 전형은 거기서 끝난다
+  if(r === "불합격"){
+    var it = inst(e.inst);
+    if(!it.missing && it.status === "active"){
+      it.status = "rejected";
+      if(hideInactive){ hidden[it.id] = true; saveUI(); }
+    }
+  }
+  persist(); renderAll();
+}
+
+// 카드나 칩에서 메뉴를 띄운다. 링크 클릭은 그대로 통과시킨다.
+function bindResultMenu(el, e){
+  el.addEventListener("click", function(ev){
+    if(ev.target.closest("a")) return;
+    ev.stopPropagation();
+    openResultMenu(ev.clientX, ev.clientY, e);
+  });
+}
+
+document.getElementById("rmenu").addEventListener("click", function(ev){
+  var b = ev.target.closest("button");
+  if(!b || !rmenuFor) return;
+  var e = rmenuFor;
+  closeResultMenu();
+  setResult(e, b.dataset.r);
+});
+document.addEventListener("click", closeResultMenu);
+window.addEventListener("scroll", closeResultMenu, true);
+
 /* ---------- events ---------- */
 function openDrawer(v){
   document.getElementById("drawer").classList.toggle("open", v);
@@ -1145,7 +1257,11 @@ function openDrawer(v){
 document.getElementById("openDrawer").addEventListener("click", function(){ openDrawer(true); });
 document.getElementById("closeDrawer").addEventListener("click", function(){ openDrawer(false); });
 document.getElementById("scrim").addEventListener("click", function(){ openDrawer(false); });
-document.addEventListener("keydown", function(e){ if(e.key === "Escape") openDrawer(false); });
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Escape") return;
+  if(!document.getElementById("rmenu").hidden){ closeResultMenu(); return; }
+  openDrawer(false);
+});
 
 document.getElementById("addInst").addEventListener("click", function(){
   var f = document.getElementById("newInstName");
