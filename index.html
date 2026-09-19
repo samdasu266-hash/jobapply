@@ -499,6 +499,37 @@ var SEEDS = {
       {id:"nhis9", inst:"nhis", label:"입사일", start:"2026-12-28", end:"2026-12-28",
        memo:"수습임용"}
     ]
+  },
+
+  // 건강보험심사평가원 2026 신규직원 채용 — 행정·심사(5급)·전산·연구 트랙.
+  // 같은 공고의 심사(4급)은 일정이 다르다(서류발표 9/18, 면접 10/21~23).
+  // 기관은 이미 있으므로 일정만 더해지고, 같은 라벨·같은 날짜는 건너뛴다.
+  hira2026: {
+    institution: {
+      id:"hira", name:"심평원", color:"#4A5560", status:"active",
+      place:"강원특별자치도 원주시 혁신로 60",
+      url:"https://www.hira.or.kr/re/recruit/recruitAdList.do?pgmid=HIRAA040078000000"
+    },
+    events: [
+      {id:"hira1", inst:"hira", label:"서류마감", start:"2026-09-02", end:"2026-09-02",
+       memo:"9/2 18시 마감 · 채용 홈페이지 접수"},
+      {id:"hira2", inst:"hira", label:"서류결과", start:"2026-09-30", end:"2026-09-30",
+       memo:"17시 이후 · 채용 홈페이지 확인"},
+      {id:"hira3", inst:"hira", label:"필기시험", start:"2026-10-17", end:"2026-10-17",
+       place:"서울 소재 중·고등학교 (고사장 추후 공지)", memo:"토요일 실시 · 인성검사 포함"},
+      {id:"hira4", inst:"hira", label:"필기결과", start:"2026-10-26", end:"2026-10-26",
+       memo:"17시 이후 · 채용 홈페이지 확인"},
+      {id:"hira5", inst:"hira", label:"증빙서류 등록", start:"2026-10-26", end:"2026-10-29",
+       memo:"10/29 18시까지 업로드"},
+      {id:"hira6", inst:"hira", label:"면접", start:"2026-11-02", end:"2026-11-13",
+       memo:"본원 교육장 등 · 기간 중 실시"},
+      {id:"hira7", inst:"hira", label:"최종발표", start:"2026-12-01", end:"2026-12-01",
+       memo:"17시 이후 · 채용 홈페이지 확인"},
+      {id:"hira8", inst:"hira", label:"임용서류 등록", start:"2026-12-01", end:"2026-12-03",
+       memo:"12/3 18시까지 업로드"},
+      {id:"hira9", inst:"hira", label:"입사일", start:"2026-12-23", end:"2026-12-23",
+       memo:"수습 임용일 (예정)"}
+    ]
   }
 };
 
@@ -508,9 +539,17 @@ function applySeeds(s){
     if(s.seeded[k]) return;
     s.seeded[k] = true;
     var sd = JSON.parse(JSON.stringify(SEEDS[k]));
-    if(s.institutions.some(function(it){ return it.id === sd.institution.id; })) return;
-    s.institutions.push(sd.institution);
-    sd.events.forEach(function(e){ s.events.push(e); });
+
+    // 이미 있는 기관이면 일정만 더한다 (심평원처럼 기관은 있고 공고만 새로 나온 경우)
+    if(!s.institutions.some(function(it){ return it.id === sd.institution.id; })){
+      s.institutions.push(sd.institution);
+    }
+    sd.events.forEach(function(e){
+      var dup = s.events.some(function(x){
+        return x.inst === e.inst && x.label === e.label && x.start === e.start;
+      });
+      if(!dup) s.events.push(e);
+    });
   });
 }
 

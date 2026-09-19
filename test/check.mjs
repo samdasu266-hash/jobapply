@@ -41,12 +41,20 @@ const shown = (p, sel) => p.evaluate((s) => {
   };
 }, sel);
 
-// 픽스처는 격리되어야 한다. 직접 상태를 주면 시드(건보공단)를 넣지 않는다 —
-// 그러지 않으면 내가 정의하지 않은 기관·일정이 섞여 결과를 흐린다.
+// 픽스처는 격리되어야 한다. 직접 상태를 주면 시드(미리 등록된 공고)를 넣지
+// 않는다 — 그러지 않으면 내가 정의하지 않은 기관·일정이 섞여 결과를 흐린다.
 // 시드 자체를 보려면 상태를 주지 말고 기본값으로 띄운다.
+//
+// index.html 에 시드를 추가하면 여기에도 키를 넣어야 한다. 빠뜨리면 아래
+// 가드가 무슨 일인지 바로 알려준다 — 예전에 이걸 빠뜨려 엉뚱한 항목 다섯 개가
+// 실패하는 바람에 원인을 한참 찾았다.
+const SEED_KEYS = ['nhis', 'hira2026'];
+
 const boot = async (p, state, ui) => {
   await p.goto(PAGE);
-  const s = state ? { seeded: { nhis: true }, ...state } : null;
+  const s = state
+    ? { seeded: Object.fromEntries(SEED_KEYS.map(k => [k, true])), ...state }
+    : null;
   await p.evaluate(([s, u]) => {
     localStorage.clear();
     if (s) localStorage.setItem('jobtracker.v1', JSON.stringify(s));
@@ -54,6 +62,16 @@ const boot = async (p, state, ui) => {
   }, [s, ui ?? null]);
   await p.reload();
   await p.waitForTimeout(400);
+
+  if (state?.institutions) {
+    const extra = await p.evaluate((ids) =>
+      JSON.parse(localStorage.getItem('jobtracker.v1'))
+        .institutions.map(i => i.id).filter(id => !ids.includes(id)),
+      state.institutions.map(i => i.id));
+    if (extra.length) throw new Error(
+      '픽스처에 없는 기관이 섞였습니다: ' + extra.join(', ') +
+      '\n  → index.html 에 새 시드가 생겼습니다. test/check.mjs 의 SEED_KEYS 에 그 키를 추가하세요.');
+  }
 };
 
 const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')));
@@ -235,9 +253,17 @@ ok('기관 없는 고아 일정은 달력에 내보내지 않는다', !(await p.
   [...document.querySelectorAll('.bar')].some(b => (b.title || '').includes('삭제됨')))));
 
 /* ─────────────────────────────────────────────── */
-section('시드 (건보공단)');
+section('시드 (미리 등록된 공고)');
 await boot(p);
 ok('건보공단이 등록된다', (await store(p)).institutions.some(i => i.id === 'nhis'));
+const hiraEv = (await store(p)).events.filter(e => e.inst === 'hira');
+ok('이미 있는 기관에도 일정이 더해진다', hiraEv.length >= 9, 'hira events=' + hiraEv.length);
+eq('같은 라벨·같은 날짜는 중복되지 않는다',
+   hiraEv.filter(e => e.label === '서류결과' && e.start === '2026-09-30').length, 1);
+eq('토요일 필기시험이 그날 그대로 그려진다',
+   await p.evaluate(() => [...document.querySelectorAll('.bar')]
+     .filter(b => (b.title || '').includes('심평원 · 필기시험')).map(b => b.style.gridColumn)),
+   ['7 / span 1']);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 await p.evaluate(() => [...document.querySelectorAll('.mgr-item')]
   .find(r => r.querySelector('.nm').textContent === '건보공단').querySelector('button.danger').click());
