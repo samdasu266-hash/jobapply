@@ -329,7 +329,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 </div>
 
 <div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer" aria-label="기관 및 일정 관리">
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="기관 및 일정 관리">
   <button class="btn sm close" id="closeDrawer">닫기</button>
   <h2>관리</h2>
   <div class="hint">여기서 바꾸면 자동 저장됩니다.</div>
@@ -1330,9 +1330,25 @@ document.getElementById("moreMonths").addEventListener("click", function(ev){
 
 /* ---------- events ---------- */
 function openDrawer(v){
-  document.getElementById("drawer").classList.toggle("open", v);
+  var d = document.getElementById("drawer");
+  d.classList.toggle("open", v);
   document.getElementById("scrim").classList.toggle("open", v);
+  // 포커스를 안으로 옮기지 않으면 키보드로는 뒤쪽 페이지를 계속 훑게 된다
+  document.getElementById(v ? "closeDrawer" : "openDrawer").focus();
 }
+
+// 열려 있는 동안 탭이 드로어 밖으로 나가지 않게 한다
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Tab") return;
+  var d = document.getElementById("drawer");
+  if(!d.classList.contains("open")) return;
+  var f = d.querySelectorAll("button, input, select, textarea, a[href]");
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  else if(!d.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+});
 document.getElementById("openDrawer").addEventListener("click", function(){ openDrawer(true); });
 document.getElementById("closeDrawer").addEventListener("click", function(){ openDrawer(false); });
 document.getElementById("scrim").addEventListener("click", function(){ openDrawer(false); });
