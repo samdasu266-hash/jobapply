@@ -113,6 +113,8 @@ section{margin-bottom:26px;}
   box-shadow:0 10px 28px rgba(0,0,0,.16);
   padding:5px;display:flex;flex-direction:column;gap:2px;min-width:132px;
 }
+/* display:flex 가 [hidden] 의 display:none 을 덮어쓰므로 따로 지정한다 */
+.rmenu[hidden]{display:none;}
 .rmenu .rhead{font-size:11.5px;color:var(--ink-3);padding:5px 11px 4px;word-break:keep-all;}
 .rmenu button{
   border:0;background:transparent;color:var(--ink);font-family:inherit;
@@ -468,6 +470,50 @@ var HOLIDAYS = {
 
 var STAGES = ["서류마감","서류결과","인적성검사","필기시험","필기결과","면접","면접결과","최종발표"];
 
+// 공고를 보고 등록해 둔 기관. 한 번만 넣고, 지운 뒤에는 다시 생기지 않는다.
+// 출처: 국민건강보험공단 2026 하반기 신규직원 채용 공고 (2026.9.15.)
+var SEEDS = {
+  nhis: {
+    institution: {
+      id:"nhis", name:"건보공단", color:"#3F7A33", status:"active",
+      place:"강원특별자치도 원주시 건강로 32",
+      url:"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do"
+    },
+    events: [
+      {id:"nhis1", inst:"nhis", label:"서류마감", start:"2026-09-29", end:"2026-09-29",
+       memo:"9/29 14:00 마감 · 채용사이트 접수"},
+      {id:"nhis2", inst:"nhis", label:"서류결과", start:"2026-10-15", end:"2026-10-15",
+       memo:"채용사이트에서 개별 확인"},
+      {id:"nhis3", inst:"nhis", label:"필기시험", start:"2026-10-24", end:"2026-10-24",
+       place:"서울 소재 학교 (고사장 추후 공지)", memo:"토요일 실시"},
+      {id:"nhis4", inst:"nhis", label:"필기결과", start:"2026-10-30", end:"2026-10-30",
+       memo:"채용사이트에서 개별 확인"},
+      {id:"nhis5", inst:"nhis", label:"인적성검사", start:"2026-10-30", end:"2026-11-02",
+       memo:"온라인 실시 · 증빙서류 11/2 14:00까지 제출"},
+      {id:"nhis6", inst:"nhis", label:"면접", start:"2026-11-16", end:"2026-11-27",
+       place:"서울 (장소 추후 공지)", memo:"기간 중 하루 실시"},
+      {id:"nhis7", inst:"nhis", label:"최종발표", start:"2026-12-07", end:"2026-12-07",
+       memo:"채용사이트에서 개별 확인"},
+      {id:"nhis8", inst:"nhis", label:"임용후보자 등록", start:"2026-12-07", end:"2026-12-16",
+       memo:"12/16 10:00까지"},
+      {id:"nhis9", inst:"nhis", label:"입사일", start:"2026-12-28", end:"2026-12-28",
+       memo:"수습임용"}
+    ]
+  }
+};
+
+function applySeeds(s){
+  if(!s.seeded) s.seeded = {};
+  Object.keys(SEEDS).forEach(function(k){
+    if(s.seeded[k]) return;
+    s.seeded[k] = true;
+    var sd = JSON.parse(JSON.stringify(SEEDS[k]));
+    if(s.institutions.some(function(it){ return it.id === sd.institution.id; })) return;
+    s.institutions.push(sd.institution);
+    sd.events.forEach(function(e){ s.events.push(e); });
+  });
+}
+
 var DEFAULT_STATE = {
   institutions:[
     {id:"neca",   name:"NECA (보의연)",            color:"#2E6F5E", status:"active"},
@@ -527,6 +573,7 @@ function migrate(s){
   if(s && s.events) s.events.forEach(function(e){
     if(e.start && e.end && e.end < e.start) e.end = e.start;
   });
+  if(s && s.institutions && s.events) applySeeds(s);
   return s;
 }
 // 저장된 화면 설정이 있었는지 알려준다 (없으면 기본값을 적용해야 하므로)
@@ -641,7 +688,7 @@ function isWorkday(d){
 // 구간이 전부 휴일이면 원래 구간을 그대로 둔다 (달력에서 사라지지 않도록).
 function workRanges(e){
   var s = pd(e.start), en = pd(e.end);
-  if(!needsAttendance(e.label)) return [[s, en]];
+  if(!skipsHolidays(e.label)) return [[s, en]];
   var out = [], cur = null;
   for(var d = new Date(s); d <= en; d = addDays(d, 1)){
     if(isWorkday(d)){
@@ -731,7 +778,11 @@ function renderUpcoming(){
 // 정해진 시각에 어딘가 가 있어야 하는 일정만 참석으로 본다.
 // 결과·발표는 알림일 뿐이고, 인적성검사는 온라인이라 기간 내 아무 때나 응시한다.
 // 이 판정이 일정 겹침 경고와 달력의 주말·공휴일 제외 양쪽에 쓰인다.
-function needsAttendance(label){ return !/결과|발표|마감|공고|인적성/.test(label); }
+function needsAttendance(label){ return !/결과|발표|마감|공고|인적성|등록/.test(label); }
+
+// 주말·공휴일을 건너뛰는 일정. 공공기관 필기시험은 토요일에 치르는 경우가
+// 많아 제외한다 (예: 건보공단 2026 하반기 필기 10/24 토).
+function skipsHolidays(label){ return needsAttendance(label) && !/필기/.test(label); }
 
 // 달력이 주말·공휴일을 빼고 그리므로 겹침도 같은 기준으로 봐야 한다.
 // 전체 기간으로 비교하면 실제로는 못 겹치는 날짜를 경고하게 된다.
