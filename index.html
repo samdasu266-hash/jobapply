@@ -174,7 +174,9 @@ section{margin-bottom:26px;}
   padding:3px 7px;margin:0 2px;border-radius:7px;
   line-height:1.3;word-break:keep-all;white-space:normal;overflow:hidden;
   display:flex;align-items:center;min-height:22px;
+  font-family:inherit;text-align:left;cursor:pointer;
 }
+.bar:focus-visible{outline:2px solid var(--ink);outline-offset:1px;}
 /* 기관 색은 흰 글씨용이라 어두운 배경에서는 그대로 쓰면 대비가 부족하다 */
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) .bar{
@@ -312,6 +314,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div class="sec-head"><h2>달력</h2></div>
     <div class="filters" id="filters"></div>
     <div id="calendar" style="margin-top:12px;"></div>
+    <button class="btn sm" id="moreMonths">다음 3개월 더 보기</button>
   </section>
 
 </div>
@@ -892,13 +895,21 @@ function renderFilters(){
 }
 
 /* ---------- render: calendar ---------- */
+var extraMonths = 0;   // '더 보기'로 늘린 개월 수
+
 function monthRange(){
   var ds = state.events.map(function(e){ return pd(e.start); })
     .concat(state.events.map(function(e){ return pd(e.end); }));
   ds.push(TODAY);
   var min = new Date(Math.min.apply(null, ds));
   var max = new Date(Math.max.apply(null, ds));
-  return [new Date(min.getFullYear(), min.getMonth(), 1), new Date(max.getFullYear(), max.getMonth(), 1)];
+
+  // 일정이 있는 달만 그리면 앞으로의 달을 볼 수 없다. 최소 3개월은 펼쳐 둔다.
+  var last = new Date(max.getFullYear(), max.getMonth(), 1);
+  var floor = new Date(TODAY.getFullYear(), TODAY.getMonth() + 2 + extraMonths, 1);
+  if(floor > last) last = floor;
+
+  return [new Date(min.getFullYear(), min.getMonth(), 1), last];
 }
 
 function renderCalendar(){
@@ -1016,7 +1027,8 @@ function buildWeek(wStart, wEnd, month, evs){
 
   segs.forEach(function(sg){
     var it = inst(sg.ev.inst);
-    var b = document.createElement("div");
+    var b = document.createElement("button");
+    b.type = "button";
     var cls = "bar";
     if(sg.contL) cls += " cont-l";
     if(sg.contR) cls += " cont-r";
@@ -1025,7 +1037,9 @@ function buildWeek(wStart, wEnd, month, evs){
     b.style.gridRow = String(sg.lane + 2);
     b.style.gridColumn = sg.col + " / span " + sg.span;
     if(it.status === "active") b.style.setProperty("--bar-c", it.color);
-    b.textContent = sg.ev.label;
+    b.textContent = (sg.ev.result === "합격" ? "✓ " : sg.ev.result === "불합격" ? "✗ " : "")
+      + sg.ev.label;
+    bindResultMenu(b, sg.ev);
     b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start
       + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
       + (sg.ev.result ? " · " + sg.ev.result : "")
@@ -1210,11 +1224,21 @@ function openResultMenu(x, y, e){
   var r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, window.innerWidth - r.width - 8)) + "px";
   m.style.top  = Math.max(8, Math.min(y, window.innerHeight - r.height - 8)) + "px";
+
+  // 메뉴를 연 바로 그 클릭이 바깥 클릭으로 잡혀 즉시 닫히는 걸 막는다
+  document.removeEventListener("click", onOutsideClick);
+  setTimeout(function(){ document.addEventListener("click", onOutsideClick); }, 0);
+}
+
+function onOutsideClick(ev){
+  if(document.getElementById("rmenu").contains(ev.target)) return;
+  closeResultMenu();
 }
 
 function closeResultMenu(){
   document.getElementById("rmenu").hidden = true;
   rmenuFor = null;
+  document.removeEventListener("click", onOutsideClick);
 }
 
 function setResult(e, r){
@@ -1246,8 +1270,12 @@ document.getElementById("rmenu").addEventListener("click", function(ev){
   closeResultMenu();
   setResult(e, b.dataset.r);
 });
-document.addEventListener("click", closeResultMenu);
-window.addEventListener("scroll", closeResultMenu, true);
+
+document.getElementById("moreMonths").addEventListener("click", function(ev){
+  ev.stopPropagation();
+  extraMonths += 3;
+  renderCalendar();
+});
 
 /* ---------- events ---------- */
 function openDrawer(v){
