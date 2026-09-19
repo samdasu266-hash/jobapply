@@ -178,6 +178,28 @@ await boot(p, {
 eq('평일에 겹치면 경고한다', (await texts(p, '.cf-body')).length, 1);
 
 /* ─────────────────────────────────────────────── */
+section('지난 단계 접기');
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'p1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20' },
+  { id: 'p2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01', result: '합격' },
+  { id: 'f1', inst: 'a', label: '면접',     start: '2026-10-06', end: '2026-10-08' },
+]});
+eq('지난 단계는 접혀 있다', await texts(p, '.pipe .step'), ['지난 2단계', '면접 10/6(화)']);
+await p.click('.step.past-toggle'); await p.waitForTimeout(250);
+eq('펼치면 지난 단계가 나온다', (await texts(p, '.pipe .step')).length, 4);
+ok('접어둬도 결과 기록은 남아 있다',
+   (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류결과')));
+// 지난 단계에 결과를 적는 동안 접히면 쓸 수 없다
+await p.evaluate(() => [...document.querySelectorAll('.pipe .step')]
+  .find(s => s.textContent.includes('서류마감')).dataset.probe = '1');
+await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(350);
+ok('지난 단계에 결과를 적어도 펼침이 유지된다',
+   (await p.textContent('.step.past-toggle')).includes('접기'));
+await p.click('.step.past-toggle'); await p.waitForTimeout(250);
+eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
+
+/* ─────────────────────────────────────────────── */
 section('필터');
 await boot(p);
 const barInsts = () => p.evaluate(() =>

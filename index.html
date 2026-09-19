@@ -103,6 +103,7 @@ section{margin-bottom:26px;}
 .step{font-family:inherit;cursor:pointer;}
 .step:hover{border-color:var(--ink-3);}
 .step:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+.step.past-toggle{color:var(--ink-3);border-style:dashed;}
 .step.pass{border-color:var(--ok);color:var(--ok);background:transparent;text-decoration:none;font-weight:700;}
 .step.fail{border-color:var(--sun);color:var(--sun);background:transparent;text-decoration:line-through;text-decoration-thickness:1px;}
 
@@ -878,6 +879,8 @@ function renderConflicts(){
 }
 
 /* ---------- render: pipelines ---------- */
+var pipeOpen = {};   // instId -> 지난 단계를 펼쳐 둘지
+
 function renderPipes(){
   var box = document.getElementById("pipes");
   box.innerHTML = "";
@@ -916,11 +919,11 @@ function renderPipes(){
       var em = document.createElement("span"); em.className="hint"; em.textContent="등록된 일정 없음";
       steps.appendChild(em);
     }
+
     var nextMarked = false;
-    evs.forEach(function(e){
+    function addStep(e, past){
       var s = document.createElement("button");
       s.type = "button";
-      var past = pd(e.end) < TODAY;
       var cls = "step";
       if(e.result === "합격") cls += " pass";
       else if(e.result === "불합격") cls += " fail";
@@ -932,7 +935,28 @@ function renderPipes(){
       s.title = "눌러서 합격·불합격 기록";
       bindResultMenu(s, e);
       steps.appendChild(s);
-    });
+    }
+
+    // 지난 단계를 다 펼쳐두면 기관이 늘수록 페이지가 길어진다. 접어두되
+    // 결과 기록은 남아 있어야 하므로 지우지 않고 토글로 꺼내 본다.
+    var passed = evs.filter(function(e){ return pd(e.end) < TODAY; });
+    var ahead  = evs.filter(function(e){ return pd(e.end) >= TODAY; });
+    if(passed.length){
+      var t = document.createElement("button");
+      t.type = "button";
+      t.className = "step past-toggle";
+      t.textContent = pipeOpen[it.id] ? "지난 단계 접기" : "지난 " + passed.length + "단계";
+      t.title = "지난 전형 단계 보기";
+      t.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        pipeOpen[it.id] = !pipeOpen[it.id];
+        renderPipes();
+      });
+      steps.appendChild(t);
+      if(pipeOpen[it.id]) passed.forEach(function(e){ addStep(e, true); });
+    }
+    ahead.forEach(function(e){ addStep(e, false); });
+
     row.appendChild(steps);
     box.appendChild(row);
   });
