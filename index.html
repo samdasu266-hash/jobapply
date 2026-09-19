@@ -715,11 +715,16 @@ function freeColor(){
 }
 
 /* ---------- render: upcoming ---------- */
+// 모바일에서는 카드가 한 줄에 하나씩 쌓여 6장이면 화면을 통째로 먹는다
+var mqNarrow = window.matchMedia("(max-width:560px)");
+function upcomingLimit(){ return mqNarrow.matches ? 4 : 6; }
+if(mqNarrow.addEventListener) mqNarrow.addEventListener("change", function(){ renderUpcoming(); });
+
 function renderUpcoming(){
   var box = document.getElementById("upcoming");
   var list = state.events.filter(function(e){
     return isActive(e.inst) && pd(e.end) >= TODAY;
-  }).sort(function(a,b){ return pd(a.start) - pd(b.start); }).slice(0,6);
+  }).sort(function(a,b){ return pd(a.start) - pd(b.start); }).slice(0, upcomingLimit());
 
   box.innerHTML = "";
   if(!list.length){
@@ -955,23 +960,33 @@ function monthRange(){
   var min = new Date(Math.min.apply(null, ds));
   var max = new Date(Math.max.apply(null, ds));
 
-  // 일정이 있는 달만 그리면 앞으로의 달을 볼 수 없다. 최소 3개월은 펼쳐 둔다.
-  var last = new Date(max.getFullYear(), max.getMonth(), 1);
-  var floor = new Date(TODAY.getFullYear(), TODAY.getMonth() + 2 + extraMonths, 1);
-  if(floor > last) last = floor;
+  // 달력이 페이지 높이의 절반을 넘게 차지해서, 기본은 현재월과 다음달까지만
+  // 펼치고 나머지는 '더 보기'로 넘긴다. 뒤에 일정이 남아 있으면 버튼이 알린다.
+  var first = new Date(min.getFullYear(), min.getMonth(), 1);
+  var lastWithEvents = new Date(max.getFullYear(), max.getMonth(), 1);
+  var cap = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1 + extraMonths, 1);
+  var last = cap < lastWithEvents ? cap : lastWithEvents;
+  if(last < first) last = first;
 
-  return [new Date(min.getFullYear(), min.getMonth(), 1), last];
+  return [first, last, lastWithEvents];
 }
 
 function renderCalendar(){
   var box = document.getElementById("calendar");
   box.innerHTML = "";
-  var r = monthRange(), cur = r[0], last = r[1];
+  var r = monthRange(), cur = r[0], last = r[1], lastEv = r[2];
   var guard = 0;
   while(cur <= last && guard++ < 36){
     box.appendChild(buildMonth(cur.getFullYear(), cur.getMonth()));
     cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
   }
+
+  // 접어둔 달에 일정이 남아 있으면 그 사실을 버튼에 적는다
+  var btn = document.getElementById("moreMonths");
+  btn.textContent = lastEv > last
+    ? (lastEv.getFullYear() !== TODAY.getFullYear() ? lastEv.getFullYear() + "년 " : "")
+      + (lastEv.getMonth()+1) + "월까지 일정이 더 있습니다 · 3개월 더 보기"
+    : "3개월 더 보기";
 }
 
 function buildMonth(y, m){
