@@ -184,12 +184,23 @@ ok('체크박스는 켜진 채 유지', await p.evaluate(() => document.querySel
 
 /* ─────────────────────────────────────────────── */
 section('달력 범위');
+// 달력이 페이지 높이의 절반을 넘겨서, 기본은 현재월+다음달까지만 펼친다
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'a1', inst: 'a', label: '면접',     start: '2026-09-21', end: '2026-09-21' },
+  { id: 'a2', inst: 'a', label: '최종발표', start: '2026-12-07', end: '2026-12-07' },
+]});
+eq('기본은 현재월과 다음달까지', await texts(p, '.month h3'), ['2026년 9월', '2026년 10월']);
+ok('접힌 달에 일정이 있으면 버튼이 알린다',
+   (await p.textContent('#moreMonths')).includes('12월까지 일정이 더 있습니다'),
+   await p.textContent('#moreMonths'));
+await p.click('#moreMonths'); await p.waitForTimeout(250);
+eq('더 보기로 마지막 일정 달까지 펼쳐진다', (await texts(p, '.month h3')).length, 4);
+ok('다 펼치면 안내 문구가 사라진다',
+   !(await p.textContent('#moreMonths')).includes('일정이 더 있습니다'));
+
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')],
   events: [{ id: 'x', inst: 'a', label: '면접', start: '2026-09-21', end: '2026-09-21' }] });
-const m0 = (await texts(p, '.month h3')).length;
-ok('일정이 한 달뿐이어도 최소 여러 달을 보여준다', m0 >= 2, 'months=' + m0);
-await p.click('#moreMonths'); await p.waitForTimeout(250);
-ok('더 보기로 늘어난다', (await texts(p, '.month h3')).length > m0);
+eq('일정이 이번 달뿐이면 그 달만 그린다', (await texts(p, '.month h3')).length, 1);
 
 /* ─────────────────────────────────────────────── */
 section('장소와 링크');
@@ -317,6 +328,14 @@ ok('결과 메뉴가 화면 안에 들어온다', await mp.evaluate(() => {
   const r = document.getElementById('rmenu').getBoundingClientRect();
   return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.top >= 0;
 }));
+await boot(mp);
+const upM = await mp.evaluate(() => document.querySelectorAll('.up-card').length);
+const upD = await p.evaluate(() => document.querySelectorAll('.up-card').length);
+ok('다가오는 일정이 모바일에서는 4장까지', upM <= 4, 'mobile=' + upM);
+ok('데스크톱에서는 6장까지', upD <= 6 && upD > 4, 'desktop=' + upD);
+ok('페이지가 모바일에서 5화면을 넘지 않는다', await mp.evaluate(() =>
+  document.body.scrollHeight / innerHeight < 5), await mp.evaluate(() =>
+  (document.body.scrollHeight / innerHeight).toFixed(1) + '화면'));
 
 /* ─────────────────────────────────────────────── */
 section('다크 모드 대비');
