@@ -126,6 +126,7 @@ section{margin-bottom:26px;}
 .rmenu button.pass{color:var(--ok);}
 .rmenu button.fail{color:var(--sun);}
 .rmenu button[aria-pressed="true"]{background:var(--line-2);}
+.rmenu .rsep{height:1px;background:var(--line-2);margin:4px 6px;}
 
 /* ---------- filters ---------- */
 .filters{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
@@ -332,6 +333,9 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <button type="button" class="pass" data-r="합격">합격</button>
   <button type="button" class="fail" data-r="불합격">불합격</button>
   <button type="button" data-r="">미정으로</button>
+  <div class="rsep"></div>
+  <button type="button" data-action="edit-event">일정 수정</button>
+  <button type="button" data-action="edit-inst">기관 이름 수정</button>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -1226,6 +1230,7 @@ function renderDrawer(){
   state.institutions.forEach(function(it){
     var row = document.createElement("div");
     row.className = "mgr-item";
+    row.dataset.id = it.id;
     row.innerHTML =
       '<span class="swatch" style="background:'+it.color+'"></span>'+
       '<input type="text" class="nm" placeholder="기관 이름">'+
@@ -1388,7 +1393,7 @@ function openResultMenu(x, y, e){
   rmenuFor = e;
   var m = document.getElementById("rmenu");
   document.getElementById("rmenuHead").textContent = inst(e.inst).name + " · " + e.label;
-  Array.prototype.forEach.call(m.querySelectorAll("button"), function(b){
+  Array.prototype.forEach.call(m.querySelectorAll("button[data-r]"), function(b){
     b.setAttribute("aria-pressed", (e.result || "") === b.dataset.r ? "true" : "false");
   });
   m.hidden = false;
@@ -1439,9 +1444,34 @@ document.getElementById("rmenu").addEventListener("click", function(ev){
   var b = ev.target.closest("button");
   if(!b || !rmenuFor) return;
   var e = rmenuFor;
+  if(b.dataset.action === "edit-event"){
+    closeResultMenu();
+    openDrawer(true);
+    startEdit(e);
+    document.getElementById("evLabel").scrollIntoView({block:"center"});
+    return;
+  }
+  if(b.dataset.action === "edit-inst"){
+    closeResultMenu();
+    openDrawer(true);
+    focusInstName(e.inst);
+    return;
+  }
   closeResultMenu();
   setResult(e, b.dataset.r);
 });
+
+// 기관 이름 입력칸을 찾아 스크롤하고 포커스한다 (결과 메뉴의 "기관 이름 수정"에서 씀)
+function focusInstName(instId){
+  var row = Array.prototype.filter.call(document.querySelectorAll(".mgr-item"), function(r){
+    return r.dataset.id === instId;
+  })[0];
+  if(!row) return;
+  row.scrollIntoView({block:"center"});
+  var nm = row.querySelector(".nm");
+  nm.focus();
+  nm.select();
+}
 
 document.getElementById("moreMonths").addEventListener("click", function(ev){
   ev.stopPropagation();

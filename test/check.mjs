@@ -126,6 +126,29 @@ await p.click('h1'); await p.waitForTimeout(150);
 ok('바깥 클릭으로 닫힌다', !(await shown(p, '#rmenu')).visible);
 
 /* ─────────────────────────────────────────────── */
+section('결과 메뉴에서 일정·기관명 바로 수정');
+await boot(p);
+const chipInfo = await p.evaluate(() => {
+  const s = document.querySelector('.pipe .step');
+  return { instName: s.closest('.pipe').querySelector('.pipe-name').textContent };
+});
+await p.click('.pipe .step'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-action="edit-event"]'); await p.waitForTimeout(300);
+ok('일정 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
+ok('일정 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
+eq('일정 수정: 수정 폼이 그 일정으로 채워진다',
+   await p.evaluate(() => document.getElementById('addEvent').textContent), '수정 저장');
+await p.click('#cancelEdit'); await p.waitForTimeout(150);
+await p.click('#closeDrawer'); await p.waitForTimeout(150);
+
+await p.click('.pipe .step'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-action="edit-inst"]'); await p.waitForTimeout(300);
+ok('기관명 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
+ok('기관명 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
+eq('기관명 수정: 그 기관 이름 입력칸에 포커스된다',
+   await p.evaluate(() => document.activeElement.value), chipInfo.instName);
+
+/* ─────────────────────────────────────────────── */
 section('불합격 → 기관 탈락 연동');
 await boot(p);
 await p.evaluate(() => {
