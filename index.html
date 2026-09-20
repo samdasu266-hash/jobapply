@@ -77,7 +77,8 @@ section{margin-bottom:26px;}
 .up-empty{color:var(--ink-3);font-size:13.5px;padding:14px 0;}
 
 /* ---------- pipeline ---------- */
-.pipes{display:flex;flex-direction:column;gap:8px;}
+.pipes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-items:start;}
+@media (min-width:700px){.pipes{grid-template-columns:repeat(3,1fr);}}
 .pipe{
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:12px 14px;
