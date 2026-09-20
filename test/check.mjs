@@ -296,10 +296,36 @@ eq('토요일 필기시험이 그날 그대로 그려진다',
    ['7 / span 1']);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 await p.evaluate(() => [...document.querySelectorAll('.mgr-item')]
-  .find(r => r.querySelector('.nm').textContent === '건보공단').querySelector('button.danger').click());
+  .find(r => r.querySelector('.nm').value === '건보공단').querySelector('button.danger').click());
 await p.waitForTimeout(300);
 await p.reload(); await p.waitForTimeout(400);
 ok('지운 뒤에는 다시 생기지 않는다', !(await store(p)).institutions.some(i => i.id === 'nhis'));
+
+/* ─────────────────────────────────────────────── */
+section('기관 이름 수정과 중첩된 일정 목록');
+await boot(p);
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+ok('기관 이름 줄이 입력칸이다', await p.evaluate(() =>
+  document.querySelector('.mgr-item .nm').tagName === 'INPUT'));
+ok('기관 이름 아래에 그 기관 일정이 중첩되어 보인다', await p.evaluate(() => {
+  const block = document.querySelector('.inst-events');
+  return !!block && block.querySelectorAll('.ev-item').length > 0;
+}));
+await p.evaluate(() => {
+  const nm = document.querySelector('.mgr-item .nm');
+  nm.value = 'NECA(이름바꿈)';
+  nm.dispatchEvent(new Event('change'));
+});
+await p.waitForTimeout(200);
+eq('기관 이름 변경이 저장된다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
+ok('빈 이름으로는 바뀌지 않는다', await p.evaluate(() => {
+  const nm = document.querySelector('.mgr-item .nm');
+  nm.value = '';
+  nm.dispatchEvent(new Event('change'));
+  return nm.value === 'NECA(이름바꿈)';
+}));
+ok('소속 없는 일정 목록은 고아 일정이 없으면 숨겨진다',
+   (await shown(p, '#evListHead')).visible === false);
 
 /* ─────────────────────────────────────────────── */
 section('색상');
@@ -321,7 +347,7 @@ section('일정 편집');
 await boot(p);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 const before = (await store(p)).events.length;
-await p.click('#evList .ev-item .edit'); await p.waitForTimeout(150);
+await p.click('.inst-events .ev-item .edit'); await p.waitForTimeout(150);
 await p.fill('#evStart', '2026-11-05');
 await p.fill('#evEnd', '2026-11-05');
 await p.click('#addEvent'); await p.waitForTimeout(300);

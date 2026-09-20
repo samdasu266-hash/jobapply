@@ -265,6 +265,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .ev-item .d{color:var(--ink-3);font-size:12px;white-space:nowrap;}
 .ev-item .t{flex:1;word-break:keep-all;}
 .ev-item .inm{font-weight:700;margin-right:4px;}
+.inst-events{margin:2px 0 10px 33px;}
+.inst-events .ev-item{font-size:12.5px;padding:6px 0;}
+.inst-events .ev-item .inm{display:none;} /* 바로 위 기관 이름 아래라 중복 표기다 */
+.inst-events .ev-empty{color:var(--ink-3);font-size:12px;padding:4px 0 8px;}
 .swatch-pick{display:flex;gap:6px;flex-wrap:wrap;}
 .swatch-pick button{
   width:26px;height:26px;border-radius:7px;border:2px solid transparent;cursor:pointer;
@@ -413,7 +417,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <div id="bulkRows"></div>
   <button class="btn" id="addBulk" style="margin-top:10px;">채운 날짜만 추가</button>
 
-  <h4>등록된 일정</h4>
+  <h4 id="evListHead">소속 기관이 없는 일정</h4>
   <div id="evList"></div>
 
   <h4>백업</h4>
@@ -1187,8 +1191,36 @@ function buildWeek(wStart, wEnd, month, evs){
 }
 
 /* ---------- drawer ---------- */
+// 기관 하나의 일정 한 줄(ev-item)을 만든다. 기관 목록 아래 중첩된 목록과
+// "소속 기관이 없는 일정" 목록 양쪽에서 함께 쓴다.
+function makeEvRow(e){
+  var it = inst(e.inst);
+  var row = document.createElement("div");
+  row.className = "ev-item";
+  row.innerHTML =
+    '<span class="swatch" style="background:'+it.color+'"></span>'+
+    '<span class="d"></span><span class="t"><span class="inm"></span></span>'+
+    '<button class="btn sm edit">수정</button>'+
+    '<button class="btn sm danger">삭제</button>';
+  row.querySelector(".d").textContent = e.start === e.end
+    ? kdate(pd(e.start))
+    : kdate(pd(e.start))+"–"+kdate(pd(e.end));
+  row.querySelector(".inm").textContent = it.name;
+  row.querySelector(".t").appendChild(document.createTextNode(
+    (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label
+  ));
+  row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
+  row.querySelector(".danger").addEventListener("click", function(){
+    state.events = state.events.filter(function(x){ return x.id !== e.id; });
+    if(editingId === e.id) endEdit();
+    persist(); renderAll();
+  });
+  return row;
+}
+
 function renderDrawer(){
-  // institutions
+  // institutions — 이름 아래에 그 기관의 일정을 바로 펼쳐 두어, 멀리 있는
+  // "등록된 일정" 목록까지 스크롤해 색점으로 찾지 않아도 되게 한다.
   var il = document.getElementById("instList");
   il.innerHTML = "";
   state.institutions.forEach(function(it){
@@ -1196,7 +1228,7 @@ function renderDrawer(){
     row.className = "mgr-item";
     row.innerHTML =
       '<span class="swatch" style="background:'+it.color+'"></span>'+
-      '<span class="nm"></span>'+
+      '<input type="text" class="nm" placeholder="기관 이름">'+
       '<select>'+
         '<option value="active">진행중</option>'+
         '<option value="rejected">탈락</option>'+
@@ -1205,7 +1237,13 @@ function renderDrawer(){
       '<button class="btn sm danger">삭제</button>'+
       '<input type="text" class="mgr-field mgr-place" placeholder="기본 장소 (선택)">'+
       '<input type="text" class="mgr-field mgr-url" placeholder="채용 페이지 링크 (선택)">';
-    row.querySelector(".nm").textContent = it.name;
+    var nmIn = row.querySelector(".nm");
+    nmIn.value = it.name;
+    nmIn.addEventListener("change", function(){
+      var v = nmIn.value.trim();
+      if(!v){ nmIn.value = it.name; return; }
+      it.name = v; persist(); renderAll();
+    });
     var sel = row.querySelector("select");
     sel.value = it.status;
     sel.addEventListener("change", function(){
@@ -1237,47 +1275,36 @@ function renderDrawer(){
       persist(); renderAll();
     });
     il.appendChild(row);
+
+    var evBox = document.createElement("div");
+    evBox.className = "inst-events";
+    var myEvents = state.events.filter(function(e){ return e.inst === it.id; })
+      .sort(function(a,b){ return pd(a.start) - pd(b.start); });
+    if(myEvents.length){
+      myEvents.forEach(function(e){ evBox.appendChild(makeEvRow(e)); });
+    } else {
+      var empty = document.createElement("div");
+      empty.className = "ev-empty";
+      empty.textContent = "등록된 일정이 없습니다.";
+      evBox.appendChild(empty);
+    }
+    il.appendChild(evBox);
   });
 
   fillInstSelect(document.getElementById("evInst"), true);
   fillInstSelect(document.getElementById("bulkInst"));
   syncNewInstField();
 
-  // event list
+  // 소속 기관이 삭제된 고아 일정만 여기 남긴다. 기관에 딸린 일정은 위
+  // 기관 목록 아래 중첩된 목록에서 다룬다.
   var el = document.getElementById("evList");
   el.innerHTML = "";
-  var instOrder = {};
-  state.institutions.forEach(function(it, i){ instOrder[it.id] = i; });
-  state.events.slice().sort(function(a,b){
-    var oa = instOrder[a.inst], ob = instOrder[b.inst];
-    if(oa === undefined) oa = 999;
-    if(ob === undefined) ob = 999;
-    if(oa !== ob) return oa - ob;
-    return pd(a.start) - pd(b.start);
-  }).forEach(function(e){
-    var it = inst(e.inst);
-    var row = document.createElement("div");
-    row.className = "ev-item";
-    row.innerHTML =
-      '<span class="swatch" style="background:'+it.color+'"></span>'+
-      '<span class="d"></span><span class="t"><span class="inm"></span></span>'+
-      '<button class="btn sm edit">수정</button>'+
-      '<button class="btn sm danger">삭제</button>';
-    row.querySelector(".d").textContent = e.start === e.end
-      ? kdate(pd(e.start))
-      : kdate(pd(e.start))+"–"+kdate(pd(e.end));
-    row.querySelector(".inm").textContent = it.name;
-    row.querySelector(".t").appendChild(document.createTextNode(
-      (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label
-    ));
-    row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
-    row.querySelector(".danger").addEventListener("click", function(){
-      state.events = state.events.filter(function(x){ return x.id !== e.id; });
-      if(editingId === e.id) endEdit();
-      persist(); renderAll();
-    });
-    el.appendChild(row);
-  });
+  var instIds = {};
+  state.institutions.forEach(function(it){ instIds[it.id] = true; });
+  var orphans = state.events.filter(function(e){ return !instIds[e.inst]; })
+    .sort(function(a,b){ return pd(a.start) - pd(b.start); });
+  document.getElementById("evListHead").hidden = orphans.length === 0;
+  orphans.forEach(function(e){ el.appendChild(makeEvRow(e)); });
 }
 
 function fillInstSelect(sel, withNew){
