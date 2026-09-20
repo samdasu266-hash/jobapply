@@ -264,6 +264,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 }
 .ev-item .d{color:var(--ink-3);font-size:12px;white-space:nowrap;}
 .ev-item .t{flex:1;word-break:keep-all;}
+.ev-item .inm{font-weight:700;margin-right:4px;}
 .swatch-pick{display:flex;gap:6px;flex-wrap:wrap;}
 .swatch-pick button{
   width:26px;height:26px;border-radius:7px;border:2px solid transparent;cursor:pointer;
@@ -1245,20 +1246,30 @@ function renderDrawer(){
   // event list
   var el = document.getElementById("evList");
   el.innerHTML = "";
-  state.events.slice().sort(function(a,b){ return pd(a.start) - pd(b.start); }).forEach(function(e){
+  var instOrder = {};
+  state.institutions.forEach(function(it, i){ instOrder[it.id] = i; });
+  state.events.slice().sort(function(a,b){
+    var oa = instOrder[a.inst], ob = instOrder[b.inst];
+    if(oa === undefined) oa = 999;
+    if(ob === undefined) ob = 999;
+    if(oa !== ob) return oa - ob;
+    return pd(a.start) - pd(b.start);
+  }).forEach(function(e){
     var it = inst(e.inst);
     var row = document.createElement("div");
     row.className = "ev-item";
     row.innerHTML =
       '<span class="swatch" style="background:'+it.color+'"></span>'+
-      '<span class="d"></span><span class="t"></span>'+
+      '<span class="d"></span><span class="t"><span class="inm"></span></span>'+
       '<button class="btn sm edit">수정</button>'+
       '<button class="btn sm danger">삭제</button>';
     row.querySelector(".d").textContent = e.start === e.end
       ? kdate(pd(e.start))
       : kdate(pd(e.start))+"–"+kdate(pd(e.end));
-    row.querySelector(".t").textContent =
-      (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label;
+    row.querySelector(".inm").textContent = it.name;
+    row.querySelector(".t").appendChild(document.createTextNode(
+      (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label
+    ));
     row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
     row.querySelector(".danger").addEventListener("click", function(){
       state.events = state.events.filter(function(x){ return x.id !== e.id; });
