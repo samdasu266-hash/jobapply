@@ -489,6 +489,16 @@ ok('페이지가 모바일에서 5화면을 넘지 않는다', await mp.evaluate
   document.body.scrollHeight / innerHeight < 5), await mp.evaluate(() =>
   (document.body.scrollHeight / innerHeight).toFixed(1) + '화면'));
 
+// keep-all 만 있으면 띄어쓰기 없는 긴 한글이 끊길 자리가 없어 카드가 통째로
+// 가로로 늘어난다 — 실제로 문서 폭이 390 → 700px 까지 벌어졌다.
+await boot(mp, { institutions: [INST('a', '아주아주긴기관이름을넣어보자한국보건의료연구원부설센터', '#2E6F5E')], events: [
+  { id: 'x', inst: 'a', label: '아주긴전형단계이름테스트입니다', start: '2026-10-06', end: '2026-10-06',
+    round: '2026년도제3차수시채용', memo: '메모도아주길게'.repeat(8) },
+]});
+ok('띄어쓰기 없는 긴 이름·메모도 가로 스크롤을 만들지 않는다', await mp.evaluate(() =>
+  document.documentElement.scrollWidth === document.documentElement.clientWidth),
+  await mp.evaluate(() => document.documentElement.scrollWidth + ' / ' + document.documentElement.clientWidth));
+
 /* ─────────────────────────────────────────────── */
 section('다크 모드 대비');
 const dp = await (await browser.newContext({ viewport: { width: 1200, height: 950 }, colorScheme: 'dark' })).newPage();
