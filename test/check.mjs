@@ -126,6 +126,29 @@ await p.click('h1'); await p.waitForTimeout(150);
 ok('바깥 클릭으로 닫힌다', !(await shown(p, '#rmenu')).visible);
 
 /* ─────────────────────────────────────────────── */
+section('결과 메뉴에서 일정·기관명 바로 수정');
+await boot(p);
+const chipInfo = await p.evaluate(() => {
+  const s = document.querySelector('.pipe .step');
+  return { instName: s.closest('.pipe').querySelector('.pipe-name').textContent };
+});
+await p.click('.pipe .step'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-action="edit-event"]'); await p.waitForTimeout(300);
+ok('일정 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
+ok('일정 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
+eq('일정 수정: 수정 폼이 그 일정으로 채워진다',
+   await p.evaluate(() => document.getElementById('addEvent').textContent), '수정 저장');
+await p.click('#cancelEdit'); await p.waitForTimeout(150);
+await p.click('#closeDrawer'); await p.waitForTimeout(150);
+
+await p.click('.pipe .step'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-action="edit-inst"]'); await p.waitForTimeout(300);
+ok('기관명 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
+ok('기관명 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
+eq('기관명 수정: 그 기관 이름 입력칸에 포커스된다',
+   await p.evaluate(() => document.activeElement.value), chipInfo.instName);
+
+/* ─────────────────────────────────────────────── */
 section('불합격 → 기관 탈락 연동');
 await boot(p);
 await p.evaluate(() => {
@@ -141,6 +164,47 @@ ok('달력에서 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.bar')].some(b => (b.title || '').includes('NIKOM')))));
 ok('겹침 경고에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('NIKOM')))));
+
+/* ─────────────────────────────────────────────── */
+section('차수(회차) 이력 관리');
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'r1', inst: 'a', label: '서류마감', start: '2026-08-01', end: '2026-08-01', round: '2026-1차' },
+  { id: 'r2', inst: 'a', label: '면접',     start: '2026-08-20', end: '2026-08-20', round: '2026-1차' },
+  { id: 'r3', inst: 'a', label: '서류마감', start: '2026-10-01', end: '2026-10-01', round: '2026-2차' },
+  { id: 'r4', inst: 'a', label: '면접',     start: '2026-11-01', end: '2026-11-01', round: '2026-2차' },
+]});
+eq('차수를 쓰면 차수 제목이 각각 나타난다', await texts(p, '.pipe .round-head'), ['2026-1차', '2026-2차']);
+ok('두 차수 모두 자기 몫의 단계만 보인다', await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  const r1steps = heads[0].nextElementSibling.querySelectorAll('.step:not(.more)').length;
+  const r2steps = heads[1].nextElementSibling.querySelectorAll('.step:not(.more)').length;
+  return r1steps === 1 && r2steps === 1; // 각자 다음 단계 하나씩만 기본으로 보임
+}));
+
+// 지난 차수(1차)에서 불합격해도, 2차가 아직 진행 중이면 기관을 탈락으로
+// 돌리지 않는다 — 2차 필터까지 함께 숨겨지면 안 되기 때문이다.
+await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  heads[0].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '1';
+});
+await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+let st = await store(p);
+eq('지난 차수 불합격: 기관은 그대로 진행중이다', st.institutions.find(i => i.id === 'a').status, 'active');
+ok('그 차수 일정에 불합격이 기록된다', st.events.some(e => e.round === '2026-1차' && e.result === '불합격'));
+
+// 반대로 최신 차수(2차)에서 불합격하면 지금까지와 같이 기관 전체가 탈락된다
+await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  heads[1].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '2';
+});
+await p.click('.step[data-probe="2"]'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+st = await store(p);
+eq('최신 차수 불합격: 기관이 탈락으로 바뀐다', st.institutions.find(i => i.id === 'a').status, 'rejected');
+
+await boot(p);
+eq('차수를 안 쓰면 차수 제목이 나타나지 않는다', (await texts(p, '.pipe .round-head')).length, 0);
 
 /* ─────────────────────────────────────────────── */
 section('주말·공휴일 처리');
@@ -241,14 +305,20 @@ eq('기본은 현재월과 다음달까지', await texts(p, '.month h3'), ['2026
 ok('접힌 달에 일정이 있으면 버튼이 알린다',
    (await p.textContent('#moreMonths')).includes('12월까지 일정이 더 있습니다'),
    await p.textContent('#moreMonths'));
+ok('기본 상태에서는 접기 버튼이 없다', !(await shown(p, '#collapseMonths')).visible);
 await p.click('#moreMonths'); await p.waitForTimeout(250);
 eq('더 보기로 마지막 일정 달까지 펼쳐진다', (await texts(p, '.month h3')).length, 4);
-ok('다 펼치면 안내 문구가 사라진다',
-   !(await p.textContent('#moreMonths')).includes('일정이 더 있습니다'));
+ok('더 보여줄 달이 없으면 더 보기 버튼이 사라진다', !(await shown(p, '#moreMonths')).visible);
+ok('더 펼친 상태에서는 접기 버튼이 나타난다', (await shown(p, '#collapseMonths')).visible);
+await p.click('#collapseMonths'); await p.waitForTimeout(250);
+eq('접기를 누르면 기본(2개월)으로 돌아간다', (await texts(p, '.month h3')).length, 2);
+ok('기본으로 돌아오면 더 보기 버튼이 다시 나타난다', (await shown(p, '#moreMonths')).visible);
+ok('기본으로 돌아오면 접기 버튼이 다시 사라진다', !(await shown(p, '#collapseMonths')).visible);
 
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')],
   events: [{ id: 'x', inst: 'a', label: '면접', start: '2026-09-21', end: '2026-09-21' }] });
 eq('일정이 이번 달뿐이면 그 달만 그린다', (await texts(p, '.month h3')).length, 1);
+ok('더 보여줄 게 없으면 더 보기 버튼이 처음부터 없다', !(await shown(p, '#moreMonths')).visible);
 
 /* ─────────────────────────────────────────────── */
 section('장소와 링크');
@@ -296,10 +366,36 @@ eq('토요일 필기시험이 그날 그대로 그려진다',
    ['7 / span 1']);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 await p.evaluate(() => [...document.querySelectorAll('.mgr-item')]
-  .find(r => r.querySelector('.nm').textContent === '건보공단').querySelector('button.danger').click());
+  .find(r => r.querySelector('.nm').value === '건보공단').querySelector('button.danger').click());
 await p.waitForTimeout(300);
 await p.reload(); await p.waitForTimeout(400);
 ok('지운 뒤에는 다시 생기지 않는다', !(await store(p)).institutions.some(i => i.id === 'nhis'));
+
+/* ─────────────────────────────────────────────── */
+section('기관 이름 수정과 중첩된 일정 목록');
+await boot(p);
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+ok('기관 이름 줄이 입력칸이다', await p.evaluate(() =>
+  document.querySelector('.mgr-item .nm').tagName === 'INPUT'));
+ok('기관 이름 아래에 그 기관 일정이 중첩되어 보인다', await p.evaluate(() => {
+  const block = document.querySelector('.inst-events');
+  return !!block && block.querySelectorAll('.ev-item').length > 0;
+}));
+await p.evaluate(() => {
+  const nm = document.querySelector('.mgr-item .nm');
+  nm.value = 'NECA(이름바꿈)';
+  nm.dispatchEvent(new Event('change'));
+});
+await p.waitForTimeout(200);
+eq('기관 이름 변경이 저장된다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
+ok('빈 이름으로는 바뀌지 않는다', await p.evaluate(() => {
+  const nm = document.querySelector('.mgr-item .nm');
+  nm.value = '';
+  nm.dispatchEvent(new Event('change'));
+  return nm.value === 'NECA(이름바꿈)';
+}));
+ok('소속 없는 일정 목록은 고아 일정이 없으면 숨겨진다',
+   (await shown(p, '#evListHead')).visible === false);
 
 /* ─────────────────────────────────────────────── */
 section('색상');
@@ -321,7 +417,7 @@ section('일정 편집');
 await boot(p);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 const before = (await store(p)).events.length;
-await p.click('#evList .ev-item .edit'); await p.waitForTimeout(150);
+await p.click('.inst-events .ev-item .edit'); await p.waitForTimeout(150);
 await p.fill('#evStart', '2026-11-05');
 await p.fill('#evEnd', '2026-11-05');
 await p.click('#addEvent'); await p.waitForTimeout(300);
