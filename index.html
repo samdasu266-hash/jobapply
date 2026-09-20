@@ -323,7 +323,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <div class="sec-head"><h2>달력</h2></div>
     <div class="filters" id="filters"></div>
     <div id="calendar" style="margin-top:12px;"></div>
-    <button class="btn sm" id="moreMonths">다음 3개월 더 보기</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn sm" id="moreMonths">다음 3개월 더 보기</button>
+      <button class="btn sm" id="collapseMonths" hidden>접기</button>
+    </div>
   </section>
 
 </div>
@@ -1058,12 +1061,20 @@ function renderCalendar(){
     cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
   }
 
-  // 접어둔 달에 일정이 남아 있으면 그 사실을 버튼에 적는다
+  // 접어둔 달에 일정이 남아 있으면 그 사실을 버튼에 적는다.
+  // 더 보여줄 달이 없으면(마지막 일정 달까지 이미 펼쳤으면) 버튼 자체를
+  // 감춘다 — 안 그러면 눌러도 아무 일도 안 나는 죽은 버튼으로 남는다.
+  var hasMore = lastEv > last;
   var btn = document.getElementById("moreMonths");
-  btn.textContent = lastEv > last
-    ? (lastEv.getFullYear() !== TODAY.getFullYear() ? lastEv.getFullYear() + "년 " : "")
-      + (lastEv.getMonth()+1) + "월까지 일정이 더 있습니다 · 3개월 더 보기"
-    : "3개월 더 보기";
+  btn.hidden = !hasMore;
+  if(hasMore){
+    btn.textContent =
+      (lastEv.getFullYear() !== TODAY.getFullYear() ? lastEv.getFullYear() + "년 " : "")
+      + (lastEv.getMonth()+1) + "월까지 일정이 더 있습니다 · 3개월 더 보기";
+  }
+
+  // 기본(현재월+다음달)보다 펼쳐져 있으면 되접을 수 있게 한다
+  document.getElementById("collapseMonths").hidden = extraMonths === 0;
 }
 
 function buildMonth(y, m){
@@ -1476,6 +1487,12 @@ function focusInstName(instId){
 document.getElementById("moreMonths").addEventListener("click", function(ev){
   ev.stopPropagation();
   extraMonths += 3;
+  renderCalendar();
+});
+
+document.getElementById("collapseMonths").addEventListener("click", function(ev){
+  ev.stopPropagation();
+  extraMonths = 0;
   renderCalendar();
 });
 

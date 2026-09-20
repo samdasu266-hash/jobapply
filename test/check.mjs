@@ -264,14 +264,20 @@ eq('기본은 현재월과 다음달까지', await texts(p, '.month h3'), ['2026
 ok('접힌 달에 일정이 있으면 버튼이 알린다',
    (await p.textContent('#moreMonths')).includes('12월까지 일정이 더 있습니다'),
    await p.textContent('#moreMonths'));
+ok('기본 상태에서는 접기 버튼이 없다', !(await shown(p, '#collapseMonths')).visible);
 await p.click('#moreMonths'); await p.waitForTimeout(250);
 eq('더 보기로 마지막 일정 달까지 펼쳐진다', (await texts(p, '.month h3')).length, 4);
-ok('다 펼치면 안내 문구가 사라진다',
-   !(await p.textContent('#moreMonths')).includes('일정이 더 있습니다'));
+ok('더 보여줄 달이 없으면 더 보기 버튼이 사라진다', !(await shown(p, '#moreMonths')).visible);
+ok('더 펼친 상태에서는 접기 버튼이 나타난다', (await shown(p, '#collapseMonths')).visible);
+await p.click('#collapseMonths'); await p.waitForTimeout(250);
+eq('접기를 누르면 기본(2개월)으로 돌아간다', (await texts(p, '.month h3')).length, 2);
+ok('기본으로 돌아오면 더 보기 버튼이 다시 나타난다', (await shown(p, '#moreMonths')).visible);
+ok('기본으로 돌아오면 접기 버튼이 다시 사라진다', !(await shown(p, '#collapseMonths')).visible);
 
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')],
   events: [{ id: 'x', inst: 'a', label: '면접', start: '2026-09-21', end: '2026-09-21' }] });
 eq('일정이 이번 달뿐이면 그 달만 그린다', (await texts(p, '.month h3')).length, 1);
+ok('더 보여줄 게 없으면 더 보기 버튼이 처음부터 없다', !(await shown(p, '#moreMonths')).visible);
 
 /* ─────────────────────────────────────────────── */
 section('장소와 링크');
