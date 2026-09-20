@@ -87,6 +87,8 @@ section{margin-bottom:26px;}
 .swatch{width:10px;height:10px;border-radius:3px;flex:none;}
 .pipe-name{font-weight:700;font-size:14px;letter-spacing:-0.01em;}
 .pipe.inactive .pipe-name{text-decoration:line-through;text-decoration-thickness:1.5px;}
+.round-head{font-size:12px;font-weight:700;color:var(--ink-2);margin:8px 0 5px;}
+.round-head:first-of-type{margin-top:0;}
 .badge{
   font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
   border:1px solid var(--line);color:var(--ink-3);
@@ -395,6 +397,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
       <option value="입사일"></option>
     </datalist>
   </div>
+  <div class="field">
+    <label for="evRound">차수 (선택, 같은 기관을 여러 번 지원할 때만)</label>
+    <input type="text" id="evRound" placeholder="예: 2026-2차">
+  </div>
   <div class="row2">
     <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
     <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
@@ -420,6 +426,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <div class="field" style="margin-top:10px;">
     <label for="bulkInst">기관</label>
     <select id="bulkInst"></select>
+  </div>
+  <div class="field">
+    <label for="bulkRound">차수 (선택, 같은 기관을 여러 번 지원할 때만)</label>
+    <input type="text" id="bulkRound" placeholder="예: 2026-2차">
   </div>
   <div id="bulkRows"></div>
   <button class="btn" id="addBulk" style="margin-top:10px;">채운 날짜만 추가</button>
@@ -807,7 +817,7 @@ function renderUpcoming(){
       '<div class="up-memo"></div>';
     el.querySelector(".up-dday").textContent = dday;
     el.querySelector(".up-title").textContent = e.label;
-    el.querySelector(".up-inst").textContent = it.name;
+    el.querySelector(".up-inst").textContent = it.name + (e.round ? " (" + e.round + ")" : "");
     el.querySelector(".up-date").textContent = range;
     el.querySelector(".up-memo").textContent = e.memo || "";
     var place = eventPlace(e);
@@ -925,56 +935,85 @@ function renderPipes(){
     }
     row.appendChild(head);
 
-    var steps = document.createElement("div");
-    steps.className = "steps";
     if(!evs.length){
+      var steps0 = document.createElement("div");
+      steps0.className = "steps";
       var em = document.createElement("span"); em.className="hint"; em.textContent="등록된 일정 없음";
-      steps.appendChild(em);
+      steps0.appendChild(em);
+      row.appendChild(steps0);
     }
 
-    var nextMarked = false;
-    function addStep(e, past){
-      var s = document.createElement("button");
-      s.type = "button";
-      var cls = "step";
-      if(e.result === "합격") cls += " pass";
-      else if(e.result === "불합격") cls += " fail";
-      else if(past) cls += " done";
-      else if(!nextMarked && it.status === "active"){ cls += " next"; nextMarked = true; s.style.color = it.color; }
-      s.className = cls;
-      s.textContent = (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
-        + e.label + " " + kdate(pd(e.start));
-      s.title = "눌러서 합격·불합격 기록";
-      bindResultMenu(s, e);
-      steps.appendChild(s);
-    }
+    // 같은 기관을 여러 번(1차·2차 등) 지원한 경우를 위해 차수(round)로
+    // 묶는다. 차수를 안 쓰면 전부 빈 문자열 하나로 묶여 기존과 똑같이
+    // 보인다 — 차수를 실제로 쓸 때만 차수 제목이 나타난다.
+    var groups = {}, order = [];
+    evs.forEach(function(e){
+      var r = e.round || "";
+      if(!(r in groups)){ groups[r] = []; order.push(r); }
+      groups[r].push(e);
+    });
+    order.sort(function(ra, rb){ return pd(groups[ra][0].start) - pd(groups[rb][0].start); });
+    var multi = order.length > 1;
 
-    // 전 단계를 다 펼쳐두면 기관이 늘수록 페이지가 길어진다. 기본은 다음
-    // 단계 하나만 두고 나머지는 '+N'으로 접는다. 지난 단계도 결과 기록이
-    // 남아 있으므로 지우지 않고 같은 토글로 함께 꺼내 본다.
-    var open = !!pipeOpen[it.id];
-    var ahead = evs.filter(function(e){ return pd(e.end) >= TODAY; });
-    var show = open ? evs : (evs.length ? [ahead.length ? ahead[0] : evs[evs.length-1]] : []);
+    order.forEach(function(r){
+      var groupEvs = groups[r];
+      var openKey = it.id + (multi ? "::" + r : "");
 
-    function moreToggle(label){
-      var t = document.createElement("button");
-      t.type = "button";
-      t.className = "step more";
-      t.textContent = label;
-      t.title = open ? "전형 단계 접기" : "전형 단계 모두 보기";
-      t.addEventListener("click", function(ev){
-        ev.stopPropagation();
-        pipeOpen[it.id] = !open;
-        renderPipes();
-      });
-      return t;
-    }
+      if(multi){
+        var rh = document.createElement("div");
+        rh.className = "round-head";
+        rh.textContent = r || "회차 미지정";
+        row.appendChild(rh);
+      }
 
-    if(open) steps.appendChild(moreToggle("접기"));
-    show.forEach(function(e){ addStep(e, pd(e.end) < TODAY); });
-    if(!open && evs.length > show.length) steps.appendChild(moreToggle("+" + (evs.length - show.length)));
+      var steps = document.createElement("div");
+      steps.className = "steps";
 
-    row.appendChild(steps);
+      var nextMarked = false;
+      function addStep(e, past){
+        var s = document.createElement("button");
+        s.type = "button";
+        var cls = "step";
+        if(e.result === "합격") cls += " pass";
+        else if(e.result === "불합격") cls += " fail";
+        else if(past) cls += " done";
+        else if(!nextMarked && it.status === "active"){ cls += " next"; nextMarked = true; s.style.color = it.color; }
+        s.className = cls;
+        s.textContent = (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
+          + e.label + " " + kdate(pd(e.start));
+        s.title = "눌러서 합격·불합격 기록";
+        bindResultMenu(s, e);
+        steps.appendChild(s);
+      }
+
+      // 전 단계를 다 펼쳐두면 기관이 늘수록 페이지가 길어진다. 기본은 다음
+      // 단계 하나만 두고 나머지는 '+N'으로 접는다. 지난 단계도 결과 기록이
+      // 남아 있으므로 지우지 않고 같은 토글로 함께 꺼내 본다.
+      var open = !!pipeOpen[openKey];
+      var ahead = groupEvs.filter(function(e){ return pd(e.end) >= TODAY; });
+      var show = open ? groupEvs : (groupEvs.length ? [ahead.length ? ahead[0] : groupEvs[groupEvs.length-1]] : []);
+
+      function moreToggle(label){
+        var t = document.createElement("button");
+        t.type = "button";
+        t.className = "step more";
+        t.textContent = label;
+        t.title = open ? "전형 단계 접기" : "전형 단계 모두 보기";
+        t.addEventListener("click", function(ev){
+          ev.stopPropagation();
+          pipeOpen[openKey] = !open;
+          renderPipes();
+        });
+        return t;
+      }
+
+      if(open) steps.appendChild(moreToggle("접기"));
+      show.forEach(function(e){ addStep(e, pd(e.end) < TODAY); });
+      if(!open && groupEvs.length > show.length) steps.appendChild(moreToggle("+" + (groupEvs.length - show.length)));
+
+      row.appendChild(steps);
+    });
+
     box.appendChild(row);
   });
 }
@@ -1194,7 +1233,7 @@ function buildWeek(wStart, wEnd, month, evs){
     b.textContent = (sg.ev.result === "합격" ? "✓ " : sg.ev.result === "불합격" ? "✗ " : "")
       + sg.ev.label;
     bindResultMenu(b, sg.ev);
-    b.title = it.name + " · " + sg.ev.label + " · " + sg.ev.start
+    b.title = it.name + (sg.ev.round ? " (" + sg.ev.round + ")" : "") + " · " + sg.ev.label + " · " + sg.ev.start
       + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
       + (sg.ev.result ? " · " + sg.ev.result : "")
       + (eventPlace(sg.ev) ? "\n" + eventPlace(sg.ev) : "")
@@ -1222,7 +1261,8 @@ function makeEvRow(e){
     : kdate(pd(e.start))+"–"+kdate(pd(e.end));
   row.querySelector(".inm").textContent = it.name;
   row.querySelector(".t").appendChild(document.createTextNode(
-    (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "") + e.label
+    (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
+    + (e.round ? "[" + e.round + "] " : "") + e.label
   ));
   row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
   row.querySelector(".danger").addEventListener("click", function(){
@@ -1429,12 +1469,24 @@ function closeResultMenu(){
   document.removeEventListener("click", onOutsideClick);
 }
 
+// 이 일정의 차수가 그 기관에서 가장 늦게 시작하는(=가장 최근) 차수인지
+// 판정한다. 차수를 안 쓰면 일정이 전부 같은 차수라 늘 참이다.
+function isLatestRound(e){
+  var mine = state.events.filter(function(x){ return x.inst === e.inst; });
+  if(!mine.length) return true;
+  var latest = mine[0];
+  mine.forEach(function(x){ if(pd(x.start) > pd(latest.start)) latest = x; });
+  return (latest.round || "") === (e.round || "");
+}
+
 function setResult(e, r){
   e.result = r;
-  // 한 단계에서 떨어지면 그 기관 전형은 거기서 끝난다
+  // 한 단계에서 떨어지면 그 전형은 거기서 끝난다 — 단, 같은 기관에 아직
+  // 진행 중인 다른 차수(예: 1차는 떨어졌지만 2차를 지원한 경우)가 있으면
+  // 기관 전체를 탈락으로 돌리지 않는다.
   if(r === "불합격"){
     var it = inst(e.inst);
-    if(!it.missing && it.status === "active"){
+    if(!it.missing && it.status === "active" && isLatestRound(e)){
       it.status = "rejected";
       if(hideInactive){ hidden[it.id] = true; saveUI(); }
     }
@@ -1573,6 +1625,7 @@ function startEdit(e){
   document.getElementById("evEnd").value = e.end === e.start ? "" : e.end;
   document.getElementById("evPlace").value = e.place || "";
   document.getElementById("evMemo").value = e.memo || "";
+  document.getElementById("evRound").value = e.round || "";
   syncNewInstField();
   document.getElementById("addEvent").textContent = "수정 저장";
   document.getElementById("cancelEdit").hidden = false;
@@ -1585,6 +1638,7 @@ function endEdit(){
   document.getElementById("evEnd").value = "";
   document.getElementById("evPlace").value = "";
   document.getElementById("evMemo").value = "";
+  document.getElementById("evRound").value = "";
   document.getElementById("evNewInst").value = "";
   syncNewInstField();
   document.getElementById("addEvent").textContent = "일정 추가";
@@ -1595,18 +1649,20 @@ document.getElementById("cancelEdit").addEventListener("click", endEdit);
 document.getElementById("addBulk").addEventListener("click", function(){
   var instId = document.getElementById("bulkInst").value;
   if(!instId){ alert("기관을 선택하세요."); return; }
+  var rnd = document.getElementById("bulkRound").value.trim();
   var inputs = document.querySelectorAll("#bulkRows input");
   var added = 0;
   Array.prototype.forEach.call(inputs, function(inp){
     if(!inp.value) return;
     state.events.push({
       id:uid("e"), inst:instId, label:inp.dataset.stage,
-      start:inp.value, end:inp.value, memo:""
+      start:inp.value, end:inp.value, memo:"", round:rnd
     });
     inp.value = "";
     added++;
   });
   if(!added){ alert("날짜를 하나 이상 입력하세요."); return; }
+  document.getElementById("bulkRound").value = "";
   persist(); renderAll();
   note(added + "개 단계를 추가했습니다");
 });
@@ -1618,6 +1674,7 @@ document.getElementById("addEvent").addEventListener("click", function(){
   var e = document.getElementById("evEnd").value || s;
   var pl = document.getElementById("evPlace").value.trim();
   var mo = document.getElementById("evMemo").value.trim();
+  var rnd = document.getElementById("evRound").value.trim();
   if(!l || !s){ alert("내용, 시작일은 필요합니다."); return; }
   if(pd(e) < pd(s)){ alert("종료일이 시작일보다 빠릅니다."); return; }
 
@@ -1637,10 +1694,10 @@ document.getElementById("addEvent").addEventListener("click", function(){
 
   if(editingId){
     state.events.forEach(function(x){
-      if(x.id === editingId){ x.inst=i; x.label=l; x.start=s; x.end=e; x.place=pl; x.memo=mo; }
+      if(x.id === editingId){ x.inst=i; x.label=l; x.start=s; x.end=e; x.place=pl; x.memo=mo; x.round=rnd; }
     });
   }else{
-    state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e, place:pl, memo:mo});
+    state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e, place:pl, memo:mo, round:rnd});
   }
   endEdit();
   persist(); renderAll();

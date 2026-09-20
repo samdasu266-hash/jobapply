@@ -166,6 +166,47 @@ ok('겹침 경고에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('NIKOM')))));
 
 /* ─────────────────────────────────────────────── */
+section('차수(회차) 이력 관리');
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'r1', inst: 'a', label: '서류마감', start: '2026-08-01', end: '2026-08-01', round: '2026-1차' },
+  { id: 'r2', inst: 'a', label: '면접',     start: '2026-08-20', end: '2026-08-20', round: '2026-1차' },
+  { id: 'r3', inst: 'a', label: '서류마감', start: '2026-10-01', end: '2026-10-01', round: '2026-2차' },
+  { id: 'r4', inst: 'a', label: '면접',     start: '2026-11-01', end: '2026-11-01', round: '2026-2차' },
+]});
+eq('차수를 쓰면 차수 제목이 각각 나타난다', await texts(p, '.pipe .round-head'), ['2026-1차', '2026-2차']);
+ok('두 차수 모두 자기 몫의 단계만 보인다', await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  const r1steps = heads[0].nextElementSibling.querySelectorAll('.step:not(.more)').length;
+  const r2steps = heads[1].nextElementSibling.querySelectorAll('.step:not(.more)').length;
+  return r1steps === 1 && r2steps === 1; // 각자 다음 단계 하나씩만 기본으로 보임
+}));
+
+// 지난 차수(1차)에서 불합격해도, 2차가 아직 진행 중이면 기관을 탈락으로
+// 돌리지 않는다 — 2차 필터까지 함께 숨겨지면 안 되기 때문이다.
+await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  heads[0].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '1';
+});
+await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+let st = await store(p);
+eq('지난 차수 불합격: 기관은 그대로 진행중이다', st.institutions.find(i => i.id === 'a').status, 'active');
+ok('그 차수 일정에 불합격이 기록된다', st.events.some(e => e.round === '2026-1차' && e.result === '불합격'));
+
+// 반대로 최신 차수(2차)에서 불합격하면 지금까지와 같이 기관 전체가 탈락된다
+await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  heads[1].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '2';
+});
+await p.click('.step[data-probe="2"]'); await p.waitForTimeout(150);
+await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+st = await store(p);
+eq('최신 차수 불합격: 기관이 탈락으로 바뀐다', st.institutions.find(i => i.id === 'a').status, 'rejected');
+
+await boot(p);
+eq('차수를 안 쓰면 차수 제목이 나타나지 않는다', (await texts(p, '.pipe .round-head')).length, 0);
+
+/* ─────────────────────────────────────────────── */
 section('주말·공휴일 처리');
 await boot(p, {
   institutions: [INST('a', 'A', '#2E6F5E')],
