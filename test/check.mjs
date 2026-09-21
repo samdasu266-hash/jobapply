@@ -163,11 +163,20 @@ await p.click('.up-card[data-probe="1"]'); await p.waitForTimeout(150);
 await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(350);
 const afterFail = await store(p);
 eq('기관이 탈락으로 바뀐다', afterFail.institutions.find(i => i.id === 'nikom').status, 'rejected');
-ok('탈락 배지가 보인다', (await texts(p, '.pipe .badge')).includes('탈락'));
+// 탈락 기관은 취소선을 친 채로 남기지 않고 화면에서 뺀다
+ok('진행 현황에서 빠진다', !(await texts(p, '.pipe-name')).some(t => t.includes('NIKOM')));
 ok('달력에서 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.bar')].some(b => (b.title || '').includes('NIKOM')))));
+ok('다가오는 일정에서도 빠진다', !(await p.evaluate(() =>
+   [...document.querySelectorAll('.up-inst')].some(e => e.textContent.includes('NIKOM')))));
 ok('겹침 경고에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('NIKOM')))));
+// 숨긴 것이지 지운 게 아니다 — 칩을 다시 켜면 돌아온다
+await p.evaluate(() => [...document.querySelectorAll('.chip:not(.all):not(.more)')]
+  .find(c => c.textContent.includes('NIKOM')).click());
+await p.waitForTimeout(250);
+ok('칩을 켜면 진행 현황에 다시 나온다', (await texts(p, '.pipe-name')).some(t => t.includes('NIKOM')));
+ok('되살리면 탈락 배지가 붙어 있다', (await texts(p, '.pipe .badge')).includes('탈락'));
 
 /* ─────────────────────────────────────────────── */
 section('차수(회차) 이력 관리');
@@ -258,11 +267,12 @@ await p.click('.step.more'); await p.waitForTimeout(250);
 eq('펼치면 전 단계가 나온다', (await texts(p, '.pipe .step')).length, 5);
 ok('접혀 있던 결과 기록이 살아 있다',
    (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류결과')));
-// 접힌 단계에 결과를 적는 동안 다시 접히면 연달아 기록할 수 없다
+// 접힌 단계에 결과를 적는 동안 다시 접히면 연달아 기록할 수 없다.
+// (불합격은 기관을 숨기므로, 상태를 바꾸지 않는 합격으로 확인한다)
 await p.evaluate(() => [...document.querySelectorAll('.pipe .step')]
   .find(s => s.textContent.includes('서류마감')).dataset.probe = '1');
 await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(350);
+await p.click('.rmenu button[data-r="합격"]'); await p.waitForTimeout(350);
 ok('결과를 적어도 펼침이 유지된다', (await p.textContent('.step.more')) === '접기');
 await p.click('.step.more'); await p.waitForTimeout(250);
 eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
@@ -639,6 +649,16 @@ const upM = await mp.evaluate(() => document.querySelectorAll('.up-card').length
 const upD = await p.evaluate(() => document.querySelectorAll('.up-card').length);
 ok('다가오는 일정이 모바일에서는 4장까지', upM <= 4, 'mobile=' + upM);
 ok('데스크톱에서는 6장까지', upD <= 6 && upD > 4, 'desktop=' + upD);
+// auto-fill 이면 화면 폭에 따라 열이 5개가 되어 6장이 5+1 로 쪼개졌다.
+// 열 수를 고정했으므로 마지막 줄이 늘 꽉 차야 한다.
+const cols = (pg) => pg.evaluate(() =>
+  getComputedStyle(document.getElementById('upcoming')).gridTemplateColumns.split(/\s+/).filter(Boolean).length);
+eq('모바일은 2열', await cols(mp), 2);
+eq('데스크톱은 3열', await cols(p), 3);
+ok('다가오는 일정은 늘 꽉 찬 줄로 끝난다', await p.evaluate(() =>
+  document.querySelectorAll('.up-card').length %
+  getComputedStyle(document.getElementById('upcoming')).gridTemplateColumns.split(/\s+/).filter(Boolean).length === 0));
+
 ok('페이지가 모바일에서 5화면을 넘지 않는다', await mp.evaluate(() =>
   document.body.scrollHeight / innerHeight < 5), await mp.evaluate(() =>
   (document.body.scrollHeight / innerHeight).toFixed(1) + '화면'));
