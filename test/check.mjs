@@ -171,7 +171,9 @@ ok('다가오는 일정에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.up-inst')].some(e => e.textContent.includes('NIKOM')))));
 ok('겹침 경고에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('NIKOM')))));
-// 숨긴 것이지 지운 게 아니다 — 칩을 다시 켜면 돌아온다
+// 숨긴 것이지 지운 게 아니다 — 칩을 다시 켜면 돌아온다.
+// 탈락하면서 칩이 뒤로 밀려 '+N' 안으로 들어갔으니 먼저 펼친다
+await p.click('.chip.more'); await p.waitForTimeout(150);
 await p.evaluate(() => [...document.querySelectorAll('.chip:not(.all):not(.more)')]
   .find(c => c.textContent.includes('NIKOM')).click());
 await p.waitForTimeout(250);
@@ -322,6 +324,24 @@ eq('펼치면 전 기관이 보인다', (await texts(p, '.chip:not(.all):not(.mo
 eq('펼친 뒤엔 접기로 바뀐다', await p.textContent('.chip.more'), '접기');
 await p.click('.chip.more'); await p.waitForTimeout(150);
 eq('접으면 다시 4개만 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 4);
+
+// 끝난 기관이 앞자리를 차지하면 정작 볼 기관이 '+N' 뒤로 밀린다
+await boot(p, {
+  institutions: [
+    INST('0', '가', '#2E6F5E'),
+    INST('1', '나탈락', '#96491B', { status: 'rejected' }),
+    INST('2', '다', '#2F5F92'),
+    INST('3', '라', '#7A4BA0'),
+    INST('4', '마', '#9C4370'),
+    INST('5', '바포기', '#4A5560', { status: 'withdrawn' }),
+  ],
+  events: [],
+}, { hidden: {}, hideInactive: false });
+eq('탈락·포기 기관은 앞자리를 차지하지 않는다',
+   await texts(p, '.chip:not(.all):not(.more)'), ['가', '다', '라', '마']);
+await p.click('.chip.more'); await p.waitForTimeout(150);
+eq('펼치면 끝난 기관이 뒤에 붙어 나온다',
+   await texts(p, '.chip:not(.all):not(.more)'), ['가', '다', '라', '마', '나탈락', '바포기']);
 
 /* ─────────────────────────────────────────────── */
 section('달력 범위');

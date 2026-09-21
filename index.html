@@ -1234,9 +1234,16 @@ function renderFilters(){
   // 기관이 늘수록 칩이 여러 줄을 차지한다. 기본은 몇 개만 보여주고
   // 나머지는 '+N'으로 접어, 필터 한번 쓰려고 화면을 몇 줄씩 넘기지
   // 않게 한다.
+  // 탈락·포기 기관은 뒤로 보낸다. 앞자리 4개는 아직 진행 중인 기관 몫이다 —
+  // 끝난 기관이 앞자리를 차지하면 정작 볼 기관이 '+N' 뒤로 밀린다.
+  // sort 는 안정 정렬이라 같은 상태끼리는 원래 순서가 유지된다.
+  var ordered = state.institutions.slice().sort(function(a, b){
+    return (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1);
+  });
+
   var VISIBLE = 4;
-  var show = chipsOpen ? state.institutions : state.institutions.slice(0, VISIBLE);
-  var restCount = state.institutions.length - show.length;
+  var show = chipsOpen ? ordered : ordered.slice(0, VISIBLE);
+  var restCount = ordered.length - show.length;
 
   show.forEach(function(it){
     var c = document.createElement("button");
