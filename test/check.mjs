@@ -132,21 +132,25 @@ const chipInfo = await p.evaluate(() => {
   const s = document.querySelector('.pipe .step');
   return { instName: s.closest('.pipe').querySelector('.pipe-name').textContent };
 });
+const chipLabel = await p.evaluate(() =>
+  document.querySelector('.pipe .step').textContent.replace(/\s+\d+\/\d+\(.\)$/, '').trim());
 await p.click('.pipe .step'); await p.waitForTimeout(150);
 await p.click('.rmenu button[data-action="edit-event"]'); await p.waitForTimeout(300);
 ok('일정 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
-ok('일정 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
-eq('일정 수정: 수정 폼이 그 일정으로 채워진다',
-   await p.evaluate(() => document.getElementById('addEvent').textContent), '수정 저장');
-await p.click('#cancelEdit'); await p.waitForTimeout(150);
-await p.click('#closeDrawer'); await p.waitForTimeout(150);
+// 드로어를 열고 폼까지 스크롤하던 땜질 대신 그 일정 시트를 바로 띄운다
+ok('일정 수정: 일정 시트가 바로 열린다', (await shown(p, '#evSheet')).visible);
+ok('일정 수정: 드로어는 열리지 않는다',
+   !(await p.getAttribute('#drawer', 'class')).includes('open'));
+eq('일정 수정: 그 일정이 채워져 있다', await p.inputValue('#evLabel'), chipLabel);
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+ok('일정 시트는 ESC 로 닫힌다', !(await shown(p, '#evSheet')).visible);
 
 await p.click('.pipe .step'); await p.waitForTimeout(150);
 await p.click('.rmenu button[data-action="edit-inst"]'); await p.waitForTimeout(300);
-ok('기관명 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
-ok('기관명 수정: 드로어가 열린다', (await p.getAttribute('#drawer', 'class')).includes('open'));
-eq('기관명 수정: 그 기관 이름 입력칸에 포커스된다',
-   await p.evaluate(() => document.activeElement.value), chipInfo.instName);
+ok('기관 정보: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
+ok('기관 정보: 기관 시트가 바로 열린다', (await shown(p, '#instSheet')).visible);
+eq('기관 정보: 그 기관이 채워져 있다', await p.inputValue('#instName'), chipInfo.instName);
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 
 /* ─────────────────────────────────────────────── */
 section('불합격 → 기관 탈락 연동');
@@ -416,36 +420,53 @@ eq('토요일 필기시험이 그날 그대로 그려진다',
    ['7 / span 1']);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 await p.evaluate(() => [...document.querySelectorAll('.mgr-item')]
-  .find(r => r.querySelector('.nm').value === '건보공단').querySelector('button.danger').click());
+  .find(r => r.querySelector('.nm').textContent === '건보공단').querySelector('.inst-more').click());
+await p.waitForTimeout(250);
+await p.click('#instDelete');
 await p.waitForTimeout(300);
 await p.reload(); await p.waitForTimeout(400);
 ok('지운 뒤에는 다시 생기지 않는다', !(await store(p)).institutions.some(i => i.id === 'nhis'));
 
 /* ─────────────────────────────────────────────── */
-section('기관 이름 수정과 중첩된 일정 목록');
+section('관리 드로어 — 목록만 두고 편집은 시트에서');
 await boot(p);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
-ok('기관 이름 줄이 입력칸이다', await p.evaluate(() =>
-  document.querySelector('.mgr-item .nm').tagName === 'INPUT'));
+ok('목록에는 편집 입력칸이 없다', await p.evaluate(() =>
+  document.querySelectorAll('#instList input, #instList select').length === 0));
 ok('기관 이름 아래에 그 기관 일정이 중첩되어 보인다', await p.evaluate(() => {
   const block = document.querySelector('.inst-events');
   return !!block && block.querySelectorAll('.ev-item').length > 0;
 }));
-await p.evaluate(() => {
-  const nm = document.querySelector('.mgr-item .nm');
-  nm.value = 'NECA(이름바꿈)';
-  nm.dispatchEvent(new Event('change'));
-});
-await p.waitForTimeout(200);
-eq('기관 이름 변경이 저장된다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
-ok('빈 이름으로는 바뀌지 않는다', await p.evaluate(() => {
-  const nm = document.querySelector('.mgr-item .nm');
-  nm.value = '';
-  nm.dispatchEvent(new Event('change'));
-  return nm.value === 'NECA(이름바꿈)';
-}));
+ok('일정 줄 자체가 버튼이다', await p.evaluate(() =>
+  document.querySelector('.inst-events .ev-item').tagName === 'BUTTON'));
+ok('줄마다 붙던 수정·삭제 버튼이 없다', await p.evaluate(() =>
+  document.querySelectorAll('#instList .ev-item button').length === 0));
+ok('진행중 기관에는 배지를 달지 않는다', await p.evaluate(() =>
+  document.querySelectorAll('#instList .badge').length === 0));
 ok('소속 없는 일정 목록은 고아 일정이 없으면 숨겨진다',
    (await shown(p, '#evListHead')).visible === false);
+
+// 기관 편집은 ⋯ → 시트에서, 저장을 눌러야 반영된다
+await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+ok('⋯ 로 기관 시트가 열린다', (await shown(p, '#instSheet')).visible);
+eq('그 기관 이름이 채워져 있다', await p.inputValue('#instName'), 'NECA (보의연)');
+await p.fill('#instName', 'NECA(이름바꿈)');
+await p.click('#instSave'); await p.waitForTimeout(300);
+eq('기관 이름 변경이 저장된다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
+ok('저장하면 시트가 닫힌다', !(await shown(p, '#instSheet')).visible);
+
+await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+await p.fill('#instName', '');
+await p.click('#instSave'); await p.waitForTimeout(250);
+eq('빈 이름으로는 저장되지 않는다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
+ok('빈 이름이면 시트가 닫히지 않는다', (await shown(p, '#instSheet')).visible);
+
+// 상태는 목록이 아니라 시트에서 바꾸고, 탈락·포기일 때만 배지가 붙는다
+await p.fill('#instName', 'NECA(이름바꿈)');
+await p.click('#instStatus button[data-status="rejected"]');
+await p.click('#instSave'); await p.waitForTimeout(300);
+eq('상태 변경이 저장된다', (await store(p)).institutions[0].status, 'rejected');
+ok('탈락이면 목록에 배지가 붙는다', (await texts(p, '#instList .badge')).includes('탈락'));
 
 /* ─────────────────────────────────────────────── */
 section('색상');
@@ -455,37 +476,97 @@ ok('기본 기관 색이 겹치지 않는다', await p.evaluate(() => {
   return new Set(c).size === c.length;
 }));
 await p.click('#openDrawer'); await p.waitForTimeout(250);
-ok('사용 중인 색은 고를 수 없다', await p.evaluate(() =>
-  [...document.querySelectorAll('#swatchPick button')].some(b => b.disabled)));
-ok('비어 있는 색이 자동 선택된다', await p.evaluate(() => {
-  const b = [...document.querySelectorAll('#swatchPick button')].find(x => x.getAttribute('aria-pressed') === 'true');
-  return b && !b.disabled;
+await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+ok('다른 기관이 쓰는 색은 고를 수 없다', await p.evaluate(() =>
+  [...document.querySelectorAll('#instSwatch button')].some(b => b.disabled)));
+// 자기 색까지 잠그면 기관 시트를 열자마자 선택된 색이 사라진다
+ok('자기 색은 선택된 채로 고를 수 있다', await p.evaluate(() => {
+  const b = [...document.querySelectorAll('#instSwatch button')].find(x => x.getAttribute('aria-pressed') === 'true');
+  return !!b && !b.disabled;
 }));
+const newColor = await p.evaluate(() => {
+  const b = [...document.querySelectorAll('#instSwatch button')].find(x => !x.disabled && x.getAttribute('aria-pressed') !== 'true');
+  b.click();
+  return b.style.backgroundColor;
+});
+await p.click('#instSave'); await p.waitForTimeout(300);
+ok('고른 색이 저장된다', await p.evaluate((want) => {
+  const it = JSON.parse(localStorage.getItem('jobtracker.v1')).institutions[0];
+  const el = document.createElement('div'); el.style.backgroundColor = it.color;
+  return el.style.backgroundColor === want;
+}, newColor));
 
 /* ─────────────────────────────────────────────── */
 section('일정 편집');
 await boot(p);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
 const before = (await store(p)).events.length;
-await p.click('.inst-events .ev-item .edit'); await p.waitForTimeout(150);
+await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+ok('줄을 누르면 그 일정 시트가 열린다', (await shown(p, '#evSheet')).visible);
+eq('수정일 때는 제목이 일정 수정', await p.textContent('#evSheetTitle'), '일정 수정');
+ok('수정일 때는 삭제 버튼이 있다', (await shown(p, '#evDelete')).visible);
 await p.fill('#evStart', '2026-11-05');
 await p.fill('#evEnd', '2026-11-05');
-await p.click('#addEvent'); await p.waitForTimeout(300);
+await p.click('#evSave'); await p.waitForTimeout(300);
 eq('수정해도 일정이 늘지 않는다', (await store(p)).events.length, before);
 ok('수정이 반영된다', (await store(p)).events.some(e => e.start === '2026-11-05'));
 
+// 값이 없는 선택 항목은 접혀 있다가 눌러야 펼쳐진다.
+// 시드 일정은 대부분 메모를 갖고 있으므로, 빈 상태는 '추가' 시트로 확인한다.
+await p.click('#newEventBtn'); await p.waitForTimeout(250);
+eq('추가 시트에서는 선택 항목 셋이 모두 접혀 있다',
+   await p.evaluate(() => [...document.querySelectorAll('.opt-field')].filter(f => !f.hidden).length), 0);
+await p.click('#evOptRow .opt[data-opt="memo"]'); await p.waitForTimeout(150);
+ok('누르면 펼쳐진다', (await shown(p, '.opt-field[data-optfield="memo"]')).visible);
+ok('펼친 항목의 버튼은 사라진다',
+   !(await shown(p, '#evOptRow .opt[data-opt="memo"]')).visible);
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+
+// 값이 있으면 펼친 채로 연다
+await boot(p, {
+  institutions: [INST('a', 'A', '#2E6F5E')],
+  events: [{ id: 'm', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06', memo: '정장 착용' }],
+});
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+ok('값이 있는 항목은 펼친 채로 열린다', (await shown(p, '.opt-field[data-optfield="memo"]')).visible);
+eq('그 값이 채워져 있다', await p.inputValue('#evMemo'), '정장 착용');
+ok('값이 없는 항목은 여전히 접혀 있다', !(await shown(p, '.opt-field[data-optfield="round"]')).visible);
+await p.fill('#evMemo', '고침');
+await p.click('#evSave'); await p.waitForTimeout(300);
+eq('펼친 항목의 수정이 저장된다', (await store(p)).events[0].memo, '고침');
+
+await boot(p);
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+
+// 추가는 같은 시트를 빈 채로 연다
+await p.click('#newEventBtn'); await p.waitForTimeout(250);
+eq('추가일 때는 제목이 일정 추가', await p.textContent('#evSheetTitle'), '일정 추가');
+ok('추가일 때는 삭제 버튼이 없다', !(await shown(p, '#evDelete')).visible);
 await p.selectOption('#evInst', '__new__'); await p.waitForTimeout(150);
 ok('새 기관 입력칸이 나타난다', (await shown(p, '#evNewInstField')).visible);
 await p.fill('#evNewInst', '테스트기관');
 await p.fill('#evLabel', '면접');
 await p.fill('#evStart', '2026-11-10');
-await p.click('#addEvent'); await p.waitForTimeout(300);
+await p.click('#evSave'); await p.waitForTimeout(300);
 ok('목록에 없는 기관이 만들어진다', (await store(p)).institutions.some(i => i.name === '테스트기관'));
+ok('만들어진 기관은 목록에서 바로 ⋯ 로 열 수 있다', await p.evaluate(() =>
+  [...document.querySelectorAll('.mgr-item')].some(r =>
+    r.querySelector('.nm').textContent === '테스트기관' && r.querySelector('.inst-more'))));
+
+// 삭제는 시트 안에서만 — 목록에서 실수로 눌릴 일이 없다
+const beforeDel = (await store(p)).events.length;
+await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+await p.click('#evDelete'); await p.waitForTimeout(300);
+eq('시트에서 삭제하면 일정이 준다', (await store(p)).events.length, beforeDel - 1);
+ok('삭제 후 시트가 닫힌다', !(await shown(p, '#evSheet')).visible);
 
 /* ─────────────────────────────────────────────── */
 section('전형 단계 일괄 추가');
 await boot(p);
 await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+ok('일괄 추가 시트가 열린다', (await shown(p, '#bulkSheet')).visible);
 const b0 = (await store(p)).events.length;
 await p.evaluate(() => {
   const set = (stage, v) => {
@@ -494,10 +575,33 @@ await p.evaluate(() => {
   };
   set('서류결과', '2026-11-02'); set('면접', '2026-11-09');
 });
-await p.click('#addBulk'); await p.waitForTimeout(300);
+await p.click('#bulkAdd'); await p.waitForTimeout(300);
 eq('채운 날짜만 추가된다', (await store(p)).events.length - b0, 2);
+ok('추가하면 시트가 닫힌다', !(await shown(p, '#bulkSheet')).visible);
+await p.click('#newBulkBtn'); await p.waitForTimeout(250);
 ok('입력칸이 비워진다', await p.evaluate(() =>
   [...document.querySelectorAll('#bulkRows input')].every(i => !i.value)));
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+
+/* ─────────────────────────────────────────────── */
+section('[hidden] 이 실제로 숨겨지는가');
+// display 를 주는 규칙(.field, .sheet, .rmenu)이 [hidden] 을 이겨서 "속성은
+// hidden 인데 화면엔 보이는" 버그를 세 번 냈다. 속성이 아니라 계산된 스타일로 본다.
+await boot(p);
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#newEventBtn'); await p.waitForTimeout(250);
+ok('기관을 고른 상태면 새 기관 이름 칸은 보이지 않는다',
+   !(await shown(p, '#evNewInstField')).visible);
+eq('접힌 선택 항목은 계산된 스타일로도 숨겨져 있다',
+   await p.evaluate(() => [...document.querySelectorAll('.opt-field')]
+     .filter(f => getComputedStyle(f).display !== 'none').length), 0);
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+ok('닫은 시트는 계산된 스타일로도 숨겨진다', !(await shown(p, '#evSheet')).visible);
+ok('시트 스크림도 함께 숨겨진다', !(await shown(p, '#sheetScrim')).visible);
+await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+ok('일괄 추가 시트에서도 새 기관 칸은 숨겨져 있다',
+   !(await shown(p, '#bulkNewInstField')).visible);
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 
 /* ─────────────────────────────────────────────── */
 section('드로어 접근성');
