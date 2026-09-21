@@ -322,7 +322,13 @@ ok('더 보여줄 게 없으면 더 보기 버튼이 처음부터 없다', !(awa
 
 /* ─────────────────────────────────────────────── */
 section('장소와 링크');
-await boot(p);
+// 방문형 일정(면접)이 확실히 "다가오는 일정" 안에 들도록 고정 픽스처를 쓴다
+// — 실제 기본 데이터는 오늘 날짜에 따라 가까운 6건이 달라지므로, 면접이
+// 그 안에 안 들 수도 있어서 결과가 날짜에 좌우되면 안 된다.
+await boot(p, {
+  institutions: [INST('a', 'A', '#2E6F5E', { place: '서울 광진구 능동로 400' })],
+  events: [{ id: 'x', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06' }],
+});
 ok('기관 기본 장소를 일정이 물려받는다', await p.evaluate(() =>
   [...document.querySelectorAll('.up-card')].some(c => c.querySelector('.up-place a'))));
 const href = await p.evaluate(() => (document.querySelector('.up-place a') || {}).href || '');
@@ -338,6 +344,35 @@ ok('장소 링크를 눌러도 결과 메뉴가 뜨지 않는다', !(await shown
 
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E', { url: 'javascript:alert(1)' })], events: [] });
 eq('javascript: 링크는 렌더하지 않는다', (await texts(p, '.pipe-link')).length, 0);
+
+/* ─────────────────────────────────────────────── */
+section('방문형 vs 온라인형 일정의 장소 표시');
+// 서류마감·서류결과·인적성검사처럼 방문이 필요 없는 일정은 기관의 물리적
+// 주소를 자동으로 보여주면 안 된다 — 실제로 가야 하는 줄 오해하게 만든다.
+await boot(p, {
+  institutions: [INST('a', 'A', '#2E6F5E', { place: '서울 광진구 능동로 400' })],
+  events: [
+    { id: 'e1', inst: 'a', label: '면접',       start: '2026-10-06', end: '2026-10-06' },
+    { id: 'e2', inst: 'a', label: '서류마감',   start: '2026-10-01', end: '2026-10-01' },
+    { id: 'e3', inst: 'a', label: '서류결과',   start: '2026-10-08', end: '2026-10-08', place: 'https://apply.example.com/result' },
+    { id: 'e4', inst: 'a', label: '인적성검사', start: '2026-10-10', end: '2026-10-12', place: 'https://hr.example.com/test' },
+    { id: 'e5', inst: 'a', label: '필기시험',   start: '2026-10-17', end: '2026-10-17', place: '서울 소재 고사장' },
+  ],
+});
+const cardOf = (label) => p.evaluate((l) => {
+  const c = [...document.querySelectorAll('.up-card')].find(x => x.querySelector('.up-title').textContent === l);
+  const a = c.querySelector('.up-place a');
+  return { text: c.querySelector('.up-place').textContent.trim(), href: a ? a.href : null };
+}, label);
+eq('면접(장소 없음): 기관 기본 주소를 물려받아 지도로 연결', (await cardOf('면접')).href,
+   'https://map.kakao.com/link/search/' + encodeURIComponent('서울 광진구 능동로 400'));
+eq('서류마감(장소 없음): 기관 주소를 물려받지 않고 비워둔다', (await cardOf('서류마감')).text, '');
+const r3 = await cardOf('서류결과');
+eq('서류결과(링크 입력): 짧은 하이퍼링크로 표시', r3.text, 'apply.example.com ↗');
+eq('서류결과: 실제 링크는 원래 URL 그대로', r3.href, 'https://apply.example.com/result');
+eq('인적성검사(링크 입력): 짧은 하이퍼링크로 표시', (await cardOf('인적성검사')).text, 'hr.example.com ↗');
+eq('필기시험(직접 넣은 주소): 지도 링크 유지', (await cardOf('필기시험')).href,
+   'https://map.kakao.com/link/search/' + encodeURIComponent('서울 소재 고사장'));
 
 /* ─────────────────────────────────────────────── */
 section('깨진 데이터 방어');
