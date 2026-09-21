@@ -941,7 +941,17 @@ function renderUpcoming(){
   var all = state.events.filter(function(e){
     return isActive(e.inst) && pd(e.end) >= TODAY;
   }).sort(function(a,b){ return pd(a.start) - pd(b.start); });
-  var list = all.slice(0, upcomingLimit());
+  // 한 기관이 카드를 두세 장씩 차지하면 정작 다른 기관 일정이 안 보인다.
+  // 기관마다 가장 가까운 일정 하나를 먼저 채우고, 자리가 남을 때만
+  // 나머지를 날짜 순으로 더 얹는다.
+  var limit = upcomingLimit();
+  var seen = {}, first = [], rest = [];
+  all.forEach(function(e){
+    if(seen[e.inst]) rest.push(e);
+    else { seen[e.inst] = 1; first.push(e); }
+  });
+  var list = first.concat(rest).slice(0, limit)
+    .sort(function(a,b){ return pd(a.start) - pd(b.start); });
   var hiddenCount = all.length - list.length;
 
   box.innerHTML = "";
