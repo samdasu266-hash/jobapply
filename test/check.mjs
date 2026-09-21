@@ -594,6 +594,116 @@ ok('입력칸이 비워진다', await p.evaluate(() =>
 await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 
 /* ─────────────────────────────────────────────── */
+section('데이터 오염 방지');
+// 일괄 추가에서 기관 생성이 날짜 검증보다 먼저면, 날짜를 하나도 안 채우고
+// 눌렀을 때 일정 없는 빈 기관만 남고 다음 저장에 딸려 들어간다.
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'x', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06' }]});
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.selectOption('#bulkInst', '__new__'); await p.waitForTimeout(150);
+await p.fill('#bulkNewInst', '빈기관');
+await p.click('#bulkAdd'); await p.waitForTimeout(300);
+ok('날짜를 안 채우면 기관이 만들어지지 않는다', await p.evaluate(() =>
+  ![...document.querySelectorAll('#bulkInst option')].some(o => o.textContent === '빈기관')));
+// 메모리에만 생겼다가 다음 저장에 딸려 들어가는 경로까지 막혔는지 본다
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.click('#closeDrawer'); await p.waitForTimeout(250);
+await p.click('.pipe .step'); await p.waitForTimeout(200);
+await p.click('.rmenu button[data-r="합격"]'); await p.waitForTimeout(400);
+ok('다른 저장이 일어나도 빈 기관이 저장되지 않는다',
+   !(await store(p)).institutions.some(i => i.name === '빈기관'));
+
+// 같은 기관·내용·기간·차수면 같은 일정이다
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [] });
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+for (let k = 0; k < 2; k++) {
+  await p.click('#newEventBtn'); await p.waitForTimeout(250);
+  await p.fill('#evLabel', '면접');
+  await p.fill('#evStart', '2026-11-11');
+  await p.click('#evSave'); await p.waitForTimeout(300);
+}
+eq('같은 일정을 두 번 저장해도 하나만 남는다',
+   (await store(p)).events.filter(e => e.label === '면접').length, 1);
+// 중복을 거부당한 시트는 열린 채로 남는다 (고쳐서 다시 저장할 수 있게)
+ok('중복이면 시트가 닫히지 않는다', (await shown(p, '#evSheet')).visible);
+await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+
+// 차수가 다르면 다른 일정이다
+await p.click('#newEventBtn'); await p.waitForTimeout(250);
+await p.fill('#evLabel', '면접');
+await p.fill('#evStart', '2026-11-11');
+await p.click('#evOptRow .opt[data-opt="round"]'); await p.waitForTimeout(150);
+await p.fill('#evRound', '2차');
+await p.click('#evSave'); await p.waitForTimeout(300);
+eq('차수가 다르면 따로 등록된다',
+   (await store(p)).events.filter(e => e.label === '면접').length, 2);
+// 수정할 때 자기 자신을 중복으로 잡으면 안 된다
+await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+await p.click('#evOptRow .opt[data-opt="memo"]'); await p.waitForTimeout(150);
+await p.fill('#evMemo', '자기중복아님');
+await p.click('#evSave'); await p.waitForTimeout(300);
+ok('수정 시 자기 자신은 중복으로 보지 않는다',
+   (await store(p)).events.some(e => e.memo === '자기중복아님'));
+
+// 일괄 추가도 같은 기준으로 건너뛴다
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'd', inst: 'a', label: '서류결과', start: '2026-11-02', end: '2026-11-02' }]});
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.evaluate(() => {
+  const set = (stage, v) => {
+    const i = [...document.querySelectorAll('#bulkRows input')].find(x => x.dataset.stage === stage);
+    i.value = v;
+  };
+  set('서류결과', '2026-11-02'); set('면접', '2026-11-09');
+});
+await p.click('#bulkAdd'); await p.waitForTimeout(300);
+eq('일괄 추가는 이미 있는 일정을 건너뛴다', (await store(p)).events.length, 2);
+
+/* ─────────────────────────────────────────────── */
+section('달력은 늘 이번 달부터');
+// 데이터의 가장 오래된 일정을 시작월로 잡으면, 지난 기록이 쌓일수록 달력이
+// 과거로 끝없이 늘어난다 (3월 일정 하나에 3~10월 8개월이 펼쳐졌다).
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'old', inst: 'a', label: '서류마감', start: '2026-03-02', end: '2026-03-02' },
+  { id: 'now', inst: 'a', label: '면접',     start: '2026-10-06', end: '2026-10-06' },
+]});
+eq('과거 일정이 있어도 이번 달부터 그린다',
+   await texts(p, '.month h3'), ['2026년 9월', '2026년 10월']);
+ok('과거 일정 데이터 자체는 지우지 않는다',
+   (await store(p)).events.some(e => e.id === 'old'));
+
+/* ─────────────────────────────────────────────── */
+section('다가오는 일정에 잘린 건수 표시');
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')],
+  events: Array.from({ length: 9 }, (_, i) => ({
+    id: 'u' + i, inst: 'a', label: '면접',
+    start: '2026-10-' + String(i + 6).padStart(2, '0'),
+    end: '2026-10-' + String(i + 6).padStart(2, '0') })) });
+eq('데스크톱은 6장까지만 보인다', await p.evaluate(() => document.querySelectorAll('.up-card').length), 6);
+ok('뒤에 더 있으면 건수를 알려준다', (await p.textContent('#upHint')).includes('3건 더'),
+   await p.textContent('#upHint'));
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'u1', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06' }]});
+ok('다 보이면 건수를 붙이지 않는다', !(await p.textContent('#upHint')).includes('더'),
+   await p.textContent('#upHint'));
+
+/* ─────────────────────────────────────────────── */
+section('시트 포커스');
+// 시트가 열리자마자 텍스트 입력칸을 잡으면 모바일에서 키보드가 화면을 덮는다
+await boot(p);
+await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('.mgr-item .inst-more'); await p.waitForTimeout(300);
+ok('기관 시트를 열어도 입력칸에 포커스가 가지 않는다', await p.evaluate(() =>
+  document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'));
+ok('닫기 버튼에 포커스가 간다', await p.evaluate(() =>
+  document.activeElement.classList.contains('sheet-close')));
+await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+ok('시트를 닫으면 열었던 버튼으로 돌아온다', await p.evaluate(() =>
+  document.activeElement.classList.contains('inst-more')));
+
+/* ─────────────────────────────────────────────── */
 section('[hidden] 이 실제로 숨겨지는가');
 // display 를 주는 규칙(.field, .sheet, .rmenu)이 [hidden] 을 이겨서 "속성은
 // hidden 인데 화면엔 보이는" 버그를 세 번 냈다. 속성이 아니라 계산된 스타일로 본다.
