@@ -688,6 +688,19 @@ var SEEDS = {
   }
 };
 
+// 같은 일정인지 판정한다. 시드·직접 추가·일괄 추가가 모두 이 기준을 쓴다.
+// exceptId 는 수정 중인 일정 자신을 중복으로 잡지 않기 위한 것.
+function sameEvent(a, b){
+  return a.inst === b.inst && a.label === b.label &&
+         a.start === b.start && (a.end || a.start) === (b.end || b.start) &&
+         (a.round || "") === (b.round || "");
+}
+function findDuplicate(list, ev, exceptId){
+  return list.filter(function(x){
+    return x.id !== exceptId && sameEvent(x, ev);
+  })[0];
+}
+
 function applySeeds(s){
   if(!s.seeded) s.seeded = {};
   Object.keys(SEEDS).forEach(function(k){
@@ -700,10 +713,7 @@ function applySeeds(s){
       s.institutions.push(sd.institution);
     }
     sd.events.forEach(function(e){
-      var dup = s.events.some(function(x){
-        return x.inst === e.inst && x.label === e.label && x.start === e.start;
-      });
-      if(!dup) s.events.push(e);
+      if(!findDuplicate(s.events, e)) s.events.push(e);
     });
   });
 }
@@ -928,9 +938,11 @@ if(mqNarrow.addEventListener) mqNarrow.addEventListener("change", function(){ re
 
 function renderUpcoming(){
   var box = document.getElementById("upcoming");
-  var list = state.events.filter(function(e){
+  var all = state.events.filter(function(e){
     return isActive(e.inst) && pd(e.end) >= TODAY;
-  }).sort(function(a,b){ return pd(a.start) - pd(b.start); }).slice(0, upcomingLimit());
+  }).sort(function(a,b){ return pd(a.start) - pd(b.start); });
+  var list = all.slice(0, upcomingLimit());
+  var hiddenCount = all.length - list.length;
 
   box.innerHTML = "";
   if(!list.length){
@@ -938,7 +950,10 @@ function renderUpcoming(){
     document.getElementById("upHint").textContent = "";
     return;
   }
-  document.getElementById("upHint").textContent = "진행 중인 기관만";
+  // 조용히 잘리면 뒤에 일정이 더 있다는 걸 알 수 없다. 줄을 새로 만들지 않고
+  // 기존 안내 문구에 붙여 높이를 늘리지 않는다.
+  document.getElementById("upHint").textContent =
+    "진행 중인 기관만" + (hiddenCount ? " · 뒤로 " + hiddenCount + "건 더" : "");
 
   list.forEach(function(e){
     var it = inst(e.inst);
@@ -1272,12 +1287,14 @@ function monthRange(){
   var ds = state.events.map(function(e){ return pd(e.start); })
     .concat(state.events.map(function(e){ return pd(e.end); }));
   ds.push(TODAY);
-  var min = new Date(Math.min.apply(null, ds));
   var max = new Date(Math.max.apply(null, ds));
 
   // 달력이 페이지 높이의 절반을 넘게 차지해서, 기본은 현재월과 다음달까지만
   // 펼치고 나머지는 '더 보기'로 넘긴다. 뒤에 일정이 남아 있으면 버튼이 알린다.
-  var first = new Date(min.getFullYear(), min.getMonth(), 1);
+  // 기준점은 항상 오늘이다. 데이터의 가장 오래된 일정을 시작월로 잡으면,
+  // 지난 지원 기록이 쌓일수록 달력이 과거로 끝없이 늘어난다 (3월 일정 하나에
+  // 3~10월 8개월이 펼쳐졌다). 과거 일정은 지우지 않고 달력에만 안 편다.
+  var first = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
   var lastWithEvents = new Date(max.getFullYear(), max.getMonth(), 1);
   var cap = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1 + extraMonths, 1);
   var last = cap < lastWithEvents ? cap : lastWithEvents;
@@ -1713,13 +1730,19 @@ var openSheetId = null;
 var instSheetFor = null;   // 편집 중인 기관
 var sheetColor = null;     // 기관 시트에서 고른 색
 
+var sheetOpener = null;   // 시트를 연 버튼 (닫을 때 포커스를 돌려준다)
+
 function openSheet(id){
+  var opener = document.activeElement;
   closeSheet();
+  sheetOpener = (opener && opener !== document.body) ? opener : null;
   openSheetId = id;
   document.getElementById("sheetScrim").hidden = false;
   var s = document.getElementById(id);
   s.hidden = false;
-  var f = s.querySelector("input, select, button");
+  // 닫기 버튼에 포커스를 준다. 텍스트 입력칸을 잡으면 모바일에서 시트가
+  // 열리자마자 키보드가 화면을 덮는다 — 정보만 보려고 연 경우엔 방해다.
+  var f = s.querySelector(".sheet-close") || s.querySelector("button, input, select");
   if(f) f.focus();
 }
 
@@ -1730,6 +1753,10 @@ function closeSheet(){
   openSheetId = null;
   instSheetFor = null;
   editingId = null;
+  // 열었던 자리로 돌려준다. 안 그러면 포커스가 body 로 날아가 키보드
+  // 사용자는 목록 처음부터 다시 훑어야 한다.
+  if(sheetOpener && document.body.contains(sheetOpener)) sheetOpener.focus();
+  sheetOpener = null;
 }
 
 document.getElementById("sheetScrim").addEventListener("click", closeSheet);
@@ -1818,6 +1845,14 @@ document.getElementById("evSave").addEventListener("click", function(){
     }
   }
   if(!i){ alert("기관을 선택하세요."); return; }
+
+  // 같은 기관·내용·기간·차수면 같은 일정으로 본다. 시트가 가벼워져 두 번
+  // 저장하기 쉬워졌으므로 여기서 막는다. 수정 중인 자신은 제외한다.
+  var cand = {inst:i, label:l, start:s, end:e, round:rnd};
+  if(findDuplicate(state.events, cand, editingId)){
+    alert("이미 같은 일정이 등록되어 있습니다.");
+    return;
+  }
 
   if(editingId){
     state.events.forEach(function(x){
@@ -1947,36 +1982,44 @@ function syncBulkNewInstField(){
 document.getElementById("bulkInst").addEventListener("change", syncBulkNewInstField);
 
 document.getElementById("bulkAdd").addEventListener("click", function(){
-  var instId = document.getElementById("bulkInst").value;
-  if(instId === "__new__"){
-    var nm = document.getElementById("bulkNewInst").value.trim();
-    if(!nm){ alert("새 기관 이름을 입력하세요."); return; }
-    var hit = state.institutions.filter(function(x){ return x.name === nm; })[0];
+  var sel = document.getElementById("bulkInst").value;
+  var newName = document.getElementById("bulkNewInst").value.trim();
+  var rnd = document.getElementById("bulkRound").value.trim();
+
+  // 날짜부터 확인한다. 기관을 먼저 만들면, 날짜를 하나도 안 채운 채 눌렀을 때
+  // 일정 없는 빈 기관만 남고 그게 다음 저장에 딸려 들어간다.
+  var filled = Array.prototype.filter.call(
+    document.querySelectorAll("#bulkRows input"), function(i){ return !!i.value; });
+  if(!filled.length){ alert("날짜를 하나 이상 입력하세요."); return; }
+
+  if(sel === "__new__" && !newName){ alert("새 기관 이름을 입력하세요."); return; }
+  if(sel !== "__new__" && !sel){ alert("기관을 선택하세요."); return; }
+
+  // 여기까지 와야 기관을 만든다
+  var instId = sel;
+  if(sel === "__new__"){
+    var hit = state.institutions.filter(function(x){ return x.name === newName; })[0];
     if(hit){
       instId = hit.id;
     }else{
       instId = uid("i");
-      state.institutions.push({id:instId, name:nm, color:freeColor(), status:"active", url:"", place:""});
+      state.institutions.push({id:instId, name:newName, color:freeColor(), status:"active", url:"", place:""});
     }
   }
-  if(!instId){ alert("기관을 선택하세요."); return; }
-  var rnd = document.getElementById("bulkRound").value.trim();
-  var inputs = document.querySelectorAll("#bulkRows input");
-  var added = 0;
-  Array.prototype.forEach.call(inputs, function(inp){
-    if(!inp.value) return;
-    state.events.push({
-      id:uid("e"), inst:instId, label:inp.dataset.stage,
-      start:inp.value, end:inp.value, memo:"", round:rnd
-    });
+
+  var added = 0, skipped = 0;
+  filled.forEach(function(inp){
+    var ev = {id:uid("e"), inst:instId, label:inp.dataset.stage,
+              start:inp.value, end:inp.value, memo:"", round:rnd};
+    if(findDuplicate(state.events, ev)){ skipped++; }
+    else { state.events.push(ev); added++; }
     inp.value = "";
-    added++;
   });
-  if(!added){ alert("날짜를 하나 이상 입력하세요."); return; }
+
   document.getElementById("bulkRound").value = "";
   closeSheet();
   persist(); renderAll();
-  note(added + "개 단계를 추가했습니다");
+  note(added + "개 단계를 추가했습니다" + (skipped ? " (같은 일정 " + skipped + "개는 건너뜀)" : ""));
 });
 
 document.getElementById("evInst").addEventListener("change", syncNewInstField);
