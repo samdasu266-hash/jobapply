@@ -64,7 +64,9 @@ section{margin-bottom:26px;}
 .hint{font-size:12.5px;color:var(--ink-3);}
 
 /* ---------- upcoming ---------- */
-.upcoming{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;}
+/* 열 수를 고정한다. auto-fill 이면 폭에 따라 열이 5개가 되어 6장이
+   5+1 로 쪼개졌다. 고정하면 6장=3열×2줄, 4장=2열×2줄로 늘 꽉 찬다. */
+.upcoming{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .up-card{
   background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
   padding:13px 14px; border-left-width:4px; position:relative;
@@ -211,6 +213,8 @@ section{margin-bottom:26px;}
 
 /* ---------- mobile ---------- */
 @media (max-width:560px){
+  .upcoming{grid-template-columns:repeat(2,1fr);}
+
   body{padding:20px 10px 60px;}
   h1{font-size:22px;}
   .month{padding:10px 8px 8px;}
@@ -1061,7 +1065,21 @@ var pipeOpen = {};   // instId -> 지난 단계를 펼쳐 둘지
 function renderPipes(){
   var box = document.getElementById("pipes");
   box.innerHTML = "";
-  state.institutions.forEach(function(it){
+
+  // 달력과 같은 필터를 탄다. 전에는 진행 현황만 전 기관을 그려서, 탈락
+  // 기관이 달력에서는 빠졌는데 여기에는 취소선 친 채로 남아 있었다.
+  var show = state.institutions.filter(function(it){ return visible(it.id); });
+  if(!show.length){
+    var em = document.createElement("div");
+    em.className = "hint";
+    em.textContent = state.institutions.length
+      ? "표시할 기관이 없습니다. 아래 필터에서 기관을 켜 보세요."
+      : "등록된 기관이 없습니다.";
+    box.appendChild(em);
+    return;
+  }
+
+  show.forEach(function(it){
     var evs = state.events.filter(function(e){ return e.inst === it.id; })
       .sort(function(a,b){ return pd(a.start) - pd(b.start); });
 
@@ -1174,6 +1192,10 @@ function renderPipes(){
 }
 
 /* ---------- render: filters ---------- */
+// 필터(칩·체크박스)는 진행 현황·달력 양쪽을 함께 바꾼다. 전에는 달력만
+// 다시 그려서, 칩을 켜도 진행 현황이 그대로였다.
+function renderFiltered(){ renderFilters(); renderPipes(); renderCalendar(); }
+
 function renderFilters(){
   var box = document.getElementById("filters");
   box.innerHTML = "";
@@ -1190,7 +1212,7 @@ function renderFilters(){
     }else{
       state.institutions.forEach(function(it){ hidden[it.id] = true; });
     }
-    saveUI(); renderFilters(); renderCalendar();
+    saveUI(); renderFiltered();
   });
   box.appendChild(all);
 
@@ -1210,7 +1232,7 @@ function renderFilters(){
     c.querySelector(".chip-text").textContent = it.name;
     c.addEventListener("click", function(){
       if(hidden[it.id]) delete hidden[it.id]; else hidden[it.id] = true;
-      saveUI(); renderFilters(); renderCalendar();
+      saveUI(); renderFiltered();
     });
     box.appendChild(c);
   });
@@ -1238,7 +1260,7 @@ function renderFilters(){
       if(it.status === "active") return;
       if(hideInactive) hidden[it.id] = true; else delete hidden[it.id];
     });
-    saveUI(); renderFilters(); renderCalendar();
+    saveUI(); renderFiltered();
   });
   box.appendChild(t);
 }
