@@ -143,6 +143,7 @@ section{margin-bottom:26px;}
 .chip.off{opacity:.4;}
 .chip.gone .chip-text{text-decoration:line-through;}
 .chip.all{font-weight:700;border-style:dashed;color:var(--ink);}
+.chip.more{color:var(--ink-3);border-style:dashed;}
 .toggle{
   margin-left:auto;display:inline-flex;align-items:center;gap:7px;
   font-size:12.5px;color:var(--ink-2);cursor:pointer;user-select:none;
@@ -617,6 +618,7 @@ var DEFAULT_STATE = {
 var state = null;
 var hidden = {};          // instId -> true (filter off)
 var hideInactive = true;
+var chipsOpen = false;    // 기관 필터 칩을 다 펼쳐 뒀는지
 var pickedColor = PALETTE[0];
 var dbHandle = null;
 var editingId = null;
@@ -1075,7 +1077,14 @@ function renderFilters(){
   });
   box.appendChild(all);
 
-  state.institutions.forEach(function(it){
+  // 기관이 늘수록 칩이 여러 줄을 차지한다. 기본은 몇 개만 보여주고
+  // 나머지는 '+N'으로 접어, 필터 한번 쓰려고 화면을 몇 줄씩 넘기지
+  // 않게 한다.
+  var VISIBLE = 4;
+  var show = chipsOpen ? state.institutions : state.institutions.slice(0, VISIBLE);
+  var restCount = state.institutions.length - show.length;
+
+  show.forEach(function(it){
     var c = document.createElement("button");
     c.type = "button";
     c.className = "chip" + (hidden[it.id] ? " off" : "") + (it.status !== "active" ? " gone" : "");
@@ -1088,6 +1097,18 @@ function renderFilters(){
     });
     box.appendChild(c);
   });
+
+  if(state.institutions.length > VISIBLE){
+    var more = document.createElement("button");
+    more.type = "button";
+    more.className = "chip more";
+    more.textContent = chipsOpen ? "접기" : "+" + restCount;
+    more.addEventListener("click", function(){
+      chipsOpen = !chipsOpen;
+      renderFilters();
+    });
+    box.appendChild(more);
+  }
 
   var t = document.createElement("label");
   t.className = "toggle";

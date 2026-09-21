@@ -294,6 +294,21 @@ await p.waitForTimeout(200);
 ok('숨기기가 켜져 있어도 칩으로 되살릴 수 있다', await barInsts() === 1);
 ok('체크박스는 켜진 채 유지', await p.evaluate(() => document.querySelector('.toggle input').checked));
 
+// 기관이 늘수록 필터 칩이 여러 줄을 차지해, 기본은 몇 개만 보여주고
+// 나머지는 '+N'으로 접는다.
+const CHIP_COLORS = ['#2E6F5E', '#96491B', '#2F5F92', '#7A4BA0', '#9C4370', '#4A5560'];
+await boot(p, {
+  institutions: ['가', '나', '다', '라', '마', '바'].map((n, i) => INST(String(i), n, CHIP_COLORS[i])),
+  events: [],
+});
+eq('기본은 칩 4개만 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 4);
+eq('나머지는 +N 으로 접힌다', await p.textContent('.chip.more'), '+2');
+await p.click('.chip.more'); await p.waitForTimeout(150);
+eq('펼치면 전 기관이 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 6);
+eq('펼친 뒤엔 접기로 바뀐다', await p.textContent('.chip.more'), '접기');
+await p.click('.chip.more'); await p.waitForTimeout(150);
+eq('접으면 다시 4개만 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 4);
+
 /* ─────────────────────────────────────────────── */
 section('달력 범위');
 // 달력이 페이지 높이의 절반을 넘겨서, 기본은 현재월+다음달까지만 펼친다
