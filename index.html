@@ -77,8 +77,7 @@ section{margin-bottom:26px;}
 .up-empty{color:var(--ink-3);font-size:13.5px;padding:14px 0;}
 
 /* ---------- pipeline ---------- */
-.pipes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-items:start;}
-@media (min-width:700px){.pipes{grid-template-columns:repeat(3,1fr);}}
+.pipes{display:flex;flex-direction:column;gap:8px;}
 .pipe{
   background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:12px 14px;
@@ -126,6 +125,7 @@ section{margin-bottom:26px;}
   border-radius:7px;cursor:pointer;white-space:nowrap;
 }
 .rmenu button:hover{background:var(--line-2);}
+.rmenu button small{display:block;font-weight:400;font-size:11px;color:var(--ink-3);white-space:nowrap;margin-top:1px;}
 .rmenu button.pass{color:var(--ok);}
 .rmenu button.fail{color:var(--sun);}
 .rmenu button[aria-pressed="true"]{background:var(--line-2);}
@@ -143,6 +143,7 @@ section{margin-bottom:26px;}
 .chip.off{opacity:.4;}
 .chip.gone .chip-text{text-decoration:line-through;}
 .chip.all{font-weight:700;border-style:dashed;color:var(--ink);}
+.chip.more{color:var(--ink-3);border-style:dashed;}
 .toggle{
   margin-left:auto;display:inline-flex;align-items:center;gap:7px;
   font-size:12.5px;color:var(--ink-2);cursor:pointer;user-select:none;
@@ -281,6 +282,12 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .swatch-pick button:disabled{opacity:.25;cursor:not-allowed;}
 .pipe-link{font-size:11.5px;color:var(--ink-3);text-underline-offset:2px;}
 .up-place{font-size:12px;margin-top:4px;word-break:keep-all;}
+
+/* keep-all 은 한글을 단어 단위로 끊어 읽기 좋게 하지만, 띄어쓰기가 없는 긴
+   이름·메모는 끊을 자리가 없어 아예 줄바꿈되지 않고 카드를 가로로 터뜨린다.
+   (390px 화면에서 문서 폭이 700px 까지 늘어났다.) 넘칠 때만 강제로 끊는다. */
+.up-title,.up-inst,.up-memo,.up-place,.rmenu .rhead,.cf-body,
+.ev-item .t,.pipe-name,.round-head{overflow-wrap:anywhere;}
 .up-place a{color:var(--ink-2);text-underline-offset:2px;}
 .up-card{cursor:pointer;}
 .up-card:hover{border-color:var(--ink-3);}
@@ -340,8 +347,8 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <button type="button" class="fail" data-r="불합격">불합격</button>
   <button type="button" data-r="">미정으로</button>
   <div class="rsep"></div>
-  <button type="button" data-action="edit-event">일정 수정</button>
-  <button type="button" data-action="edit-inst">기관 이름 수정</button>
+  <button type="button" data-action="edit-event">이 일정 고치기<small>날짜 · 장소 · 메모 · 차수</small></button>
+  <button type="button" data-action="edit-inst">기관 정보 고치기<small>이름 · 주소 · 채용 링크</small></button>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -505,6 +512,7 @@ var SEEDS = {
     },
     events: [
       {id:"nhis1", inst:"nhis", label:"서류마감", start:"2026-09-29", end:"2026-09-29",
+       place:"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do",
        memo:"9/29 14:00 마감 · 채용사이트 접수 · 요양직 6급가 / 인천경기로 지원"},
       {id:"nhis2", inst:"nhis", label:"서류결과", start:"2026-10-15", end:"2026-10-15",
        memo:"채용사이트에서 개별 확인"},
@@ -536,6 +544,7 @@ var SEEDS = {
     },
     events: [
       {id:"hira1", inst:"hira", label:"서류마감", start:"2026-09-02", end:"2026-09-02",
+       place:"https://www.hira.or.kr/re/recruit/recruitAdList.do?pgmid=HIRAA040078000000",
        memo:"9/2 18시 마감 · 채용 홈페이지 접수"},
       {id:"hira2", inst:"hira", label:"서류결과", start:"2026-09-30", end:"2026-09-30",
        memo:"17시 이후 · 채용 홈페이지 확인"},
@@ -609,6 +618,7 @@ var DEFAULT_STATE = {
 var state = null;
 var hidden = {};          // instId -> true (filter off)
 var hideInactive = true;
+var chipsOpen = false;    // 기관 필터 칩을 다 펼쳐 뒀는지
 var pickedColor = PALETTE[0];
 var dbHandle = null;
 var editingId = null;
@@ -739,8 +749,20 @@ function uid(p){ return p + Math.random().toString(36).slice(2,8); }
 function safeUrl(u){ return u && /^https?:\/\//i.test(u) ? u : ""; }
 function kakaoMapUrl(q){ return "https://map.kakao.com/link/search/" + encodeURIComponent(q); }
 
-// 일정에 장소가 없으면 기관 기본 장소를 쓴다
-function eventPlace(e){ return e.place || inst(e.inst).place || ""; }
+// 방문이 필요한 일정(면접·필기시험)에서만 기관 기본 장소를 물려받는다.
+// 서류마감·서류결과·인적성검사처럼 방문이 필요 없는 일정은 사용자가 그
+// 일정에 직접 넣은 값(주로 온라인 접수·검사 링크)만 쓴다 — 기관의 물리적
+// 주소를 자동으로 보여주면 "여기로 가야 하나" 오해를 준다.
+function eventPlace(e){
+  if(needsAttendance(e.label)) return e.place || inst(e.inst).place || "";
+  return e.place || "";
+}
+
+// 링크를 짧게 보여줄 표시용 텍스트 (호스트명만)
+function shortLinkText(u){
+  try{ return new URL(u).hostname.replace(/^www\./,""); }
+  catch(e){ return u; }
+}
 
 function isWorkday(d){
   var wd = d.getDay();
@@ -823,13 +845,28 @@ function renderUpcoming(){
     el.querySelector(".up-memo").textContent = e.memo || "";
     var place = eventPlace(e);
     if(place){
-      var mp = document.createElement("a");
-      mp.href = kakaoMapUrl(place);
-      mp.target = "_blank";
-      mp.rel = "noopener noreferrer";
-      mp.textContent = place;
-      mp.title = "카카오맵에서 보기";
-      el.querySelector(".up-place").appendChild(mp);
+      var placeBox = el.querySelector(".up-place");
+      if(needsAttendance(e.label)){
+        // 방문이 필요한 일정 — 주소를 카카오맵 검색으로 연결한다
+        var mp = document.createElement("a");
+        mp.href = kakaoMapUrl(place);
+        mp.target = "_blank";
+        mp.rel = "noopener noreferrer";
+        mp.textContent = place;
+        mp.title = "카카오맵에서 보기";
+        placeBox.appendChild(mp);
+      } else if(safeUrl(place)){
+        // 방문이 필요 없는 일정 — 사용자가 넣은 온라인 링크를 짧게 보여준다
+        var lk = document.createElement("a");
+        lk.href = place;
+        lk.target = "_blank";
+        lk.rel = "noopener noreferrer";
+        lk.textContent = shortLinkText(place) + " ↗";
+        lk.title = place;
+        placeBox.appendChild(lk);
+      } else {
+        placeBox.textContent = place;
+      }
     }
     if(e.result){
       var rb = document.createElement("span");
@@ -1040,7 +1077,14 @@ function renderFilters(){
   });
   box.appendChild(all);
 
-  state.institutions.forEach(function(it){
+  // 기관이 늘수록 칩이 여러 줄을 차지한다. 기본은 몇 개만 보여주고
+  // 나머지는 '+N'으로 접어, 필터 한번 쓰려고 화면을 몇 줄씩 넘기지
+  // 않게 한다.
+  var VISIBLE = 4;
+  var show = chipsOpen ? state.institutions : state.institutions.slice(0, VISIBLE);
+  var restCount = state.institutions.length - show.length;
+
+  show.forEach(function(it){
     var c = document.createElement("button");
     c.type = "button";
     c.className = "chip" + (hidden[it.id] ? " off" : "") + (it.status !== "active" ? " gone" : "");
@@ -1053,6 +1097,18 @@ function renderFilters(){
     });
     box.appendChild(c);
   });
+
+  if(state.institutions.length > VISIBLE){
+    var more = document.createElement("button");
+    more.type = "button";
+    more.className = "chip more";
+    more.textContent = chipsOpen ? "접기" : "+" + restCount;
+    more.addEventListener("click", function(){
+      chipsOpen = !chipsOpen;
+      renderFilters();
+    });
+    box.appendChild(more);
+  }
 
   var t = document.createElement("label");
   t.className = "toggle";
@@ -1385,10 +1441,16 @@ function syncNewInstField(){
   var sel = document.getElementById("evInst");
   document.getElementById("evNewInstField").hidden = sel.value !== "__new__";
 
-  // 기관에 기본 장소가 있으면 비워둬도 된다는 걸 자리표시자로 알린다
+  // 방문이 필요한 라벨(면접·필기시험)일 때만 기관 기본 장소를 물려받는다고
+  // 안내한다. 서류마감·인적성검사처럼 방문이 필요 없는 라벨은 온라인
+  // 링크를 넣는 자리라는 걸 알려준다. 라벨을 아직 안 정했으면(빈칸)
+  // 기존처럼 방문형으로 가정해 안내한다.
+  var label = document.getElementById("evLabel").value.trim();
+  var visit = !label || needsAttendance(label);
   var it = state.institutions.filter(function(x){ return x.id === sel.value; })[0];
   document.getElementById("evPlace").placeholder =
-    (it && it.place) ? "비워두면 " + it.place : "예: 서울 서초구 헌릉로 13";
+    visit ? ((it && it.place) ? "비워두면 " + it.place : "예: 서울 서초구 헌릉로 13")
+          : "예: 온라인 접수·검사 링크 (https://...)";
 }
 
 function renderBulkRows(){
@@ -1600,6 +1662,7 @@ document.getElementById("addInst").addEventListener("click", function(){
 });
 
 document.getElementById("evInst").addEventListener("change", syncNewInstField);
+document.getElementById("evLabel").addEventListener("input", syncNewInstField);
 
 // 입력칸이 비어 있으면 기관 이름으로 카카오맵 검색을 연다
 function openMapSearch(inputId, fallback){
