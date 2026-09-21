@@ -116,8 +116,6 @@ section{margin-bottom:26px;}
   box-shadow:0 10px 28px rgba(0,0,0,.16);
   padding:5px;display:flex;flex-direction:column;gap:2px;min-width:132px;
 }
-/* display:flex 가 [hidden] 의 display:none 을 덮어쓰므로 따로 지정한다 */
-.rmenu[hidden]{display:none;}
 .rmenu .rhead{font-size:11.5px;color:var(--ink-3);padding:5px 11px 4px;word-break:keep-all;}
 .rmenu button{
   border:0;background:transparent;color:var(--ink);font-family:inherit;
@@ -240,6 +238,12 @@ section{margin-bottom:26px;}
 .drawer h4{font-size:12.5px;color:var(--ink-3);margin:24px 0 9px;font-weight:700;}
 .close{position:absolute;top:18px;right:18px;}
 
+/* display 를 지정하는 규칙은 [hidden] 의 display:none 을 이긴다. .rmenu,
+   .sheet, .field 에서 연달아 당했고, 그때마다 "속성은 hidden 인데 화면에는
+   보이는" 버그가 났다 (기관을 골라도 '새 기관 이름' 칸이 계속 떠 있던 것도
+   이것이다). 개별로 막지 말고 전역으로 못박는다. */
+[hidden]{display:none !important;}
+
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
 .field label{font-size:12px;color:var(--ink-2);font-weight:600;}
 input[type=text],input[type=date],select{
@@ -257,23 +261,72 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .bulk-row .bl{flex:0 0 76px;font-size:12.5px;color:var(--ink-2);font-weight:600;}
 .bulk-row input{flex:1;}
 
+/* 관리 드로어 위쪽의 두 가지 추가 동작 */
+.mgr-actions{display:flex;gap:8px;margin:14px 0 18px;}
+.mgr-actions .btn{flex:1;}
+
 .mgr-item{
-  display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line-2);
-  flex-wrap:wrap;
+  display:flex;align-items:center;gap:9px;padding:9px 0 7px;
 }
-.mgr-item .nm{flex:1;font-weight:600;font-size:13.5px;word-break:keep-all;}
-.mgr-item select{width:auto;padding:5px 8px;font-size:12.5px;}
-.mgr-field{flex:1 0 100%;font-size:12px !important;padding:6px 8px !important;}
+.mgr-item .nm{flex:1;font-weight:700;font-size:13.5px;word-break:keep-all;overflow-wrap:anywhere;}
+.mgr-item .inst-more{flex:none;padding:4px 10px;line-height:1;font-size:15px;}
+
+/* 일정 한 줄 = 버튼 하나. 줄마다 수정·삭제 버튼을 붙이지 않는다. */
 .ev-item{
-  display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:13px;
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:8px 2px;border:0;border-bottom:1px solid var(--line-2);
+  background:transparent;color:var(--ink);font-family:inherit;font-size:13px;cursor:pointer;
 }
+.ev-item:hover{background:var(--line-2);}
+.ev-item:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
 .ev-item .d{color:var(--ink-3);font-size:12px;white-space:nowrap;}
 .ev-item .t{flex:1;word-break:keep-all;}
 .ev-item .inm{font-weight:700;margin-right:4px;}
-.inst-events{margin:2px 0 10px 33px;}
-.inst-events .ev-item{font-size:12.5px;padding:6px 0;}
+.ev-item .chev{color:var(--ink-3);font-size:14px;flex:none;}
+.inst-events{margin:0 0 14px 19px;}
+.inst-events .ev-item{font-size:12.5px;padding:7px 2px;}
 .inst-events .ev-item .inm{display:none;} /* 바로 위 기관 이름 아래라 중복 표기다 */
-.inst-events .ev-empty{color:var(--ink-3);font-size:12px;padding:4px 0 8px;}
+.inst-events .ev-empty{color:var(--ink-3);font-size:12px;padding:2px 0 6px;}
+
+/* ---------- sheet (일정·기관·일괄 추가) ---------- */
+.sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55;}
+.sheet{
+  position:fixed;z-index:60;background:var(--card);
+  display:flex;flex-direction:column;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(440px,calc(100% - 32px));max-height:min(82vh,720px);
+  border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:0 18px 48px rgba(0,0,0,.22);
+}
+@media (max-width:560px){
+  /* 좁은 화면에서는 아래에서 올라오는 시트가 엄지에 가깝다 */
+  .sheet{
+    left:0;top:auto;bottom:0;transform:none;
+    width:100%;max-height:88vh;border-radius:16px 16px 0 0;border-bottom:0;
+  }
+}
+.sheet-head{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:15px 16px 11px;border-bottom:1px solid var(--line-2);
+}
+.sheet-head > div{flex:1;min-width:0;}
+.sheet-title{font-size:15.5px;font-weight:700;letter-spacing:-0.01em;}
+.sheet-sub{font-size:12px;color:var(--ink-3);margin-top:2px;overflow-wrap:anywhere;}
+.sheet-body{padding:14px 16px 4px;overflow-y:auto;}
+.sheet-foot{
+  display:flex;gap:8px;justify-content:flex-end;
+  padding:11px 16px 14px;border-top:1px solid var(--line-2);
+}
+.sheet-foot .danger{margin-right:auto;}
+
+/* 비어 있는 선택 항목은 버튼으로 접어 둔다 */
+.opt-row{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 14px;}
+.opt-row:empty{display:none;}
+.btn.opt{border-style:dashed;color:var(--ink-3);font-weight:600;}
+
+/* 기관 상태 선택 */
+.seg{display:flex;gap:7px;flex-wrap:wrap;}
+.seg .btn[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:700;}
 .swatch-pick{display:flex;gap:6px;flex-wrap:wrap;}
 .swatch-pick button{
   width:26px;height:26px;border-radius:7px;border:2px solid transparent;cursor:pointer;
@@ -355,92 +408,14 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="기관 및 일정 관리">
   <button class="btn sm close" id="closeDrawer">닫기</button>
   <h2>관리</h2>
-  <div class="hint">여기서 바꾸면 자동 저장됩니다.</div>
+  <div class="hint">일정을 누르면 그 일정을, 기관 오른쪽 버튼을 누르면 기관 정보를 고칩니다.</div>
 
-  <h4>기관</h4>
+  <div class="mgr-actions">
+    <button class="btn" id="newEventBtn">+ 일정 추가</button>
+    <button class="btn" id="newBulkBtn">전형 단계 일괄 추가</button>
+  </div>
+
   <div id="instList"></div>
-  <div class="field" style="margin-top:12px;">
-    <label for="newInstName">새 기관 이름</label>
-    <input type="text" id="newInstName" placeholder="예: 국립암센터">
-  </div>
-  <div class="field">
-    <label for="newInstPlace">기본 장소 (선택)</label>
-    <div class="with-btn">
-      <input type="text" id="newInstPlace" placeholder="예: 서울 서초구 헌릉로 13">
-      <button class="btn sm" type="button" id="newInstPlaceFind">지도</button>
-    </div>
-  </div>
-  <div class="field">
-    <label for="newInstUrl">채용 페이지 링크 (선택)</label>
-    <input type="text" id="newInstUrl" placeholder="https://...">
-  </div>
-  <div class="field">
-    <label>색상</label>
-    <div class="swatch-pick" id="swatchPick"></div>
-    <div class="hint" id="swatchHint"></div>
-  </div>
-  <button class="btn" id="addInst">기관 추가</button>
-
-  <h4>일정 추가</h4>
-  <div class="field">
-    <label for="evInst">기관</label>
-    <select id="evInst"></select>
-  </div>
-  <div class="field" id="evNewInstField" hidden>
-    <label for="evNewInst">새 기관 이름</label>
-    <input type="text" id="evNewInst" placeholder="예: 국립암센터">
-  </div>
-  <div class="field">
-    <label for="evLabel">내용</label>
-    <input type="text" id="evLabel" list="labelPresets" placeholder="예: 면접">
-    <datalist id="labelPresets">
-      <option value="서류마감"></option>
-      <option value="서류결과"></option>
-      <option value="인적성검사"></option>
-      <option value="필기시험"></option>
-      <option value="필기결과"></option>
-      <option value="면접"></option>
-      <option value="면접결과"></option>
-      <option value="최종발표"></option>
-      <option value="입사일"></option>
-    </datalist>
-  </div>
-  <div class="field">
-    <label for="evRound">차수 (선택, 같은 기관을 여러 번 지원할 때만)</label>
-    <input type="text" id="evRound" placeholder="예: 2026-2차">
-  </div>
-  <div class="row2">
-    <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
-    <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
-  </div>
-  <div class="field">
-    <label for="evPlace">장소 (선택)</label>
-    <div class="with-btn">
-      <input type="text" id="evPlace" placeholder="예: 서울 서초구 헌릉로 13">
-      <button class="btn sm" type="button" id="evPlaceFind">지도</button>
-    </div>
-  </div>
-  <div class="field">
-    <label for="evMemo">메모 (선택)</label>
-    <input type="text" id="evMemo" placeholder="예: 3층 대회의실, 정장 착용">
-  </div>
-  <div style="display:flex;gap:8px;">
-    <button class="btn" id="addEvent">일정 추가</button>
-    <button class="btn" id="cancelEdit" hidden>취소</button>
-  </div>
-
-  <h4>전형 단계 일괄 추가</h4>
-  <div class="hint">아는 날짜만 채우면 그 단계만 추가됩니다.</div>
-  <div class="field" style="margin-top:10px;">
-    <label for="bulkInst">기관</label>
-    <select id="bulkInst"></select>
-  </div>
-  <div class="field">
-    <label for="bulkRound">차수 (선택, 같은 기관을 여러 번 지원할 때만)</label>
-    <input type="text" id="bulkRound" placeholder="예: 2026-2차">
-  </div>
-  <div id="bulkRows"></div>
-  <button class="btn" id="addBulk" style="margin-top:10px;">채운 날짜만 추가</button>
 
   <h4 id="evListHead">소속 기관이 없는 일정</h4>
   <div id="evList"></div>
@@ -454,6 +429,149 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 
   <div class="save-note" id="saveNote">저장 준비 중…</div>
 </aside>
+
+<div class="sheet-scrim" id="sheetScrim" hidden></div>
+
+<!-- 일정 하나만 고치는 시트. 목록에서 줄을 누르거나 '+ 일정 추가'로 연다. -->
+<div class="sheet" id="evSheet" role="dialog" aria-modal="true" aria-labelledby="evSheetTitle" hidden>
+  <div class="sheet-head">
+    <div>
+      <div class="sheet-title" id="evSheetTitle">일정</div>
+      <div class="sheet-sub" id="evSheetSub"></div>
+    </div>
+    <button class="btn sm sheet-close" type="button">닫기</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label for="evInst">기관</label>
+      <select id="evInst"></select>
+    </div>
+    <div class="field" id="evNewInstField" hidden>
+      <label for="evNewInst">새 기관 이름</label>
+      <input type="text" id="evNewInst" placeholder="예: 국립암센터">
+    </div>
+    <div class="field">
+      <label for="evLabel">내용</label>
+      <input type="text" id="evLabel" list="labelPresets" placeholder="예: 면접">
+      <datalist id="labelPresets">
+        <option value="서류마감"></option>
+        <option value="서류결과"></option>
+        <option value="인적성검사"></option>
+        <option value="필기시험"></option>
+        <option value="필기결과"></option>
+        <option value="면접"></option>
+        <option value="면접결과"></option>
+        <option value="최종발표"></option>
+        <option value="입사일"></option>
+      </datalist>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="evStart">시작일</label><input type="date" id="evStart"></div>
+      <div class="field"><label for="evEnd">종료일 (하루면 비워두기)</label><input type="date" id="evEnd"></div>
+    </div>
+
+    <!-- 비어 있는 선택 항목은 버튼으로 접어 둔다. 값이 있으면 펼친 채로 연다. -->
+    <div class="opt-row" id="evOptRow">
+      <button class="btn sm opt" type="button" data-opt="place">+ 장소 또는 링크</button>
+      <button class="btn sm opt" type="button" data-opt="memo">+ 메모</button>
+      <button class="btn sm opt" type="button" data-opt="round">+ 차수</button>
+    </div>
+
+    <div class="field opt-field" data-optfield="place" hidden>
+      <label for="evPlace">장소 또는 링크</label>
+      <div class="with-btn">
+        <input type="text" id="evPlace">
+        <button class="btn sm" type="button" id="evPlaceFind">지도</button>
+      </div>
+    </div>
+    <div class="field opt-field" data-optfield="memo" hidden>
+      <label for="evMemo">메모</label>
+      <input type="text" id="evMemo" placeholder="예: 3층 대회의실, 정장 착용">
+    </div>
+    <div class="field opt-field" data-optfield="round" hidden>
+      <label for="evRound">차수</label>
+      <input type="text" id="evRound" placeholder="예: 2026-2차">
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn danger" type="button" id="evDelete">삭제</button>
+    <button class="btn primary" type="button" id="evSave">저장</button>
+  </div>
+</div>
+
+<!-- 기관 정보 시트. 목록의 ⋯ 로 연다. -->
+<div class="sheet" id="instSheet" role="dialog" aria-modal="true" aria-labelledby="instSheetTitle" hidden>
+  <div class="sheet-head">
+    <div>
+      <div class="sheet-title" id="instSheetTitle">기관 정보</div>
+      <div class="sheet-sub" id="instSheetSub"></div>
+    </div>
+    <button class="btn sm sheet-close" type="button">닫기</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label for="instName">기관명</label>
+      <input type="text" id="instName" placeholder="예: 국립암센터">
+    </div>
+    <div class="field">
+      <label>상태</label>
+      <div class="seg" id="instStatus">
+        <button class="btn sm" type="button" data-status="active">진행중</button>
+        <button class="btn sm" type="button" data-status="rejected">탈락</button>
+        <button class="btn sm" type="button" data-status="withdrawn">포기</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="instPlace">기본 장소 (선택)</label>
+      <div class="with-btn">
+        <input type="text" id="instPlace" placeholder="예: 서울 서초구 헌릉로 13">
+        <button class="btn sm" type="button" id="instPlaceFind">지도</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="instUrl">채용 페이지 링크 (선택)</label>
+      <input type="text" id="instUrl" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label>색상</label>
+      <div class="swatch-pick" id="instSwatch"></div>
+      <div class="hint" id="instSwatchHint"></div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn danger" type="button" id="instDelete">삭제</button>
+    <button class="btn primary" type="button" id="instSave">저장</button>
+  </div>
+</div>
+
+<!-- 전형 단계 일괄 추가 시트 -->
+<div class="sheet" id="bulkSheet" role="dialog" aria-modal="true" aria-labelledby="bulkSheetTitle" hidden>
+  <div class="sheet-head">
+    <div>
+      <div class="sheet-title" id="bulkSheetTitle">전형 단계 일괄 추가</div>
+      <div class="sheet-sub">아는 날짜만 채우면 그 단계만 추가됩니다.</div>
+    </div>
+    <button class="btn sm sheet-close" type="button">닫기</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label for="bulkInst">기관</label>
+      <select id="bulkInst"></select>
+    </div>
+    <div class="field" id="bulkNewInstField" hidden>
+      <label for="bulkNewInst">새 기관 이름</label>
+      <input type="text" id="bulkNewInst" placeholder="예: 국립암센터">
+    </div>
+    <div class="field">
+      <label for="bulkRound">차수 (선택, 같은 기관을 여러 번 지원할 때만)</label>
+      <input type="text" id="bulkRound" placeholder="예: 2026-2차">
+    </div>
+    <div id="bulkRows"></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn primary" type="button" id="bulkAdd">채운 날짜만 추가</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -619,7 +737,6 @@ var state = null;
 var hidden = {};          // instId -> true (filter off)
 var hideInactive = true;
 var chipsOpen = false;    // 기관 필터 칩을 다 펼쳐 뒀는지
-var pickedColor = PALETTE[0];
 var dbHandle = null;
 var editingId = null;
 
@@ -1304,15 +1421,18 @@ function buildWeek(wStart, wEnd, month, evs){
 /* ---------- drawer ---------- */
 // 기관 하나의 일정 한 줄(ev-item)을 만든다. 기관 목록 아래 중첩된 목록과
 // "소속 기관이 없는 일정" 목록 양쪽에서 함께 쓴다.
+// 일정 한 줄. 줄 전체가 버튼이고, 누르면 그 일정만 담긴 시트가 열린다.
+// 줄마다 수정·삭제 버튼을 붙이면 목록이 버튼밭이 되고 오터치로 지워진다.
 function makeEvRow(e){
   var it = inst(e.inst);
-  var row = document.createElement("div");
+  var row = document.createElement("button");
+  row.type = "button";
   row.className = "ev-item";
+  row.dataset.id = e.id;
   row.innerHTML =
     '<span class="swatch" style="background:'+it.color+'"></span>'+
     '<span class="d"></span><span class="t"><span class="inm"></span></span>'+
-    '<button class="btn sm edit">수정</button>'+
-    '<button class="btn sm danger">삭제</button>';
+    '<span class="chev" aria-hidden="true">›</span>';
   row.querySelector(".d").textContent = e.start === e.end
     ? kdate(pd(e.start))
     : kdate(pd(e.start))+"–"+kdate(pd(e.end));
@@ -1321,18 +1441,12 @@ function makeEvRow(e){
     (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
     + (e.round ? "[" + e.round + "] " : "") + e.label
   ));
-  row.querySelector(".edit").addEventListener("click", function(){ startEdit(e); });
-  row.querySelector(".danger").addEventListener("click", function(){
-    state.events = state.events.filter(function(x){ return x.id !== e.id; });
-    if(editingId === e.id) endEdit();
-    persist(); renderAll();
-  });
+  row.addEventListener("click", function(){ openEventSheet(e); });
   return row;
 }
 
 function renderDrawer(){
-  // institutions — 이름 아래에 그 기관의 일정을 바로 펼쳐 두어, 멀리 있는
-  // "등록된 일정" 목록까지 스크롤해 색점으로 찾지 않아도 되게 한다.
+  // 목록만 둔다. 고치는 일은 전부 시트에서 한다.
   var il = document.getElementById("instList");
   il.innerHTML = "";
   state.institutions.forEach(function(it){
@@ -1341,52 +1455,17 @@ function renderDrawer(){
     row.dataset.id = it.id;
     row.innerHTML =
       '<span class="swatch" style="background:'+it.color+'"></span>'+
-      '<input type="text" class="nm" placeholder="기관 이름">'+
-      '<select>'+
-        '<option value="active">진행중</option>'+
-        '<option value="rejected">탈락</option>'+
-        '<option value="withdrawn">포기</option>'+
-      '</select>'+
-      '<button class="btn sm danger">삭제</button>'+
-      '<input type="text" class="mgr-field mgr-place" placeholder="기본 장소 (선택)">'+
-      '<input type="text" class="mgr-field mgr-url" placeholder="채용 페이지 링크 (선택)">';
-    var nmIn = row.querySelector(".nm");
-    nmIn.value = it.name;
-    nmIn.addEventListener("change", function(){
-      var v = nmIn.value.trim();
-      if(!v){ nmIn.value = it.name; return; }
-      it.name = v; persist(); renderAll();
-    });
-    var sel = row.querySelector("select");
-    sel.value = it.status;
-    sel.addEventListener("change", function(){
-      it.status = sel.value;
-      // 방금 탈락·포기로 바뀌었고 숨기기가 켜져 있으면 바로 접어둔다
-      if(hideInactive && it.status !== "active"){ hidden[it.id] = true; saveUI(); }
-      persist(); renderAll();
-    });
-    var placeIn = row.querySelector(".mgr-place");
-    placeIn.value = it.place || "";
-    placeIn.addEventListener("change", function(){
-      it.place = placeIn.value.trim(); persist(); renderAll();
-    });
-    var urlIn = row.querySelector(".mgr-url");
-    urlIn.value = it.url || "";
-    urlIn.addEventListener("change", function(){
-      var v = urlIn.value.trim();
-      if(v && !safeUrl(v)){
-        alert("링크는 http:// 또는 https:// 로 시작해야 합니다.");
-        urlIn.value = it.url || "";
-        return;
-      }
-      it.url = v; persist(); renderAll();
-    });
-    row.querySelector("button").addEventListener("click", function(){
-      if(!confirm(it.name + " 기관과 등록된 일정을 모두 삭제할까요?")) return;
-      state.institutions = state.institutions.filter(function(x){ return x.id !== it.id; });
-      state.events = state.events.filter(function(e){ return e.inst !== it.id; });
-      persist(); renderAll();
-    });
+      '<span class="nm"></span>'+
+      '<button class="btn sm inst-more" type="button" aria-label="기관 정보 고치기">···</button>';
+    row.querySelector(".nm").textContent = it.name;
+    // 진행중은 기본값이라 배지를 달지 않는다 — 7개가 전부 "진행중"이면 그게 노이즈다
+    if(it.status !== "active"){
+      var b = document.createElement("span");
+      b.className = "badge " + (it.status === "rejected" ? "rejected" : "withdrawn");
+      b.textContent = it.status === "rejected" ? "탈락" : "포기";
+      row.insertBefore(b, row.querySelector(".inst-more"));
+    }
+    row.querySelector(".inst-more").addEventListener("click", function(){ openInstSheet(it); });
     il.appendChild(row);
 
     var evBox = document.createElement("div");
@@ -1404,12 +1483,7 @@ function renderDrawer(){
     il.appendChild(evBox);
   });
 
-  fillInstSelect(document.getElementById("evInst"), true);
-  fillInstSelect(document.getElementById("bulkInst"));
-  syncNewInstField();
-
-  // 소속 기관이 삭제된 고아 일정만 여기 남긴다. 기관에 딸린 일정은 위
-  // 기관 목록 아래 중첩된 목록에서 다룬다.
+  // 소속 기관이 삭제된 고아 일정만 따로 남긴다
   var el = document.getElementById("evList");
   el.innerHTML = "";
   var instIds = {};
@@ -1418,6 +1492,11 @@ function renderDrawer(){
     .sort(function(a,b){ return pd(a.start) - pd(b.start); });
   document.getElementById("evListHead").hidden = orphans.length === 0;
   orphans.forEach(function(e){ el.appendChild(makeEvRow(e)); });
+
+  fillInstSelect(document.getElementById("evInst"), true);
+  fillInstSelect(document.getElementById("bulkInst"), true);
+  syncNewInstField();
+  syncBulkNewInstField();
 }
 
 function fillInstSelect(sel, withNew){
@@ -1464,31 +1543,6 @@ function renderBulkRows(){
     row.querySelector("input").dataset.stage = s;
     box.appendChild(row);
   });
-}
-
-function renderSwatches(){
-  var box = document.getElementById("swatchPick");
-  box.innerHTML = "";
-  var used = usedColors();
-  var allUsed = PALETTE.every(function(c){ return used[c]; });
-
-  if(used[pickedColor] && !allUsed) pickedColor = freeColor();
-
-  PALETTE.forEach(function(c){
-    var taken = !!used[c] && !allUsed;
-    var b = document.createElement("button");
-    b.type = "button";
-    b.style.background = c;
-    b.disabled = taken;
-    b.setAttribute("aria-pressed", c === pickedColor ? "true" : "false");
-    b.setAttribute("aria-label", "색상 " + c + (taken ? " (사용 중)" : ""));
-    b.title = taken ? "이미 사용 중" : c;
-    if(!taken) b.addEventListener("click", function(){ pickedColor = c; renderSwatches(); });
-    box.appendChild(b);
-  });
-
-  document.getElementById("swatchHint").textContent =
-    allUsed ? "팔레트를 모두 사용해 색이 겹칠 수 있습니다." : "사용 중인 색은 선택할 수 없습니다.";
 }
 
 function renderAll(){
@@ -1572,32 +1626,19 @@ document.getElementById("rmenu").addEventListener("click", function(ev){
   var e = rmenuFor;
   if(b.dataset.action === "edit-event"){
     closeResultMenu();
-    openDrawer(true);
-    startEdit(e);
-    document.getElementById("evLabel").scrollIntoView({block:"center"});
+    openEventSheet(e);
     return;
   }
   if(b.dataset.action === "edit-inst"){
     closeResultMenu();
-    openDrawer(true);
-    focusInstName(e.inst);
+    var it = inst(e.inst);
+    if(it.missing){ alert("이 일정의 기관이 삭제되었습니다."); return; }
+    openInstSheet(it);
     return;
   }
   closeResultMenu();
   setResult(e, b.dataset.r);
 });
-
-// 기관 이름 입력칸을 찾아 스크롤하고 포커스한다 (결과 메뉴의 "기관 이름 수정"에서 씀)
-function focusInstName(instId){
-  var row = Array.prototype.filter.call(document.querySelectorAll(".mgr-item"), function(r){
-    return r.dataset.id === instId;
-  })[0];
-  if(!row) return;
-  row.scrollIntoView({block:"center"});
-  var nm = row.querySelector(".nm");
-  nm.focus();
-  nm.select();
-}
 
 document.getElementById("moreMonths").addEventListener("click", function(ev){
   ev.stopPropagation();
@@ -1620,9 +1661,10 @@ function openDrawer(v){
   document.getElementById(v ? "closeDrawer" : "openDrawer").focus();
 }
 
-// 열려 있는 동안 탭이 드로어 밖으로 나가지 않게 한다
+// 열려 있는 동안 탭이 드로어 밖으로 나가지 않게 한다.
+// 시트가 위에 떠 있으면 트랩은 시트 쪽이 가져간다.
 document.addEventListener("keydown", function(e){
-  if(e.key !== "Tab") return;
+  if(e.key !== "Tab" || openSheetId) return;
   var d = document.getElementById("drawer");
   if(!d.classList.contains("open")) return;
   var f = d.querySelectorAll("button, input, select, textarea, a[href]");
@@ -1637,101 +1679,100 @@ document.getElementById("closeDrawer").addEventListener("click", function(){ ope
 document.getElementById("scrim").addEventListener("click", function(){ openDrawer(false); });
 document.addEventListener("keydown", function(e){
   if(e.key !== "Escape") return;
+  // 위에 떠 있는 것부터 닫는다: 결과 메뉴 → 시트 → 드로어
   if(!document.getElementById("rmenu").hidden){ closeResultMenu(); return; }
+  if(openSheetId){ closeSheet(); return; }
   openDrawer(false);
 });
 
-document.getElementById("addInst").addEventListener("click", function(){
-  var f = document.getElementById("newInstName");
-  var uf = document.getElementById("newInstUrl");
-  var pf = document.getElementById("newInstPlace");
-  var n = f.value.trim();
-  var u = uf.value.trim();
-  if(!n){ f.focus(); return; }
-  if(u && !safeUrl(u)){ alert("링크는 http:// 또는 https:// 로 시작해야 합니다."); return; }
-  state.institutions.push({
-    id:uid("i"), name:n, color:pickedColor, status:"active",
-    url:u, place:pf.value.trim()
-  });
-  f.value = "";
-  uf.value = "";
-  pf.value = "";
-  pickedColor = freeColor();
-  renderSwatches();
-  persist(); renderAll();
-});
+/* ---------- sheet (일정·기관·일괄 추가) ---------- */
+// 시트는 목록 위에 뜬다. 열려 있는 동안 포커스를 시트 안에 가둔다.
+var openSheetId = null;
+var instSheetFor = null;   // 편집 중인 기관
+var sheetColor = null;     // 기관 시트에서 고른 색
 
-document.getElementById("evInst").addEventListener("change", syncNewInstField);
-document.getElementById("evLabel").addEventListener("input", syncNewInstField);
-
-// 입력칸이 비어 있으면 기관 이름으로 카카오맵 검색을 연다
-function openMapSearch(inputId, fallback){
-  var v = document.getElementById(inputId).value.trim() || fallback;
-  if(!v){ alert("기관 이름이나 주소를 먼저 입력하세요."); return; }
-  window.open(kakaoMapUrl(v), "_blank", "noopener");
+function openSheet(id){
+  closeSheet();
+  openSheetId = id;
+  document.getElementById("sheetScrim").hidden = false;
+  var s = document.getElementById(id);
+  s.hidden = false;
+  var f = s.querySelector("input, select, button");
+  if(f) f.focus();
 }
 
-document.getElementById("newInstPlaceFind").addEventListener("click", function(){
-  openMapSearch("newInstPlace", document.getElementById("newInstName").value.trim());
-});
-
-document.getElementById("evPlaceFind").addEventListener("click", function(){
-  var sel = document.getElementById("evInst");
-  var it = state.institutions.filter(function(x){ return x.id === sel.value; })[0];
-  openMapSearch("evPlace", it ? it.name : document.getElementById("evNewInst").value.trim());
-});
-
-function startEdit(e){
-  editingId = e.id;
-  document.getElementById("evInst").value = e.inst;
-  document.getElementById("evLabel").value = e.label;
-  document.getElementById("evStart").value = e.start;
-  document.getElementById("evEnd").value = e.end === e.start ? "" : e.end;
-  document.getElementById("evPlace").value = e.place || "";
-  document.getElementById("evMemo").value = e.memo || "";
-  document.getElementById("evRound").value = e.round || "";
-  syncNewInstField();
-  document.getElementById("addEvent").textContent = "수정 저장";
-  document.getElementById("cancelEdit").hidden = false;
-  document.getElementById("evLabel").focus();
-}
-function endEdit(){
+function closeSheet(){
+  if(!openSheetId) return;
+  document.getElementById(openSheetId).hidden = true;
+  document.getElementById("sheetScrim").hidden = true;
+  openSheetId = null;
+  instSheetFor = null;
   editingId = null;
-  document.getElementById("evLabel").value = "";
-  document.getElementById("evStart").value = "";
-  document.getElementById("evEnd").value = "";
-  document.getElementById("evPlace").value = "";
-  document.getElementById("evMemo").value = "";
-  document.getElementById("evRound").value = "";
-  document.getElementById("evNewInst").value = "";
-  syncNewInstField();
-  document.getElementById("addEvent").textContent = "일정 추가";
-  document.getElementById("cancelEdit").hidden = true;
 }
-document.getElementById("cancelEdit").addEventListener("click", endEdit);
 
-document.getElementById("addBulk").addEventListener("click", function(){
-  var instId = document.getElementById("bulkInst").value;
-  if(!instId){ alert("기관을 선택하세요."); return; }
-  var rnd = document.getElementById("bulkRound").value.trim();
-  var inputs = document.querySelectorAll("#bulkRows input");
-  var added = 0;
-  Array.prototype.forEach.call(inputs, function(inp){
-    if(!inp.value) return;
-    state.events.push({
-      id:uid("e"), inst:instId, label:inp.dataset.stage,
-      start:inp.value, end:inp.value, memo:"", round:rnd
-    });
-    inp.value = "";
-    added++;
-  });
-  if(!added){ alert("날짜를 하나 이상 입력하세요."); return; }
-  document.getElementById("bulkRound").value = "";
-  persist(); renderAll();
-  note(added + "개 단계를 추가했습니다");
+document.getElementById("sheetScrim").addEventListener("click", closeSheet);
+Array.prototype.forEach.call(document.querySelectorAll(".sheet-close"), function(b){
+  b.addEventListener("click", closeSheet);
 });
 
-document.getElementById("addEvent").addEventListener("click", function(){
+// 열려 있는 동안 탭이 시트 밖으로 새지 않게 한다 (드로어 트랩보다 우선)
+document.addEventListener("keydown", function(e){
+  if(e.key !== "Tab" || !openSheetId) return;
+  var s = document.getElementById(openSheetId);
+  var f = Array.prototype.filter.call(
+    s.querySelectorAll("button, input, select, textarea, a[href]"),
+    function(el){ return !el.disabled && el.offsetParent !== null; });
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  else if(!s.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+});
+
+/* ---------- 일정 시트 ---------- */
+// 값이 없는 선택 항목(장소·메모·차수)은 버튼으로 접어 두고, 값이 있으면 펼쳐 연다.
+function setOptField(name, open){
+  var f = document.querySelector('.opt-field[data-optfield="' + name + '"]');
+  var b = document.querySelector('#evOptRow .opt[data-opt="' + name + '"]');
+  f.hidden = !open;
+  b.hidden = open;
+}
+
+document.getElementById("evOptRow").addEventListener("click", function(ev){
+  var b = ev.target.closest(".opt");
+  if(!b) return;
+  setOptField(b.dataset.opt, true);
+  var f = document.querySelector('.opt-field[data-optfield="' + b.dataset.opt + '"] input');
+  if(f) f.focus();
+});
+
+function openEventSheet(e){
+  editingId = e ? e.id : null;
+  var adding = !e;
+
+  document.getElementById("evSheetTitle").textContent = adding ? "일정 추가" : "일정 수정";
+  document.getElementById("evSheetSub").textContent =
+    adding ? "" : inst(e.inst).name + (e.round ? " (" + e.round + ")" : "") + " · " + e.label;
+
+  document.getElementById("evInst").value  = adding ? (state.institutions[0] || {}).id || "" : e.inst;
+  document.getElementById("evLabel").value = adding ? "" : e.label;
+  document.getElementById("evStart").value = adding ? "" : e.start;
+  document.getElementById("evEnd").value   = adding ? "" : (e.end === e.start ? "" : e.end);
+  document.getElementById("evPlace").value = adding ? "" : (e.place || "");
+  document.getElementById("evMemo").value  = adding ? "" : (e.memo || "");
+  document.getElementById("evRound").value = adding ? "" : (e.round || "");
+  document.getElementById("evNewInst").value = "";
+
+  setOptField("place", !adding && !!e.place);
+  setOptField("memo",  !adding && !!e.memo);
+  setOptField("round", !adding && !!e.round);
+
+  document.getElementById("evDelete").hidden = adding;
+  syncNewInstField();
+  openSheet("evSheet");
+}
+
+document.getElementById("evSave").addEventListener("click", function(){
   var i = document.getElementById("evInst").value;
   var l = document.getElementById("evLabel").value.trim();
   var s = document.getElementById("evStart").value;
@@ -1763,8 +1804,177 @@ document.getElementById("addEvent").addEventListener("click", function(){
   }else{
     state.events.push({id:uid("e"), inst:i, label:l, start:s, end:e, place:pl, memo:mo, round:rnd});
   }
-  endEdit();
+  closeSheet();
   persist(); renderAll();
+});
+
+document.getElementById("evDelete").addEventListener("click", function(){
+  if(!editingId) return;
+  if(!confirm("이 일정을 삭제할까요?")) return;
+  var id = editingId;
+  state.events = state.events.filter(function(x){ return x.id !== id; });
+  closeSheet();
+  persist(); renderAll();
+});
+
+document.getElementById("newEventBtn").addEventListener("click", function(){ openEventSheet(null); });
+
+/* ---------- 기관 시트 ---------- */
+function openInstSheet(it){
+  instSheetFor = it;
+  sheetColor = it.color;
+  document.getElementById("instSheetSub").textContent = it.name;
+  document.getElementById("instName").value = it.name;
+  document.getElementById("instPlace").value = it.place || "";
+  document.getElementById("instUrl").value = it.url || "";
+  renderInstStatus(it.status);
+  renderInstSwatch();
+  openSheet("instSheet");
+}
+
+function renderInstStatus(v){
+  Array.prototype.forEach.call(
+    document.querySelectorAll("#instStatus button"),
+    function(b){ b.setAttribute("aria-pressed", b.dataset.status === v ? "true" : "false"); });
+}
+
+document.getElementById("instStatus").addEventListener("click", function(ev){
+  var b = ev.target.closest("button");
+  if(b) renderInstStatus(b.dataset.status);
+});
+
+function instStatusValue(){
+  var b = document.querySelector('#instStatus button[aria-pressed="true"]');
+  return b ? b.dataset.status : "active";
+}
+
+// 자기 색은 고를 수 있어야 하므로 자신을 뺀 나머지가 쓰는 색만 잠근다
+function renderInstSwatch(){
+  var box = document.getElementById("instSwatch");
+  box.innerHTML = "";
+  var used = {};
+  state.institutions.forEach(function(x){
+    if(!instSheetFor || x.id !== instSheetFor.id) used[x.color] = true;
+  });
+  var allUsed = PALETTE.every(function(c){ return used[c]; });
+  PALETTE.forEach(function(c){
+    var taken = !!used[c] && !allUsed;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.style.background = c;
+    b.disabled = taken;
+    b.setAttribute("aria-pressed", c === sheetColor ? "true" : "false");
+    b.setAttribute("aria-label", "색상 " + c + (taken ? " (사용 중)" : ""));
+    b.title = taken ? "이미 사용 중" : c;
+    if(!taken) b.addEventListener("click", function(){ sheetColor = c; renderInstSwatch(); });
+    box.appendChild(b);
+  });
+  document.getElementById("instSwatchHint").textContent =
+    allUsed ? "팔레트를 모두 사용해 색이 겹칠 수 있습니다." : "다른 기관이 쓰는 색은 고를 수 없습니다.";
+}
+
+document.getElementById("instSave").addEventListener("click", function(){
+  var it = instSheetFor;
+  if(!it) return;
+  var n = document.getElementById("instName").value.trim();
+  var u = document.getElementById("instUrl").value.trim();
+  if(!n){ alert("기관 이름은 비울 수 없습니다."); return; }
+  if(u && !safeUrl(u)){ alert("링크는 http:// 또는 https:// 로 시작해야 합니다."); return; }
+
+  it.name = n;
+  it.place = document.getElementById("instPlace").value.trim();
+  it.url = u;
+  it.color = sheetColor || it.color;
+
+  var st = instStatusValue();
+  if(st !== it.status){
+    it.status = st;
+    // 방금 탈락·포기로 바뀌었고 숨기기가 켜져 있으면 바로 접어둔다
+    if(hideInactive && st !== "active") hidden[it.id] = true;
+    else if(st === "active") delete hidden[it.id];
+    saveUI();
+  }
+  closeSheet();
+  persist(); renderAll();
+});
+
+document.getElementById("instDelete").addEventListener("click", function(){
+  var it = instSheetFor;
+  if(!it) return;
+  if(!confirm(it.name + " 기관과 등록된 일정을 모두 삭제할까요?")) return;
+  state.institutions = state.institutions.filter(function(x){ return x.id !== it.id; });
+  state.events = state.events.filter(function(e){ return e.inst !== it.id; });
+  closeSheet();
+  persist(); renderAll();
+});
+
+/* ---------- 일괄 추가 시트 ---------- */
+document.getElementById("newBulkBtn").addEventListener("click", function(){
+  document.getElementById("bulkRound").value = "";
+  document.getElementById("bulkNewInst").value = "";
+  Array.prototype.forEach.call(document.querySelectorAll("#bulkRows input"),
+    function(i){ i.value = ""; });
+  syncBulkNewInstField();
+  openSheet("bulkSheet");
+});
+
+function syncBulkNewInstField(){
+  var sel = document.getElementById("bulkInst");
+  document.getElementById("bulkNewInstField").hidden = sel.value !== "__new__";
+}
+document.getElementById("bulkInst").addEventListener("change", syncBulkNewInstField);
+
+document.getElementById("bulkAdd").addEventListener("click", function(){
+  var instId = document.getElementById("bulkInst").value;
+  if(instId === "__new__"){
+    var nm = document.getElementById("bulkNewInst").value.trim();
+    if(!nm){ alert("새 기관 이름을 입력하세요."); return; }
+    var hit = state.institutions.filter(function(x){ return x.name === nm; })[0];
+    if(hit){
+      instId = hit.id;
+    }else{
+      instId = uid("i");
+      state.institutions.push({id:instId, name:nm, color:freeColor(), status:"active", url:"", place:""});
+    }
+  }
+  if(!instId){ alert("기관을 선택하세요."); return; }
+  var rnd = document.getElementById("bulkRound").value.trim();
+  var inputs = document.querySelectorAll("#bulkRows input");
+  var added = 0;
+  Array.prototype.forEach.call(inputs, function(inp){
+    if(!inp.value) return;
+    state.events.push({
+      id:uid("e"), inst:instId, label:inp.dataset.stage,
+      start:inp.value, end:inp.value, memo:"", round:rnd
+    });
+    inp.value = "";
+    added++;
+  });
+  if(!added){ alert("날짜를 하나 이상 입력하세요."); return; }
+  document.getElementById("bulkRound").value = "";
+  closeSheet();
+  persist(); renderAll();
+  note(added + "개 단계를 추가했습니다");
+});
+
+document.getElementById("evInst").addEventListener("change", syncNewInstField);
+document.getElementById("evLabel").addEventListener("input", syncNewInstField);
+
+// 입력칸이 비어 있으면 기관 이름으로 카카오맵 검색을 연다
+function openMapSearch(inputId, fallback){
+  var v = document.getElementById(inputId).value.trim() || fallback;
+  if(!v){ alert("기관 이름이나 주소를 먼저 입력하세요."); return; }
+  window.open(kakaoMapUrl(v), "_blank", "noopener");
+}
+
+document.getElementById("instPlaceFind").addEventListener("click", function(){
+  openMapSearch("instPlace", document.getElementById("instName").value.trim());
+});
+
+document.getElementById("evPlaceFind").addEventListener("click", function(){
+  var sel = document.getElementById("evInst");
+  var it = state.institutions.filter(function(x){ return x.id === sel.value; })[0];
+  openMapSearch("evPlace", it ? it.name : document.getElementById("evNewInst").value.trim());
 });
 
 document.getElementById("exportBtn").addEventListener("click", function(){
@@ -1794,7 +2004,7 @@ document.getElementById("importFile").addEventListener("change", function(ev){
     }
     if(!confirm("현재 데이터를 모두 덮어씁니다. 계속할까요?")) return;
     state = migrate(d);
-    endEdit();
+    closeSheet();
     persist(); renderAll();
     note("가져왔습니다");
   };
@@ -1808,7 +2018,6 @@ saveLocal();
 if(!loadUI()) hideInactiveNow();
 document.getElementById("todayLabel").textContent =
   "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
-renderSwatches();
 renderBulkRows();
 renderAll();
 initDb();
