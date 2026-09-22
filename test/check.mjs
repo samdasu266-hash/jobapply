@@ -857,6 +857,111 @@ if (KEEP) {
 }
 
 /* ─────────────────────────────────────────────── */
+section('기기 간 동기화 (가짜 Gist)');
+// 서버가 없어 기기마다 localStorage 가 따로 논다. 비공개 Gist 하나를 공용
+// 저장소로 두는 경로를, 브라우저 두 개와 가짜 GitHub API 로 실제로 태워 본다.
+{
+  const GID = 'a'.repeat(32);
+  let gist = null;
+  const wire = (c) => c.route('https://api.github.com/**', (route) => {
+    const q = route.request(), url = q.url(), m = q.method();
+    if (q.headers()['authorization'] !== 'token TT')
+      return route.fulfill({ status: 401, body: '{}' });
+    if (m === 'POST' || m === 'PATCH') {
+      gist = JSON.parse(q.postData()).files['jobtracker.json'].content;
+      return route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ id: GID }) });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify({ id: GID, files: gist === null ? {}
+        : { 'jobtracker.json': { content: gist, truncated: false } } }) });
+  });
+  const device = async () => {
+    const c = await browser.newContext({ viewport: { width: 1200, height: 950 } });
+    await wire(c);
+    return c.newPage();
+  };
+  // 편집을 UI 대신 저장소에 직접 넣고 새로고침한다 — 여기서 보는 것은
+  // 편집 방법이 아니라 그 편집이 다른 기기까지 가느냐다.
+  const edit = async (pg, fn) => {
+    await pg.evaluate((src) => {
+      const s = JSON.parse(localStorage.getItem('jobtracker.v1'));
+      (new Function('s', src))(s);
+      localStorage.setItem('jobtracker.v1', JSON.stringify(s));
+    }, '(' + fn + ')(s)');
+    await pg.reload(); await pg.waitForTimeout(800);
+  };
+  const wake = async (pg) => {
+    await pg.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await pg.waitForTimeout(800);
+  };
+  const seed = async (pg, st) => {
+    await pg.goto(PAGE);
+    await pg.evaluate((v) => { localStorage.clear();
+      localStorage.setItem('jobtracker.v1', JSON.stringify(v)); }, st);
+    await pg.reload(); await pg.waitForTimeout(300);
+  };
+  const connect = async (pg, gid) => {
+    await pg.click('#openDrawer'); await pg.waitForTimeout(250);
+    await pg.click('#syncBtn'); await pg.waitForTimeout(250);
+    await pg.fill('#syncToken', 'TT');
+    await pg.fill('#syncGist', gid);
+    pg.once('dialog', d => d.accept());
+    await pg.click('#syncSave'); await pg.waitForTimeout(800);
+  };
+  const SEEDED = Object.fromEntries(SEED_KEYS.map(k => [k, true]));
+  const st = (pg) => pg.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')));
+
+  const pc = await device();
+  await seed(pc, { seeded: SEEDED, institutions: [INST('a', '가', '#2E6F5E')],
+    events: [{ id: 'e1', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06' }] });
+  await connect(pc, '');
+  ok('Gist ID 를 비우면 새로 만들어 저장한다', gist !== null &&
+     (await pc.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.sync.v1')).gistId)) === GID);
+
+  const phone = await device();
+  await seed(phone, { seeded: SEEDED, institutions: [], events: [] });
+  await connect(phone, GID);
+  eq('같은 Gist ID 를 넣은 기기가 내용을 받아온다',
+     (await st(phone)).institutions.map(i => i.name), ['가']);
+
+  // 이 앱을 만든 이유 — PC 에서 찍은 탈락이 폰에 보여야 한다
+  await edit(pc, (s) => { s.institutions[0].status = 'rejected'; });
+  await wake(phone);
+  eq('PC 에서 찍은 탈락이 폰에 보인다', (await st(phone)).institutions[0].status, 'rejected');
+
+  // 양쪽이 서로 다른 항목을 고쳤다면 둘 다 살아야 한다
+  await edit(phone, (s) => { s.events[0].memo = '폰메모'; });
+  await edit(pc, (s) => { s.events.push({ id: 'e2', inst: 'a', label: '필기',
+    start: '2026-11-02', end: '2026-11-02' }); });
+  await wake(phone);
+  const both = await st(phone);
+  ok('폰의 메모와 PC 의 새 일정이 둘 다 남는다',
+     both.events.find(e => e.id === 'e1').memo === '폰메모' &&
+     !!both.events.find(e => e.id === 'e2'),
+     JSON.stringify(both.events));
+
+  // 지운 것이 되살아나면 지운 의미가 없다
+  await edit(pc, (s) => { s.events = s.events.filter(e => e.id !== 'e2'); });
+  await wake(phone);
+  ok('한쪽에서 지우면 다른 쪽에서도 사라진다',
+     !(await st(phone)).events.some(e => e.id === 'e2'));
+
+  // 토큰이 틀리면 조용히 넘어가지 않고 이 기기 저장으로 남아야 한다
+  const bad = await device();
+  await seed(bad, { seeded: SEEDED, institutions: [], events: [] });
+  await bad.click('#openDrawer'); await bad.waitForTimeout(250);
+  await bad.click('#syncBtn'); await bad.waitForTimeout(250);
+  await bad.fill('#syncToken', 'WRONG'); await bad.fill('#syncGist', GID);
+  let alerted = '';
+  bad.once('dialog', d => { alerted = d.message(); d.accept(); });
+  await bad.click('#syncSave'); await bad.waitForTimeout(800);
+  ok('토큰이 거부되면 알려주고 연결하지 않는다',
+     alerted.includes('연결하지 못했습니다') &&
+     !(await bad.evaluate(() => localStorage.getItem('jobtracker.sync.v1') || '')).includes('WRONG'),
+     alerted);
+}
+
 section('런타임 오류');
 ok('콘솔/런타임 오류 없음', runtimeErrors.length === 0, runtimeErrors.join(' | ').slice(0, 300));
 

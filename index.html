@@ -431,6 +431,12 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
     <input type="file" id="importFile" accept="application/json,.json" hidden>
   </div>
 
+  <h4>기기 간 동기화</h4>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="btn sm" id="syncBtn">설정</button>
+    <span class="hint" id="syncState" style="margin:0;"></span>
+  </div>
+
   <div class="save-note" id="saveNote">저장 준비 중…</div>
 </aside>
 
@@ -545,6 +551,44 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
   <div class="sheet-foot">
     <button class="btn danger" type="button" id="instDelete">삭제</button>
     <button class="btn primary" type="button" id="instSave">저장</button>
+  </div>
+</div>
+
+<!-- 기기 간 동기화 설정 시트 -->
+<div class="sheet" id="syncSheet" role="dialog" aria-modal="true" aria-labelledby="syncSheetTitle" hidden>
+  <div class="sheet-head">
+    <div>
+      <div class="sheet-title" id="syncSheetTitle">기기 간 동기화</div>
+      <div class="sheet-sub" id="syncSheetSub"></div>
+    </div>
+    <button class="btn sm sheet-close" type="button">닫기</button>
+  </div>
+  <div class="sheet-body">
+    <div class="hint">
+      이 앱에는 서버가 없어서 저장한 내용이 브라우저마다 따로 놉니다.
+      비공개 Gist 하나를 공용 저장소로 두면 PC와 폰이 같은 내용을 봅니다.
+      토큰은 이 기기에만 저장되고 github.com 말고 어디로도 보내지 않습니다.
+    </div>
+    <div class="field">
+      <label for="syncToken">GitHub 토큰</label>
+      <input type="password" id="syncToken" placeholder="ghp_..." autocomplete="off">
+      <div class="hint">
+        github.com → Settings → Developer settings → Personal access tokens →
+        Tokens (classic) → Generate new token. 권한은 <b>gist</b> 하나만 켜면 됩니다.
+      </div>
+    </div>
+    <div class="field">
+      <label for="syncGist">Gist ID</label>
+      <input type="text" id="syncGist" placeholder="비워 두면 새로 만듭니다" autocomplete="off">
+      <div class="hint">
+        먼저 연결한 기기에서 만들어진 ID를 다른 기기에도 똑같이 넣어야
+        같은 내용을 봅니다.
+      </div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn danger" type="button" id="syncOff">연결 해제</button>
+    <button class="btn primary" type="button" id="syncSave">연결</button>
   </div>
 </div>
 
@@ -799,6 +843,7 @@ var dirty = false;      // 원격 데이터가 도착하기 전에 편집이 있
 function persist(){
   dirty = true;
   saveLocal();
+  syncSoon(1200);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
     if(!dbHandle) return;
@@ -821,6 +866,7 @@ function waitClaude(){
 }
 
 async function initDb(){
+  if(syncOn()) return;          // Gist 동기화가 켜져 있으면 그쪽이 저장 경로다
   var c = await waitClaude();
   if(!c){ note("이 기기에만 저장됨"); return; }
   var db = null;
@@ -2093,6 +2139,202 @@ document.getElementById("importFile").addEventListener("change", function(ev){
   rd.readAsText(f);
 });
 
+/* ---------- sync: 비공개 Gist ---------- */
+// GitHub Pages 에는 서버가 없어서 localStorage 가 기기마다 따로 논다 — PC 에서
+// 탈락을 눌러도 폰은 모른다. 두 기기가 같이 바라볼 저장소로 비공개 Gist 하나를
+// 쓴다. 토큰은 이 기기의 localStorage 에만 남고 api.github.com 외로는 안 나간다.
+var SYNC_LS = "jobtracker.sync.v1";   // {token, gistId}
+var BASE_LS = "jobtracker.base.v1";   // 마지막으로 주고받은 스냅샷 — 병합의 기준
+var GIST_FILE = "jobtracker.json";
+var sync = { token:"", gistId:"" };
+var syncing = false, syncTimer = null, lastSyncAt = 0;
+
+function loadSync(){
+  try{
+    var v = JSON.parse(localStorage.getItem(SYNC_LS));
+    if(v){ sync.token = v.token || ""; sync.gistId = v.gistId || ""; }
+  }catch(e){}
+}
+function saveSync(){
+  try{ localStorage.setItem(SYNC_LS, JSON.stringify(sync)); }catch(e){}
+}
+function syncOn(){ return !!(sync.token && sync.gistId); }
+function loadBase(){ try{ return JSON.parse(localStorage.getItem(BASE_LS)); }catch(e){ return null; } }
+function saveBase(v){ try{ localStorage.setItem(BASE_LS, JSON.stringify(v)); }catch(e){} }
+
+function same(a, b){ return JSON.stringify(a) === JSON.stringify(b); }
+function byId(list){ var m = {}; (list||[]).forEach(function(x){ m[x.id] = x; }); return m; }
+
+// base(마지막 동기화) 를 기준으로 이쪽과 저쪽이 각각 무엇을 바꿨는지 보고 합친다.
+// 한쪽만 건드린 항목은 그쪽을 따르므로, 폰에서 메모를 달았다고 PC 에서 찍은
+// 탈락이 날아가지 않는다. 양쪽이 같은 항목을 다르게 고쳤을 때만 이 기기가 이긴다.
+// base 에 있는데 한쪽에서 사라졌으면 삭제로 본다.
+function mergeList(base, mine, theirs){
+  var B = byId(base), M = byId(mine), T = byId(theirs), out = [], seen = {};
+  function pick(id){
+    var b = B[id], m = M[id], t = T[id];
+    if(same(m, t)) return m;   // 양쪽이 이미 같다
+    if(same(m, b)) return t;   // 이쪽은 그대로 — 저쪽 변경(삭제 포함)을 받는다
+    if(same(t, b)) return m;   // 저쪽은 그대로 — 이쪽 변경을 민다
+    return m || t;             // 양쪽 다 바꿨다. 지운 쪽보다 고친 쪽을 살린다
+  }
+  function take(x){
+    if(seen[x.id]) return;
+    seen[x.id] = 1;
+    var v = pick(x.id);
+    if(v) out.push(v);
+  }
+  (mine||[]).forEach(take);            // 순서는 이 기기 것을 유지하고
+  (theirs||[]).forEach(take);          // 저쪽에만 있는 건 뒤에 붙인다
+  return out;
+}
+function merge3(base, mine, theirs){
+  base = base || { institutions:[], events:[] };
+  return {
+    institutions: mergeList(base.institutions, mine.institutions, theirs.institutions),
+    events:       mergeList(base.events,       mine.events,       theirs.events)
+  };
+}
+
+function ghFetch(path, opts){
+  opts = opts || {};
+  opts.headers = {
+    "Authorization": "token " + sync.token,
+    "Accept": "application/vnd.github+json"
+  };
+  return fetch("https://api.github.com" + path, opts).then(function(r){
+    if(r.status === 401) throw new Error("토큰이 거부되었습니다");
+    if(r.status === 404) throw new Error("Gist 를 찾을 수 없습니다");
+    if(!r.ok) throw new Error("GitHub " + r.status);
+    return r.json();
+  });
+}
+function gistBody(st){
+  var f = {};
+  f[GIST_FILE] = { content: JSON.stringify(st, null, 2) };
+  return f;
+}
+function gistRead(){
+  return ghFetch("/gists/" + sync.gistId).then(function(g){
+    var f = g.files && g.files[GIST_FILE];
+    if(!f) return null;
+    // 큰 파일은 content 가 잘린 채 오고 raw_url 로만 온전히 받을 수 있다
+    if(f.truncated && f.raw_url) return fetch(f.raw_url).then(function(r){ return r.json(); });
+    return JSON.parse(f.content);
+  }).then(function(d){
+    return (d && Array.isArray(d.institutions) && Array.isArray(d.events)) ? d : null;
+  });
+}
+
+function syncLabel(){
+  if(!syncOn()) return "이 기기에만 저장됨";
+  if(!lastSyncAt) return "동기화 준비 중…";
+  var d = new Date(lastSyncAt);
+  return "동기화됨 " + ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2);
+}
+function renderSyncState(){
+  var el = document.getElementById("syncState");
+  if(el) el.textContent = syncOn() ? ("켜짐 · " + syncLabel()) : "꺼짐 — 이 기기에만 저장됩니다";
+}
+
+// 이 기기 것을 밀어 넣기 전에 늘 저쪽을 먼저 읽는다. 읽지 않고 쓰면 다른
+// 기기에서 해 둔 일이 조용히 지워진다.
+function syncNow(){
+  if(!syncOn() || syncing) return Promise.resolve();
+  // 시트를 열어 두고 고치는 중에 화면을 갈아엎지 않는다. 닫으면 그때 돈다.
+  if(openSheetId) return Promise.resolve();
+  syncing = true;
+  note("동기화 중…");
+  return gistRead().then(function(remote){
+    var merged = remote ? merge3(loadBase(), state, remote) : state;
+    if(!same(merged, state)){
+      state = merged;
+      saveLocal();
+      renderAll();
+    }
+    if(remote && same(merged, remote)){ saveBase(merged); return; }
+    return ghFetch("/gists/" + sync.gistId,
+      { method:"PATCH", body: JSON.stringify({ files: gistBody(merged) }) })
+      .then(function(){ saveBase(merged); });
+  }).then(function(){
+    lastSyncAt = Date.now();
+    note(syncLabel());
+  }).catch(function(e){
+    note("동기화 실패 — " + (e.message || "이 기기에만 저장됨"));
+  }).then(function(){
+    syncing = false;
+    renderSyncState();
+  });
+}
+function syncSoon(ms){
+  if(!syncOn()) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, ms);
+}
+
+// 다른 기기에서 바꾼 내용을 가져올 기회를 넓게 잡는다. 탭으로 돌아올 때,
+// 창이 포커스를 얻을 때, 그리고 켜 둔 채 있어도 1분마다.
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible") syncSoon(200);
+});
+window.addEventListener("focus", function(){ syncSoon(200); });
+setInterval(function(){ if(document.visibilityState === "visible") syncNow(); }, 60000);
+
+document.getElementById("syncBtn").addEventListener("click", function(){
+  document.getElementById("syncToken").value = sync.token;
+  document.getElementById("syncGist").value = sync.gistId;
+  document.getElementById("syncSheetSub").textContent =
+    syncOn() ? syncLabel() : "아직 연결되지 않았습니다";
+  openSheet("syncSheet");
+});
+
+document.getElementById("syncSave").addEventListener("click", function(){
+  var token = document.getElementById("syncToken").value.trim();
+  var gid = document.getElementById("syncGist").value.trim();
+  if(!token){ alert("토큰을 넣어 주세요."); return; }
+  // 주소를 통째로 붙여 넣어도 받아준다
+  var m = gid.match(/([0-9a-f]{20,})/i);
+  gid = m ? m[1] : "";
+  sync.token = token;
+  var btn = this;
+  btn.disabled = true;
+  // ID 를 직접 넣었어도 한 번 읽어 본다. 읽지 않으면 토큰이 틀렸거나 ID 가
+  // 엉뚱해도 '연결됨'으로 표시되고, 안 되는 줄 모른 채 쓰게 된다.
+  var made = gid
+    ? ghFetch("/gists/" + gid).then(function(){ return gid; })
+    : ghFetch("/gists", { method:"POST", body: JSON.stringify({
+        description: "지원 전형 일정 트래커",
+        "public": false,
+        files: gistBody(state)
+      })}).then(function(g){ return g.id; });
+  made.then(function(id){
+    sync.gistId = id;
+    saveSync();
+    saveBase(null);          // 기준을 비워 첫 동기화에서 양쪽을 온전히 합치게 한다
+    closeSheet();
+    renderSyncState();
+    return syncNow();
+  }).then(function(){
+    if(syncOn()) alert("연결했습니다.\n다른 기기에서도 같은 Gist ID 를 넣으세요:\n\n" + sync.gistId);
+  }).catch(function(e){
+    sync.token = ""; sync.gistId = "";
+    alert("연결하지 못했습니다 — " + (e.message || "알 수 없는 오류"));
+  }).then(function(){
+    btn.disabled = false;
+    renderSyncState();
+  });
+});
+
+document.getElementById("syncOff").addEventListener("click", function(){
+  if(!confirm("이 기기에서 동기화를 끕니다. Gist 내용은 지우지 않습니다.")) return;
+  sync.token = ""; sync.gistId = "";
+  saveSync(); saveBase(null);
+  lastSyncAt = 0;
+  closeSheet();
+  renderSyncState();
+  note("이 기기에만 저장됨");
+});
+
 /* ---------- boot ---------- */
 state = migrate(loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE)));
 saveLocal();
@@ -2102,6 +2344,9 @@ document.getElementById("todayLabel").textContent =
   "오늘 " + TODAY.getFullYear() + ". " + (TODAY.getMonth()+1) + ". " + TODAY.getDate() + ". (" + WD[TODAY.getDay()] + ")";
 renderBulkRows();
 renderAll();
+loadSync();
+renderSyncState();
+if(syncOn()){ note(syncLabel()); syncNow(); }
 initDb();
 
 })();
