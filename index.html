@@ -111,7 +111,7 @@ section{margin-bottom:26px;}
 .step.pass{border-color:var(--ok);color:var(--ok);background:transparent;text-decoration:none;font-weight:700;}
 .step.fail{border-color:var(--sun);color:var(--sun);background:transparent;text-decoration:line-through;text-decoration-thickness:1px;}
 
-/* ---------- 합격/불합격 선택 메뉴 ---------- */
+/* ---------- 결과 표시 메뉴 ---------- */
 .rmenu{
   position:fixed;z-index:60;background:var(--card);
   border:1px solid var(--line);border-radius:10px;
@@ -400,9 +400,8 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 
 <div class="rmenu" id="rmenu" hidden>
   <div class="rhead" id="rmenuHead"></div>
-  <button type="button" class="pass" data-r="합격">합격</button>
-  <button type="button" class="fail" data-r="불합격">불합격</button>
-  <button type="button" data-r="">미정으로</button>
+  <button type="button" id="rmenuSet"></button>
+  <button type="button" id="rmenuClear">표시 지우기</button>
   <div class="rsep"></div>
   <button type="button" data-action="edit-event">이 일정 고치기<small>날짜 · 장소 · 메모 · 차수</small></button>
   <button type="button" data-action="edit-inst">기관 정보 고치기<small>이름 · 주소 · 채용 링크</small></button>
@@ -679,7 +678,7 @@ var SEEDS = {
     events: [
       {id:"nhis1", inst:"nhis", label:"서류마감", start:"2026-09-29", end:"2026-09-29",
        place:"https://www.nhis.or.kr/nhis/together/wbhaea02700m01.do",
-       memo:"9/29 14:00 마감 · 채용사이트 접수 · 요양직 6급가 / 인천경기로 지원"},
+       memo:"9/29 14:00 마감 · 채용사이트 접수"},
       {id:"nhis2", inst:"nhis", label:"서류결과", start:"2026-10-15", end:"2026-10-15",
        memo:"채용사이트에서 개별 확인"},
       {id:"nhis3", inst:"nhis", label:"필기시험", start:"2026-10-24", end:"2026-10-24",
@@ -820,6 +819,9 @@ function migrate(s){
   // YYYY-MM-DD 는 문자열 비교가 곧 날짜 비교다.
   if(s && s.events) s.events.forEach(function(e){
     if(e.start && e.end && e.end < e.start) e.end = e.start;
+    // 예전 데이터의 '합격', 그리고 제출 일정에 찍힌 '불합격'처럼 그 일정에
+    // 켤 수 없는 표시는 지운다. 남겨 두면 지울 수도 없는 값이 화면에 남는다.
+    if(e.result && e.result !== resultOn(e)) delete e.result;
   });
   if(s && s.institutions && s.events) applySeeds(s);
   return s;
@@ -1020,9 +1022,9 @@ function renderUpcoming(){
 
     var el = document.createElement("div");
     el.className = "up-card"
-      + (e.result === "합격" ? " pass" : e.result === "불합격" ? " fail" : "");
+      + (e.result ? " " + resultClass(e) : "");
     el.style.borderLeftColor = it.color;
-    el.title = "눌러서 합격·불합격 기록";
+    el.title = resultHint(e);
     el.innerHTML =
       '<div class="up-dday" style="color:'+it.color+'"></div>'+
       '<div class="up-title"></div>'+
@@ -1062,7 +1064,7 @@ function renderUpcoming(){
     }
     if(e.result){
       var rb = document.createElement("span");
-      rb.className = "up-result " + (e.result === "합격" ? "pass" : "fail");
+      rb.className = "up-result " + resultClass(e);
       rb.textContent = e.result;
       el.appendChild(rb);
     }
@@ -1075,6 +1077,16 @@ function renderUpcoming(){
 // 정해진 시각에 어딘가 가 있어야 하는 일정만 참석으로 본다.
 // 결과·발표는 알림일 뿐이고, 인적성검사는 온라인이라 기간 내 아무 때나 응시한다.
 // 이 판정이 일정 겹침 경고와 달력의 주말·공휴일 제외 양쪽에 쓰인다.
+// 제출·등록으로 끝나는 일정은 합격·불합격이 없다 — 냈는가 아닌가만 남는다.
+function isSubmit(label){ return /마감|등록|접수/.test(label); }
+// 합격·미정은 쓰지 않는다. 떨어졌는지만 남기면 되고, 제출 일정은 그마저도
+// 해당이 없다. 그래서 일정마다 켤 수 있는 표시는 늘 하나뿐이다.
+var DONE = "제출완료", FAIL = "불합격";
+function resultOn(e){ return isSubmit(e.label) ? DONE : FAIL; }
+function resultMark(e){ return e.result === DONE ? "✓ " : e.result === FAIL ? "✗ " : ""; }
+function resultClass(e){ return e.result === DONE ? "pass" : e.result === FAIL ? "fail" : ""; }
+function resultHint(e){ return "눌러서 " + resultOn(e) + " 표시"; }
+
 function needsAttendance(label){ return !/결과|발표|마감|공고|인적성|등록/.test(label); }
 
 // 주말·공휴일을 건너뛰는 일정. 공공기관 필기시험은 토요일에 치르는 경우가
@@ -1218,14 +1230,12 @@ function renderPipes(){
         var s = document.createElement("button");
         s.type = "button";
         var cls = "step";
-        if(e.result === "합격") cls += " pass";
-        else if(e.result === "불합격") cls += " fail";
+        if(e.result) cls += " " + resultClass(e);
         else if(past) cls += " done";
         else if(!nextMarked && it.status === "active"){ cls += " next"; nextMarked = true; s.style.color = it.color; }
         s.className = cls;
-        s.textContent = (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
-          + e.label + " " + kdate(pd(e.start));
-        s.title = "눌러서 합격·불합격 기록";
+        s.textContent = resultMark(e) + e.label + " " + kdate(pd(e.start));
+        s.title = resultHint(e);
         bindResultMenu(s, e);
         steps.appendChild(s);
       }
@@ -1506,8 +1516,7 @@ function buildWeek(wStart, wEnd, month, evs){
     b.style.gridRow = String(sg.lane + 2);
     b.style.gridColumn = sg.col + " / span " + sg.span;
     if(it.status === "active") b.style.setProperty("--bar-c", it.color);
-    b.textContent = (sg.ev.result === "합격" ? "✓ " : sg.ev.result === "불합격" ? "✗ " : "")
-      + sg.ev.label;
+    b.textContent = resultMark(sg.ev) + sg.ev.label;
     bindResultMenu(b, sg.ev);
     b.title = it.name + (sg.ev.round ? " (" + sg.ev.round + ")" : "") + " · " + sg.ev.label + " · " + sg.ev.start
       + (sg.ev.start!==sg.ev.end ? " ~ "+sg.ev.end : "")
@@ -1540,8 +1549,7 @@ function makeEvRow(e){
     : kdate(pd(e.start))+"–"+kdate(pd(e.end));
   row.querySelector(".inm").textContent = it.name;
   row.querySelector(".t").appendChild(document.createTextNode(
-    (e.result === "합격" ? "✓ " : e.result === "불합격" ? "✗ " : "")
-    + (e.round ? "[" + e.round + "] " : "") + e.label
+    resultMark(e) + (e.round ? "[" + e.round + "] " : "") + e.label
   ));
   row.addEventListener("click", function(){ openEventSheet(e); });
   return row;
@@ -1656,16 +1664,20 @@ function renderAll(){
   renderDrawer();
 }
 
-/* ---------- 합격/불합격 ---------- */
+/* ---------- 결과 표시 ---------- */
 var rmenuFor = null;
 
 function openResultMenu(x, y, e){
   rmenuFor = e;
   var m = document.getElementById("rmenu");
   document.getElementById("rmenuHead").textContent = inst(e.inst).name + " · " + e.label;
-  Array.prototype.forEach.call(m.querySelectorAll("button[data-r]"), function(b){
-    b.setAttribute("aria-pressed", (e.result || "") === b.dataset.r ? "true" : "false");
-  });
+  var on = resultOn(e);
+  var setB = document.getElementById("rmenuSet");
+  setB.textContent = on;
+  setB.className = isSubmit(e.label) ? "pass" : "fail";
+  setB.setAttribute("aria-pressed", e.result === on ? "true" : "false");
+  // 켜 둔 게 없으면 지울 것도 없다
+  document.getElementById("rmenuClear").hidden = !e.result;
   m.hidden = false;
   // 열고 나서 크기를 재야 화면 밖으로 나가는 걸 막을 수 있다
   var r = m.getBoundingClientRect();
@@ -1703,7 +1715,7 @@ function setResult(e, r){
   // 한 단계에서 떨어지면 그 전형은 거기서 끝난다 — 단, 같은 기관에 아직
   // 진행 중인 다른 차수(예: 1차는 떨어졌지만 2차를 지원한 경우)가 있으면
   // 기관 전체를 탈락으로 돌리지 않는다.
-  if(r === "불합격"){
+  if(r === FAIL){
     var it = inst(e.inst);
     if(!it.missing && it.status === "active" && isLatestRound(e)){
       it.status = "rejected";
@@ -1739,7 +1751,7 @@ document.getElementById("rmenu").addEventListener("click", function(ev){
     return;
   }
   closeResultMenu();
-  setResult(e, b.dataset.r);
+  setResult(e, b.id === "rmenuSet" ? resultOn(e) : "");
 });
 
 document.getElementById("moreMonths").addEventListener("click", function(ev){
