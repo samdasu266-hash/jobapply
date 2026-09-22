@@ -110,10 +110,11 @@ for (const [label, sel] of [['진행 현황 칩', '.pipe .step'], ['다가오는
     const r = document.getElementById('rmenu').getBoundingClientRect();
     return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
   }));
-  await p.click('.rmenu button[data-r="합격"]');
+  const mark = await p.textContent('#rmenuSet');
+  await p.click('#rmenuSet');
   await p.waitForTimeout(300);
-  const saved = (await store(p)).events.filter(e => e.result === '합격').length;
-  ok(label + ': 합격이 저장된다', saved === 1, 'saved=' + saved);
+  const saved = (await store(p)).events.filter(e => e.result === mark).length;
+  ok(label + ': 표시가 저장된다 (' + mark + ')', saved === 1, 'saved=' + saved);
   ok(label + ': 선택 후 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
 }
 
@@ -160,7 +161,7 @@ await p.evaluate(() => {
   c.dataset.probe = '1';
 });
 await p.click('.up-card[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(350);
+await p.click('#rmenuSet'); await p.waitForTimeout(350);
 const afterFail = await store(p);
 eq('기관이 탈락으로 바뀐다', afterFail.institutions.find(i => i.id === 'nikom').status, 'rejected');
 // 탈락 기관은 취소선을 친 채로 남기지 않고 화면에서 뺀다
@@ -179,6 +180,58 @@ await p.evaluate(() => [...document.querySelectorAll('.chip:not(.all):not(.more)
 await p.waitForTimeout(250);
 ok('칩을 켜면 진행 현황에 다시 나온다', (await texts(p, '.pipe-name')).some(t => t.includes('NIKOM')));
 ok('되살리면 탈락 배지가 붙어 있다', (await texts(p, '.pipe .badge')).includes('탈락'));
+
+/* ─────────────────────────────────────────────── */
+section('제출 일정에는 합격·불합격이 없다');
+// 서류마감에 '불합격'을 물어봐야 답이 없다 — 냈는가 아닌가만 남는다.
+// 반대로 결과 일정에 '제출완료'는 뜻이 없다. 그래서 일정마다 켤 수 있는
+// 표시는 하나뿐이고, 메뉴도 그 하나만 내놓는다.
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 's1', inst: 'a', label: '서류마감', start: '2026-10-01', end: '2026-10-01' },
+  { id: 's2', inst: 'a', label: '면접',     start: '2026-11-01', end: '2026-11-01' },
+  { id: 's3', inst: 'a', label: '증빙서류 등록', start: '2026-11-20', end: '2026-11-20' },
+]});
+const menuFor = async (t) => {
+  await p.evaluate((txt) => {
+    document.querySelectorAll('.pipe .step[data-probe]').forEach(s => delete s.dataset.probe);
+    const m = document.querySelector('.pipe .step.more');
+    if (m && m.textContent !== '접기') m.click();
+  }, t);
+  await p.waitForTimeout(200);
+  await p.evaluate((txt) => {
+    [...document.querySelectorAll('.pipe .step:not(.more)')]
+      .find(s => s.textContent.includes(txt)).dataset.probe = '1';
+  }, t);
+  await p.click('.step[data-probe="1"]'); await p.waitForTimeout(200);
+};
+await menuFor('서류마감');
+eq('서류마감은 제출완료만 물어본다', await p.textContent('#rmenuSet'), '제출완료');
+ok('아직 켠 게 없으면 지우기는 숨는다', !(await shown(p, '#rmenuClear')).visible);
+await p.click('#rmenuSet'); await p.waitForTimeout(300);
+eq('서류마감에 제출완료가 기록된다',
+   (await store(p)).events.find(e => e.id === 's1').result, '제출완료');
+eq('제출완료는 기관을 탈락으로 돌리지 않는다',
+   (await store(p)).institutions[0].status, 'active');
+await menuFor('서류마감');
+ok('켜 둔 뒤에는 지우기가 나온다', (await shown(p, '#rmenuClear')).visible);
+await p.click('#rmenuClear'); await p.waitForTimeout(300);
+ok('지우면 표시가 없어진다', !(await store(p)).events.find(e => e.id === 's1').result);
+await menuFor('증빙서류 등록');
+eq('등록 일정도 제출완료로 본다', await p.textContent('#rmenuSet'), '제출완료');
+await menuFor('면접');
+eq('그 밖의 일정은 불합격만 물어본다', await p.textContent('#rmenuSet'), '불합격');
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+
+// 예전 데이터의 '합격'과, 종류가 안 맞는 표시는 지울 수도 없는 값으로 남는다
+await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+  { id: 'o1', inst: 'a', label: '면접결과', start: '2026-10-01', end: '2026-10-01', result: '합격' },
+  { id: 'o2', inst: 'a', label: '서류마감', start: '2026-10-05', end: '2026-10-05', result: '불합격' },
+  { id: 'o3', inst: 'a', label: '필기시험', start: '2026-10-09', end: '2026-10-09', result: '불합격' },
+]});
+const kept = await store(p);
+ok("예전 '합격'은 털어낸다", !kept.events.find(e => e.id === 'o1').result);
+ok("제출 일정의 '불합격'도 털어낸다", !kept.events.find(e => e.id === 'o2').result);
+eq('맞는 표시는 그대로 둔다', kept.events.find(e => e.id === 'o3').result, '불합격');
 
 /* ─────────────────────────────────────────────── */
 section('차수(회차) 이력 관리');
@@ -203,18 +256,26 @@ await p.evaluate(() => {
   heads[0].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '1';
 });
 await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+await p.click('#rmenuSet'); await p.waitForTimeout(300);
 let st = await store(p);
 eq('지난 차수 불합격: 기관은 그대로 진행중이다', st.institutions.find(i => i.id === 'a').status, 'active');
 ok('그 차수 일정에 불합격이 기록된다', st.events.some(e => e.round === '2026-1차' && e.result === '불합격'));
 
-// 반대로 최신 차수(2차)에서 불합격하면 지금까지와 같이 기관 전체가 탈락된다
+// 반대로 최신 차수(2차)에서 불합격하면 지금까지와 같이 기관 전체가 탈락된다.
+// 2차가 기본으로 내놓는 단계는 서류마감이고 제출 일정에는 불합격이 없으니,
+// 펼쳐서 면접을 누른다.
 await p.evaluate(() => {
   const heads = [...document.querySelectorAll('.pipe .round-head')];
-  heads[1].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '2';
+  heads[1].nextElementSibling.querySelector('.step.more').click();
+});
+await p.waitForTimeout(250);
+await p.evaluate(() => {
+  const heads = [...document.querySelectorAll('.pipe .round-head')];
+  [...heads[1].nextElementSibling.querySelectorAll('.step:not(.more)')]
+    .find(s => s.textContent.includes('면접')).dataset.probe = '2';
 });
 await p.click('.step[data-probe="2"]'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-r="불합격"]'); await p.waitForTimeout(300);
+await p.click('#rmenuSet'); await p.waitForTimeout(300);
 st = await store(p);
 eq('최신 차수 불합격: 기관이 탈락으로 바뀐다', st.institutions.find(i => i.id === 'a').status, 'rejected');
 
@@ -259,8 +320,8 @@ eq('평일에 겹치면 경고한다', (await texts(p, '.cf-body')).length, 1);
 /* ─────────────────────────────────────────────── */
 section('전형 단계 접기');
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
-  { id: 'p1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20' },
-  { id: 'p2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01', result: '합격' },
+  { id: 'p1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20', result: '제출완료' },
+  { id: 'p2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01' },
   { id: 'f1', inst: 'a', label: '면접',     start: '2026-10-06', end: '2026-10-08' },
   { id: 'f2', inst: 'a', label: '최종발표', start: '2026-10-20', end: '2026-10-20' },
 ]});
@@ -268,13 +329,13 @@ eq('기본은 다음 단계 하나와 +N', await texts(p, '.pipe .step'), ['면�
 await p.click('.step.more'); await p.waitForTimeout(250);
 eq('펼치면 전 단계가 나온다', (await texts(p, '.pipe .step')).length, 5);
 ok('접혀 있던 결과 기록이 살아 있다',
-   (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류결과')));
+   (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류마감')));
 // 접힌 단계에 결과를 적는 동안 다시 접히면 연달아 기록할 수 없다.
-// (불합격은 기관을 숨기므로, 상태를 바꾸지 않는 합격으로 확인한다)
+// (불합격은 기관을 숨기므로, 상태를 바꾸지 않는 제출완료로 확인한다)
 await p.evaluate(() => [...document.querySelectorAll('.pipe .step')]
   .find(s => s.textContent.includes('서류마감')).dataset.probe = '1');
 await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-r="합격"]'); await p.waitForTimeout(350);
+await p.click('#rmenuSet'); await p.waitForTimeout(350);
 ok('결과를 적어도 펼침이 유지된다', (await p.textContent('.step.more')) === '접기');
 await p.click('.step.more'); await p.waitForTimeout(250);
 eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
@@ -630,7 +691,7 @@ ok('날짜를 안 채우면 기관이 만들어지지 않는다', await p.evalua
 await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 await p.click('#closeDrawer'); await p.waitForTimeout(250);
 await p.click('.pipe .step'); await p.waitForTimeout(200);
-await p.click('.rmenu button[data-r="합격"]'); await p.waitForTimeout(400);
+await p.click('#rmenuSet'); await p.waitForTimeout(400);
 ok('다른 저장이 일어나도 빈 기관이 저장되지 않는다',
    !(await store(p)).institutions.some(i => i.name === '빈기관'));
 
