@@ -1228,6 +1228,11 @@ section('면접 준비 페이지 (neca.html)');
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
   const agencyText = await ax.textContent('#view');
+  ok('2026 전략체계와 기관 전체/지원직무 구분이 반영되어 있다',
+     agencyText.includes('선진입 의료기술 근거창출 5% 확대') &&
+     agencyText.includes('신의료기술평가 신뢰지수 100') &&
+     agencyText.includes('기관 전체') &&
+     agencyText.includes('신의료기술평가 직무'));
   ok('기관 화면에 사업본부 5개 팀과 윤리가 반영되어 있다',
      agencyText.includes('평가사업팀') && agencyText.includes('혁신평가팀') &&
      agencyText.includes('근거창출지원팀') && agencyText.includes('평가사업협력팀') &&
