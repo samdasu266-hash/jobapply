@@ -1194,6 +1194,29 @@ section('면접 준비 페이지 (neca.html)');
   eq('필수 카드만 볼 수 있다', await tr.textContent('#result'), '7개 개념');
   ok('홈에서 필수 진도를 보여준다', (await (await open({ width: 1280, height: 900 }, 'light', {})).textContent('.hero')).includes('필수 개념 0/7'));
 
+  // 직무 설명은 한 곳에만 둔다 — 두 화면에 따로 적었다가 한쪽에 옛 '세 가지 축'이 남았다
+  const ax = await open({ width: 1280, height: 900 }, 'light', {});
+  await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
+  const agencyText = await ax.textContent('#view');
+  ok('기관·제도 화면에 직무 다섯 축이 나온다', agencyText.includes('다섯 축') && agencyText.includes('선진입 기술 관리'));
+  ok('옛 세 가지 축은 어디에도 없다', !(await ax.content()).includes('세 가지 축'));
+  await ax.goto(NECA + '#learn/c9'); await ax.waitForTimeout(300);
+  ok('연구원 카드에도 같은 다섯 축이 나온다', (await ax.textContent('#c9')).includes('컨설팅·대외협력') && !(await ax.textContent('#c9')).includes('{{AXES}}'));
+  await ax.fill('#search', '선진입 기술 관리'); await ax.waitForTimeout(150);
+  ok('다섯 축 내용도 검색된다', (await ax.textContent('#cards')).includes('연구원과 위원회'));
+  // 직무기술서가 명시한 업무는 상황 질문으로 연습한다
+  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
+  await ax.selectOption('#q-group', '__req'); await ax.waitForTimeout(150);
+  eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 8);
+  ok('필수 질문에 선진입 자료 누락 질문이 있다', (await ax.textContent('#questions')).includes('누락이나 기관별 차이'));
+  await ax.goto(NECA + '#home'); await ax.waitForTimeout(300);
+  ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
+  // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
+  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  eq('경험 항목은 8개다', (await ax.$$('#view details')).length, 8);
+  ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
+    [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
+
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
 
