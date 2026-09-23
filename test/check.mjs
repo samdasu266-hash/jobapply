@@ -1196,8 +1196,8 @@ section('면접 준비 페이지 (neca.html)');
   await tr.goto(NECA + '#learn'); await tr.waitForTimeout(300);
   ok('필수 카드에 필수 배지가 붙는다', (await tr.textContent('#c1 summary')).includes('필수'));
   await tr.selectOption('#group', '__req'); await tr.waitForTimeout(150);
-  eq('필수 카드만 볼 수 있다', await tr.textContent('#result'), '7개 개념');
-  ok('홈에서 필수 진도를 보여준다', (await (await open({ width: 1280, height: 900 }, 'light', {})).textContent('.hero')).includes('필수 개념 0/7'));
+  eq('필수 카드만 볼 수 있다', await tr.textContent('#result'), '11개 개념');
+  ok('홈에서 필수 진도를 보여준다', (await (await open({ width: 1280, height: 900 }, 'light', {})).textContent('.hero')).includes('필수 개념 0/11'));
 
   // 직무 설명은 한 곳에만 둔다 — 두 화면에 따로 적었다가 한쪽에 옛 '세 가지 축'이 남았다
   const ax = await open({ width: 1280, height: 900 }, 'light', {});
@@ -1212,17 +1212,29 @@ section('면접 준비 페이지 (neca.html)');
   // 직무기술서가 명시한 업무는 상황 질문으로 연습한다
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   await ax.selectOption('#q-group', '__req'); await ax.waitForTimeout(150);
-  eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 8);
+  eq('필수 질문만 볼 수 있다', (await ax.$('#questions > details')).length, 11);
   ok('필수 질문에 선진입 자료 누락 질문이 있다', (await ax.textContent('#questions')).includes('누락이나 기관별 차이'));
+  ok('직무 이해 핵심 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('신의료기술평가 연구원이 실제로 하는 일') && (await ax.textContent('#questions')).includes('식약처 허가와 신의료기술평가'));
+  ok('신청자 이의·연구윤리·인재상 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('문헌 선정이나 평가 결과에 강하게 이의') && (await ax.textContent('#questions')).includes('NECA 연구윤리') && (await ax.textContent('#questions')).includes('NECA 인재상'));
   await ax.goto(NECA + '#home'); await ax.waitForTimeout(300);
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
   eq('경험 항목은 10개다', (await ax.$('#view details')).length, 10);
+  ok('경험 화면에 직무·인재상·팀 매핑이 보인다', (await ax.textContent('#view')).includes('내 경험을 NECA 언어로 보기') && (await ax.textContent('#view')).includes('NECA 인재상으로 보기') && (await ax.textContent('#view')).includes('사업본부 팀으로 보기'));
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
   // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
+  const agencyText = await ax.textContent('#view');
+  ok('기관 화면에 사업본부 5개 팀과 윤리가 반영되어 있다',
+     agencyText.includes('평가사업팀') && agencyText.includes('혁신평가팀') &&
+     agencyText.includes('근거창출지원팀') && agencyText.includes('평가사업협력팀') &&
+     agencyText.includes('평가사업관리팀') && agencyText.includes('연구윤리·이해충돌'));
+  ok('면접위원 관점은 실제 구성을 단정하지 않는다',
+     agencyText.includes('내부 실무자') && agencyText.includes('외부위원') &&
+     agencyText.includes('실제 위원 구성을 공식자료로 확인한 것은 아닙니다'));
   const practiceText = await ax.textContent('#questions');
   ok('영어·통계 답변에 제출 점수와 프로그램 실습 수준이 있다',
      practiceText.includes('TOEIC 740') && practiceText.includes('SPSS') && practiceText.includes('SAS'));
