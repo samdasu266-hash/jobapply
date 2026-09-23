@@ -1,54 +1,270 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="referrer" content="no-referrer"><title>NECA 면접 준비 · Study Room</title><style>
-:root{color-scheme:light dark;--ink:#172c41;--muted:#536577;--bg:#f4f7f8;--card:#fff;--line:#dce5e9;--teal:#087d73;--accent:#087d73;--on-accent:#fff;--soft:#e7f4f0;--amber:#885615;--rose:#a34858;--warn-bg:#fff2dc;--rose-bg:#fcecf0;--caution-bg:#fff6e8;--caution-ink:#725124;--cue-ink:#15574f;--field-line:#bbcbd1;--stripe:#f8fafb;--hero-bg:#172c41;--hero-ink:#fff;--hero-sub:#d0dfe9;--hero-eyebrow:#92d7c8;--dday:#ffd479}
-/* 트래커가 다크 모드를 따르므로, 여기로 넘어왔을 때 밝은 화면이 튀지 않게 맞춘다 */
-@media(prefers-color-scheme:dark){:root{--ink:#e6edf2;--muted:#a3b3c1;--bg:#0f1720;--card:#17212b;--line:#2a3845;--teal:#5cc9b6;--accent:#0f8f83;--soft:#15302c;--amber:#e3b766;--rose:#ef93a4;--warn-bg:#3a2d12;--rose-bg:#3b1f27;--caution-bg:#2f2614;--caution-ink:#e8cb95;--cue-ink:#a4e3d6;--field-line:#3a4b5a;--stripe:#1a2530;--hero-bg:#1d2e3d;--hero-sub:#c3d3df}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.75}button,input,select,textarea{font:inherit}button,a,input,select,summary,textarea{touch-action:manipulation}button{cursor:pointer}a{color:var(--teal)}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #a35cbd;outline-offset:3px}button,.button{border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:10px 15px;text-decoration:none;font-weight:650;display:inline-block}button:hover,.button:hover{border-color:var(--teal)}.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}.shell{max-width:1200px;margin:auto;display:grid;grid-template-columns:226px minmax(0,1fr);gap:32px;padding:28px 24px 80px}aside{position:sticky;top:24px;align-self:start}.brand{font-weight:850;font-size:25px;letter-spacing:-1px}.eyebrow{font-size:11px;letter-spacing:2px;font-weight:800;color:var(--teal)}.small{font-size:13px;color:var(--muted)}nav{display:grid;gap:7px;margin:27px 0}nav a{padding:11px 14px;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:650}nav a[aria-current="page"]{background:var(--ink);color:var(--card)}.side-foot{border-top:1px solid var(--line);padding-top:16px;font-size:12px;color:var(--muted)}h1{font-size:34px;letter-spacing:-1.2px;line-height:1.35;margin:10px 0}h2{font-size:22px;letter-spacing:-.5px;margin:0 0 16px}h3{font-size:18px;margin:12px 0}p{margin:10px 0}.lead{color:var(--muted);margin-bottom:25px}.hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:22px;padding:32px;margin-bottom:22px}.hero .eyebrow{color:var(--hero-eyebrow)}.hero p{color:var(--hero-sub);max-width:570px}.hero .button{margin:16px 8px 0 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.box{padding:24px;border:1px solid var(--line);background:var(--card);border-radius:17px;margin-bottom:18px}.box.compact{margin:0}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.spread{justify-content:space-between}.pill{font-size:12px;font-weight:750;padding:3px 10px;border-radius:30px;background:var(--soft);color:var(--teal);display:inline-block}.pill.warn{background:var(--warn-bg);color:var(--amber)}.pill.rose{background:var(--rose-bg);color:var(--rose)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:20px 0}.toolbar input{flex:1;min-width:180px}.toolbar input,.toolbar select,textarea{border:1px solid var(--field-line);background:var(--card);border-radius:10px;padding:11px;color:var(--ink)}.toolbar label{font-size:14px}.toolbar label input{min-width:0}details{border:1px solid var(--line);border-radius:15px;background:var(--card);margin:12px 0;overflow:hidden;scroll-margin-top:25px}summary{cursor:pointer;padding:19px 22px;font-weight:750;list-style:none;display:flex;align-items:center;gap:12px}summary::after{content:'＋';margin-left:auto;flex:none;font-size:21px;color:var(--teal)}details[open]>summary::after{content:'−'}summary .num{color:var(--teal);font-size:13px;flex:none}summary .title{flex:1}summary small{font-size:11px;color:var(--muted);font-weight:500}.detail-body{padding:0 22px 22px}.detail-body h3{font-size:17px}.detail-body blockquote{border-left:3px solid var(--teal);padding-left:16px;margin-left:0}.cue{background:var(--soft);padding:14px 18px;border-radius:10px;color:var(--cue-ink);font-weight:650;margin:12px 0}.caution{background:var(--caution-bg);border-radius:10px;padding:14px;font-size:14px;color:var(--caution-ink)}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:11px;min-width:100px}th{background:var(--bg)}.table-scroll{overflow:auto;margin:15px 0}textarea{width:100%;resize:vertical;min-height:130px;margin:9px 0;font-size:15px}label{cursor:pointer}.actions{border-top:1px solid var(--line);padding-top:15px;margin-top:18px}.actions button[aria-pressed="true"]{border-color:var(--teal);background:var(--soft);color:var(--teal)}progress{width:100%;height:9px;accent-color:var(--accent)}.metric{font-size:36px;font-weight:800;letter-spacing:-1px}.list-link{display:block;padding:13px 0;border-bottom:1px solid var(--line);text-decoration:none;font-weight:600}.empty{text-align:center;padding:35px;color:var(--muted)}#notice{color:var(--amber);background:var(--warn-bg);padding:10px 15px;border-radius:8px;margin-bottom:15px}.hidden,[hidden]{display:none!important}.save-state{font-size:12px;color:var(--muted);min-height:22px}.footer{margin-top:35px;font-size:12px;color:var(--muted)}.skip{position:absolute;left:10px;top:-60px}.skip:focus{top:10px;background:var(--card);padding:10px;z-index:10}ul,ol{padding-left:23px}li{margin:5px 0}.source-list a{overflow-wrap:anywhere}.checklist{display:grid;gap:12px}.checklist label{display:flex;gap:10px;align-items:start}.checklist input{margin-top:8px}.local-help{padding:12px;border-radius:10px;background:var(--bg);font-size:12px;color:var(--muted)}@media(max-width:800px){.shell{display:block;padding:14px 16px calc(96px + env(safe-area-inset-bottom))}
-aside{position:static}
-aside .eyebrow,aside>.small:not(:first-child),.side-foot{display:none}
-.brand{font-size:20px;margin-top:6px}
-h1{font-size:27px}
-h2{font-size:21px}
-.hero{padding:22px}
-.grid{gap:12px}
-.box{padding:20px}
-summary{padding:18px}
-.detail-body{padding:0 18px 22px}
+:root{
+  color-scheme:light dark;
+  --ink:#1f2933;--muted:#667085;--bg:#f7f8fa;--card:#ffffff;--line:#e2e7ec;
+  --accent:#17324d;--accent-soft:#eef3f7;--accent-ink:#17324d;
+  --green:#216e5b;--green-soft:#edf7f3;--amber:#8a5a18;--amber-soft:#fff7e8;
+  --rose:#9a4858;--rose-soft:#fbf0f2;--field:#cbd5df;--stripe:#fafbfc;
 }
-@media(max-width:480px){.grid{grid-template-columns:1fr}.toolbar{gap:8px}.toolbar input{flex-basis:100%}summary{gap:8px}.hero .button{font-size:14px}.box{border-radius:13px}}@media print{aside,.toolbar,button,.actions,textarea,.save-state,.footer,.hero .button{display:none!important}.shell{display:block;padding:0}body{background:white;color:black}.box,details{break-inside:avoid}details>*{display:block!important}h1{font-size:25px}.hero{background:white;color:black;border:1px solid #aaa}.hero p{color:black}}
-/* Reading rhythm, narrow screens, and explicit table boundaries */
-main{min-width:0;}#view{overflow-wrap:anywhere;}
-body{font-size:16px;line-height:1.85;}p,li,td{word-break:keep-all;overflow-wrap:anywhere;}
-h1,h2,h3,summary{word-break:keep-all;overflow-wrap:anywhere;}
-.detail-body{max-width:780px;}.detail-body>h2,.detail-body>h3{margin-top:28px;}
-.detail-body>p,.verification p{margin:14px 0;}.detail-body li{margin:9px 0;}
-.small,.footer,.side-foot{font-size:14px;}.lead{max-width:65ch;line-height:1.8;}
-.summary small,summary small{font-size:13px;}.cue{line-height:1.8;}
-caption{text-align:left;font-weight:700;padding:10px 0;}th{font-weight:700;}
-.table-scroll{max-width:100%;border:1px solid var(--line);border-radius:10px;}
-th,td{line-height:1.75;padding:14px;}tbody tr:nth-child(even){background:var(--stripe);}
-.verification{margin:26px 0;}.verification table{min-width:620px;}
-nav a{min-height:44px;}button,.button{min-height:44px;}
-@media(max-width:380px){.shell{padding-left:12px;padding-right:12px;}.box{padding:16px;}.toolbar select{max-width:100%;}}
-/* D-day: 면접 준비 페이지에서 가장 먼저 보여야 할 숫자 */
-.dday{font-size:52px;font-weight:850;letter-spacing:-2px;line-height:1.1;margin:6px 0 4px;color:var(--dday)}
-.dday-when{font-size:17px;font-weight:700;margin:0 0 4px;color:var(--hero-ink)}
-.hero .next{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
-/* 아코디언을 훑을 때 상태가 보이도록 제목 옆에 배지를 단다 */
-summary .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}summary .badges:empty{display:none}
-.pill.req{background:var(--ink);color:var(--card)}.pill.ext{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
-.pill.done{background:var(--soft);color:var(--teal)}
-.pill.star{background:var(--warn-bg);color:var(--amber)}
-.toolbar label{display:inline-flex;align-items:center;gap:8px;min-height:44px;white-space:nowrap;flex:none}
-.toolbar input[type=checkbox]{width:20px;height:20px;min-width:20px;margin:0;accent-color:var(--accent)}
+@media(prefers-color-scheme:dark){
+  :root{--ink:#e8edf2;--muted:#a8b3bf;--bg:#111820;--card:#17212b;--line:#2a3540;
+  --accent:#d5e4ef;--accent-soft:#1b2a36;--accent-ink:#d9e8f2;--green:#8ad0bd;
+  --green-soft:#173028;--amber:#e3bb79;--amber-soft:#342918;--rose:#efa0ad;
+  --rose-soft:#3a2228;--field:#3b4a58;--stripe:#1a2530}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  font-size:16px;line-height:1.72;letter-spacing:-.01em;
+}
+button,input,select,textarea{font:inherit}
+button,a,input,select,summary,textarea{touch-action:manipulation}
+button{cursor:pointer}
+a{color:var(--accent);text-underline-offset:3px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{
+  outline:3px solid #b48bd0;outline-offset:3px
+}
+
+.shell{
+  max-width:1180px;margin:0 auto;display:grid;
+  grid-template-columns:190px minmax(0,1fr);gap:46px;
+  padding:28px 26px 80px;
+}
+aside{position:sticky;top:24px;align-self:start}
+.brand{font-size:21px;font-weight:780;letter-spacing:-.04em;margin:5px 0 2px}
+.eyebrow{
+  margin:0 0 8px;font-size:11px;line-height:1.4;letter-spacing:.16em;
+  font-weight:800;color:var(--accent);text-transform:uppercase;
+}
+.small{font-size:13px;line-height:1.6;color:var(--muted)}
+.sync-state{font-size:12px;color:var(--muted);margin:7px 0 0;min-height:18px}
+.sync-state.fail{color:var(--rose)}
+.sync-state .retry{min-height:30px;padding:3px 8px;margin-left:6px;font-size:12px}
+
+nav{display:grid;gap:1px;margin:28px 0}
+nav a{
+  min-height:40px;display:flex;align-items:center;
+  padding:8px 4px 8px 12px;border-left:3px solid transparent;
+  border-radius:0;text-decoration:none;color:var(--muted);font-weight:620;
+}
+nav a:hover{color:var(--ink);background:transparent}
+nav a[aria-current="page"]{
+  color:var(--ink);font-weight:760;border-left-color:var(--accent);background:transparent;
+}
 nav a .s{display:none}
-.sync-state{font-size:12px;color:var(--muted);margin:6px 0 0;min-height:18px}.sync-state.fail{color:var(--rose)}
-.sync-state .retry{min-height:32px;padding:3px 10px;margin-left:6px;font-size:12px}
-/* 모바일: 메뉴를 하단에 고정한다. 위에 두면 본문이 화면 1/3 아래에서 시작하고,
-   긴 목록 끝에서 다른 메뉴로 가려면 맨 위까지 다시 올라가야 했다. */
+.side-foot{
+  border-top:1px solid var(--line);padding-top:16px;
+  font-size:12px;line-height:1.65;color:var(--muted)
+}
+
+main{min-width:0}
+#view{max-width:860px;overflow-wrap:anywhere}
+h1,h2,h3,summary{word-break:keep-all;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.3;letter-spacing:-.045em;margin:6px 0 10px;font-weight:780}
+h2{font-size:20px;line-height:1.4;letter-spacing:-.03em;margin:0 0 14px;font-weight:760}
+h3{font-size:17px;line-height:1.5;letter-spacing:-.02em;margin:18px 0 8px;font-weight:720}
+p{margin:10px 0}
+p,li,td{word-break:keep-all;overflow-wrap:anywhere}
+.lead{max-width:68ch;margin:0 0 30px;color:var(--muted);line-height:1.75}
+
+button,.button{
+  min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--field);border-radius:6px;background:var(--card);
+  color:var(--ink);padding:8px 13px;text-decoration:none;font-weight:680;
+}
+button:hover,.button:hover{border-color:var(--accent);color:var(--accent)}
+.primary{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.primary:hover{color:var(--card);filter:brightness(.94)}
+
+.hero{
+  background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);
+  border-radius:0;padding:0 0 24px;margin-bottom:28px;
+}
+.hero .eyebrow{color:var(--accent)}
+.hero p{color:var(--muted);max-width:70ch}
+.hero .button{margin:14px 8px 0 0}
+.hero .next{
+  margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);
+  font-size:14px;color:var(--muted)
+}
+.dday{
+  display:inline-block;margin:0 8px 0 0;padding:3px 8px;
+  border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);
+  font-size:15px;line-height:1.5;font-weight:800;letter-spacing:0;vertical-align:middle;
+}
+.dday-when{
+  display:inline;color:var(--ink)!important;font-size:15px;font-weight:700;
+}
+.hero .place{font-size:14px;margin-top:6px}
+
+.home-title{font-size:30px;margin:6px 0 14px}
+.home-status{
+  display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;
+  margin:14px 0 2px;font-size:14px;color:var(--muted)
+}
+.home-status strong{color:var(--ink);font-weight:720}
+.study-section{
+  padding:24px 0;border-bottom:1px solid var(--line);
+}
+.study-section:first-of-type{padding-top:6px}
+.section-kicker{
+  display:block;margin-bottom:7px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em
+}
+.question-title{font-size:21px;line-height:1.45;margin:6px 0 7px;font-weight:770}
+.question-cue{margin:0 0 14px;color:var(--muted);font-size:14px}
+.study-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.study-list{margin:6px 0 0;padding:0;list-style:none}
+.study-list li{margin:0}
+.study-list a{
+  display:flex;justify-content:space-between;gap:14px;padding:11px 0;
+  border-top:1px solid var(--line);text-decoration:none;font-weight:620;color:var(--ink)
+}
+.study-list a::after{content:'→';color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.box{
+  margin:0 0 28px;padding:0 0 24px;border:0;border-bottom:1px solid var(--line);
+  background:transparent;border-radius:0;
+}
+.box.compact{margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+.metric{font-size:24px;line-height:1.3;font-weight:780;letter-spacing:-.04em}
+progress{width:100%;height:5px;accent-color:var(--accent)}
+
+.pill{
+  display:inline-block;padding:2px 7px;border-radius:4px;background:var(--accent-soft);
+  color:var(--accent-ink);font-size:11px;line-height:1.55;font-weight:720;
+}
+.pill.req{background:var(--accent);color:var(--card)}
+.pill.ext{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.pill.done{background:var(--green-soft);color:var(--green)}
+.pill.star,.pill.warn{background:var(--amber-soft);color:var(--amber)}
+.pill.rose{background:var(--rose-soft);color:var(--rose)}
+
+.toolbar{
+  display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center;
+  margin:18px 0 20px;padding:0;
+}
+.toolbar input{flex:1;min-width:210px}
+.toolbar input,.toolbar select,textarea{
+  border:1px solid var(--field);background:var(--card);border-radius:6px;
+  padding:9px 10px;color:var(--ink)
+}
+.toolbar label{display:inline-flex;align-items:center;gap:7px;font-size:14px;white-space:nowrap}
+.toolbar input[type=checkbox]{width:18px;height:18px;min-width:18px;margin:0;accent-color:var(--accent)}
+
+details{
+  margin:0;border:0;border-bottom:1px solid var(--line);
+  border-radius:0;background:transparent;overflow:visible;scroll-margin-top:20px;
+}
+summary{
+  min-height:58px;display:flex;align-items:center;gap:12px;
+  padding:15px 2px;cursor:pointer;list-style:none;font-weight:690;
+}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'＋';margin-left:auto;flex:none;font-size:17px;font-weight:500;color:var(--muted)}
+details[open]>summary::after{content:'−'}
+summary .num{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;flex:none}
+summary .title{flex:1}
+summary small{font-size:12px;color:var(--muted);font-weight:500}
+summary .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+summary .badges:empty{display:none}
+.detail-body{max-width:760px;padding:4px 2px 24px;line-height:1.78}
+.detail-body>h2,.detail-body>h3{margin-top:24px}
+.detail-body>p,.verification p{margin:12px 0}
+.detail-body li{margin:7px 0}
+.detail-body details{
+  margin:14px 0;border:1px solid var(--line);border-radius:7px;background:var(--card);overflow:hidden
+}
+.detail-body details>summary{padding:12px 14px;min-height:48px}
+.detail-body details>.detail-body{padding:2px 14px 16px}
+
+.cue{
+  margin:12px 0;padding:10px 13px;border-left:3px solid var(--accent);
+  border-radius:0;background:var(--accent-soft);color:var(--accent-ink);
+  font-weight:620;line-height:1.7;
+}
+.caution{
+  margin:14px 0;padding:11px 13px;border-left:3px solid var(--amber);
+  border-radius:0;background:var(--amber-soft);color:var(--ink);font-size:14px;
+}
+
+textarea{width:100%;resize:vertical;min-height:128px;margin:8px 0;font-size:15px;line-height:1.7}
+.actions{border-top:0;padding-top:10px;margin-top:12px}
+.actions button[aria-pressed="true"]{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.save-state{font-size:12px;color:var(--muted);min-height:20px}
+.list-link{
+  display:block;padding:11px 0;border-bottom:1px solid var(--line);
+  text-decoration:none;font-weight:620;color:var(--ink)
+}
+.empty{text-align:left;padding:24px 0;color:var(--muted)}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+caption{text-align:left;font-weight:700;padding:10px 0}
+th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:12px;line-height:1.65;min-width:100px}
+th{background:var(--bg);font-weight:700}
+tbody tr:nth-child(even){background:var(--stripe)}
+.table-scroll{max-width:100%;overflow:auto;margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.verification{margin:26px 0}.verification table{min-width:620px}
+
+#notice{color:var(--amber);background:var(--amber-soft);padding:9px 12px;border-radius:5px;margin-bottom:16px}
+.hidden,[hidden]{display:none!important}
+.footer{max-width:760px;margin-top:38px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.skip{position:absolute;left:10px;top:-60px}
+.skip:focus{top:10px;background:var(--card);padding:10px;z-index:50}
+ul,ol{padding-left:22px}
+li{margin:5px 0}
+.source-list a{overflow-wrap:anywhere}
+.checklist{display:grid;gap:10px}
+.checklist label{display:flex;gap:9px;align-items:start}
+.checklist input{margin-top:7px}
+.local-help{padding:10px 12px;border-left:3px solid var(--line);background:transparent;font-size:12px;color:var(--muted)}
+
 @media(max-width:800px){
-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
-nav a{min-height:48px;display:flex;align-items:center;justify-content:center;padding:4px 1px;border-radius:10px;font-size:12px;letter-spacing:-.3px;white-space:nowrap;text-align:center;border:0;background:none}
-nav a .l{display:none}nav a .s{display:inline}
-.dday{font-size:44px}
+  .shell{display:block;padding:18px 16px calc(88px + env(safe-area-inset-bottom))}
+  aside{position:static}
+  aside .eyebrow,aside>.small:not(:first-child),.side-foot{display:none}
+  .brand{font-size:19px;margin-top:5px}
+  #view{max-width:none}
+  h1{font-size:25px}
+  h2{font-size:19px}
+  .home-title{font-size:27px}
+  .grid{grid-template-columns:1fr;gap:10px}
+  .study-section{padding:21px 0}
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:0;
+    padding:5px 4px calc(5px + env(safe-area-inset-bottom));
+    background:var(--card);border-top:1px solid var(--line);
+    box-shadow:0 -2px 10px rgba(0,0,0,.05)
+  }
+  nav a{
+    min-height:46px;justify-content:center;padding:4px 1px;border-left:0;border-top:2px solid transparent;
+    font-size:12px;letter-spacing:-.03em;text-align:center
+  }
+  nav a[aria-current="page"]{border-left:0;border-top-color:var(--accent)}
+  nav a .l{display:none}nav a .s{display:inline}
+  summary{padding:14px 1px}
+  .detail-body{padding-bottom:22px}
+}
+@media(max-width:480px){
+  .toolbar{gap:7px}
+  .toolbar input{flex-basis:100%}
+  .hero .button{font-size:14px}
+  .study-actions .button,.study-actions button{width:100%}
+}
+@media print{
+  aside,.toolbar,button,.actions,textarea,.save-state,.footer,.hero .button{display:none!important}
+  .shell{display:block;padding:0}
+  #view{max-width:none}
+  body{background:white;color:black}
+  details{break-inside:avoid}
+  details>*{display:block!important}
+  .hero{border-bottom:1px solid #aaa}
+  .box{break-inside:avoid}
 }
 </style></head><body><a class="skip" href="#main">본문으로 이동</a><div class="shell"><aside><a href="./index.html" class="small">← 지원 일정으로</a><p class="eyebrow">INTERVIEW STUDY ROOM</p><div class="brand">NECA 면접 준비</div><div class="small">연구원 · 신의료기술평가</div><p id="sync-state" class="sync-state" role="status"></p><nav aria-label="학습 메뉴"><a href="#home" data-route="home"><span class="l">오늘의 준비</span><span class="s">오늘</span></a><a href="#learn" data-route="learn"><span class="l">직무 지식</span><span class="s">지식</span></a><a href="#practice" data-route="practice"><span class="l">답변 연습</span><span class="s">연습</span></a><a href="#experience" data-route="experience"><span class="l">내 경험 정리</span><span class="s">경험</span></a><a href="#agency" data-route="agency"><span class="l">기관·제도·출처</span><span class="s">기관·제도</span></a><a href="#summary" data-route="summary"><span class="l">면접 직전 요약</span><span class="s">요약</span></a></nav><div class="side-foot">읽고, 가리고, 말해보세요.<br>동기화는 지원 일정의 기기 간 동기화 설정을 따릅니다.<br>개인 학습 자료 · NECA 공식 사이트 아님</div></aside><main id="main" tabindex="-1"><div id="notice" hidden role="status"></div><div id="view"></div><footer class="footer">제도·통계의 검증 범위는 기관·제도 메뉴에 표시했습니다. 학습용 예시는 실제 수행 경험이 아닙니다.</footer></main></div>
 <script>
@@ -152,7 +368,7 @@ function interview(){
     return{d,when:ev.start===(ev.end||ev.start)?kd(s):kd(s)+' – '+kd(e),place:ev.place||inst.place||''};
   }catch(e){return null}
 }
-function home(){const next=DATA.questions.find(q=>q.tier==='필수'&&!state.practiced.includes(q.id))||DATA.questions.find(q=>!state.practiced.includes(q.id))||DATA.questions[0];const last=DATA.cards.find(c=>c.id===state.last)||DATA.cards[0];$('#view').innerHTML=`<section class="hero">${(()=>{const iv=interview();if(!iv)return '<p class="eyebrow">NECA 면접</p><h1>면접 일정을 기다리는 중</h1><p>지원 일정에 NECA 면접을 등록하면 여기에 D-day가 뜹니다.</p>';return `<p class="eyebrow">NECA 면접까지</p><h1 class="dday">${iv.d>0?'D-'+iv.d:iv.d===0?'오늘':'진행 중'}</h1><p class="dday-when">${iv.when}</p>${iv.place?`<p>${esc(iv.place)}</p>`:''}`})()}<p class="next">필수 개념 ${DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length}/${DATA.cards.filter(c=>c.tier==='필수').length} · 남은 개념 ${DATA.cards.length-state.done.length}개 · 연습 안 한 질문 ${DATA.questions.length-state.practiced.length}개</p><a class="button primary" href="#learn/${last.id}">이어서 공부하기 →</a><a class="button" href="#summary">직전 요약 보기</a></section><div class="grid"><section class="box compact"><span class="small">설명할 수 있는 개념</span><div class="metric">${state.done.length}<span class="small"> / ${DATA.cards.length}</span></div><progress value="${state.done.length}" max="${DATA.cards.length}" aria-label="개념 학습 진도"></progress><p class="small">마지막 학습 · ${esc(last.title)}</p></section><section class="box compact"><span class="small">말로 연습한 질문</span><div class="metric">${state.practiced.length}<span class="small"> / ${DATA.questions.length}</span></div><p class="small">정답 점수가 아닌, 직접 연습한 기록입니다.</p></section></div><section class="box" style="margin-top:18px"><div class="row spread"><h2>오늘의 답변 연습</h2>${status(next.status)}</div><h3>${esc(next.title)}</h3><p class="small">${esc(next.cue)}</p><a class="button" href="#practice/${next.id}">질문 펼치기 →</a></section><section class="box"><div class="row spread"><h2>다시 볼 개념</h2><a href="#learn/review">모아보기</a></div>${state.review.length?state.review.slice(0,4).map(id=>{const c=DATA.cards.find(x=>x.id===id);return `<a class="list-link" href="#learn/${id}">${esc(c.title)} →</a>`}).join(''):'<p class="small">헷갈리는 카드에 ‘다시 보기’를 표시하면 이곳에 모입니다.</p>'}</section><section class="box"><h2>준비의 네 가지 기준</h2><div class="grid"><div><b>평가 목적</b><p class="small">안전성과 유효성</p></div><div><b>근거 검토</b><p class="small">질문–검색–선정–추출–평가–합성</p></div><div><b>결과 해석</b><p class="small">효과–위해–확실성–적용성</p></div><div><b>나의 경험</b><p class="small">직접 한 일–검증된 수치–남은 한계</p></div></div></section>`}
+function home(){const next=DATA.questions.find(q=>q.tier==='필수'&&!state.practiced.includes(q.id))||DATA.questions.find(q=>!state.practiced.includes(q.id))||DATA.questions[0];const last=DATA.cards.find(c=>c.id===state.last)||DATA.cards[0];const review=state.review.slice(0,4).map(id=>DATA.cards.find(x=>x.id===id)).filter(Boolean);$('#view').innerHTML=`<section class="hero"><p class="eyebrow">오늘의 학습</p><h1 class="home-title">NECA 면접 준비</h1>${(()=>{const iv=interview();if(!iv)return '<p class="small">면접 일정이 등록되면 날짜와 장소가 여기에 표시됩니다.</p>';return `<div><span class="dday">${iv.d>0?'D-'+iv.d:iv.d===0?'오늘':'진행 중'}</span><span class="dday-when">${iv.when}</span></div>${iv.place?`<p class="place">${esc(iv.place)}</p>`:''}`})()}<div class="home-status"><span>필수 개념 <strong>${DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length}/${DATA.cards.filter(c=>c.tier==='필수').length}</strong></span><span>전체 개념 <strong>${state.done.length}/${DATA.cards.length}</strong></span><span>답변 연습 <strong>${state.practiced.length}/${DATA.questions.length}</strong></span></div><p class="next">필수 개념 ${DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length}/${DATA.cards.filter(c=>c.tier==='필수').length} · 남은 개념 ${DATA.cards.length-state.done.length}개 · 연습 안 한 질문 ${DATA.questions.length-state.practiced.length}개</p></section><section class="study-section"><span class="section-kicker">오늘의 답변 연습 · ${esc(next.group)}</span><h2 class="question-title">${esc(next.title)}</h2><p class="question-cue">${esc(next.cue)}</p><div class="study-actions"><a class="button primary" href="#practice/${next.id}">답변 연습하기 →</a><a class="button" href="#practice">전체 질문 보기</a></div></section><section class="study-section"><span class="section-kicker">이어서 공부하기</span><h2 class="question-title">${esc(last.title)}</h2><p class="question-cue">${esc(last.group)} · ${state.done.includes(last.id)?'설명 가능으로 표시됨':'아직 설명 가능으로 표시하지 않음'}</p><div class="study-actions"><a class="button" href="#learn/${last.id}">개념 열기 →</a><a class="button" href="#summary">면접 직전 요약</a></div></section>${review.length?`<section class="study-section"><span class="section-kicker">다시 볼 개념</span><ul class="study-list">${review.map(c=>`<li><a href="#learn/${c.id}">${esc(c.title)}</a></li>`).join('')}</ul></section>`:''}<section class="study-section"><span class="section-kicker">답변할 때 지킬 기준</span><ul class="study-list"><li><span><b>평가 목적</b> · 안전성과 유효성</span></li><li><span><b>근거 검토</b> · 질문–검색–선정–추출–평가–합성</span></li><li><span><b>경험 답변</b> · 직접 한 일–검증된 수치–남은 한계</span></li></ul></section>`}
 function learn(target){$('#view').innerHTML=heading('KNOWLEDGE','직무 지식','답을 보기 전에 먼저 설명해보세요. 아래 카드는 학습용이며, 본인의 수행 경험과 구분합니다.')+`<div class="toolbar"><input id="search" type="search" aria-label="학습 카드 검색" placeholder="PICO, RPN, 근거 확실성…"><select id="group" aria-label="학습 단원"><option value="">전체 단원</option><option value="__req">필수 카드만</option>${[...new Set(DATA.cards.map(c=>c.group))].map(g=>`<option>${g}</option>`).join('')}</select><label><input type="checkbox" id="only-review" ${target==='review'?'checked':''}> 다시 보기만</label></div><p id="result" class="small" role="status"></p><div id="cards"></div>`;
 function draw(){const query=$('#search').value.trim().toLowerCase();const group=$('#group').value;const filtered=DATA.cards.filter(c=>(!query||(c.title+' '+c.text+(c.body.includes('{{AXES}}')?' '+DATA.axes.map(a=>a.name+' '+a.work+' '+a.prep).join(' '):'')).toLowerCase().includes(query))&&(!group||(group==='__req'?c.tier==='필수':c.group===group))&&(!$('#only-review').checked||state.review.includes(c.id)));$('#result').textContent=`${filtered.length}개 개념`;$('#cards').innerHTML=filtered.map(c=>`<details id="${c.id}"><summary><span class="num">${String(c.n).padStart(2,'0')}</span><span class="title">${esc(c.title)}<br><small>${c.group}</small><span class="badges">${cardBadges(c.id)}</span></span></summary><div class="detail-body">${cardBody(c)}<div class="row actions"><button data-done="${c.id}" aria-pressed="${state.done.includes(c.id)}">${state.done.includes(c.id)?'✓ 설명 가능':'설명 가능으로 표시'}</button><button data-review="${c.id}" aria-pressed="${state.review.includes(c.id)}">${state.review.includes(c.id)?'★ 다시 보기':'☆ 다시 보기'}</button></div></div></details>`).join('')||'<p class="empty">해당하는 카드가 없습니다. 검색어나 필터를 바꿔보세요.</p>';$('#cards').querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){state.last=d.id;save()}}));}
 $('#search').addEventListener('input',draw);$('#group').addEventListener('change',draw);$('#only-review').addEventListener('change',draw);draw();openTarget(target);
