@@ -1270,9 +1270,17 @@ section('면접 준비 페이지 (neca.html)');
      expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생건수 감소를 혼동하지 않기'));
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   const finalPracticeText = await ax.textContent('#questions');
+  ok('최신 자기소개는 임상·QI협업·대학원·직무연결 흐름이다',
+     finalPracticeText.includes('임상과 행정을 모두 경험한 지원자') &&
+     finalPracticeText.includes('병원의 질 향상이라는 공통 목표') &&
+     finalPracticeText.includes('역학과 보건통계를 공부했습니다'));
+  ok('장단점은 협업 강점과 발표 긴장 보완행동으로 갱신되어 있다',
+     finalPracticeText.includes('제 장점은 협업능력입니다') &&
+     finalPracticeText.includes('대본을 꼼꼼히 작성') &&
+     finalPracticeText.includes('이미지트레이닝'));
   ok('장단점 답변이 실제 경험으로 채워져 있다',
-     finalPracticeText.includes('반복되는 업무를 구조화') &&
-     finalPracticeText.includes('즉석에서 생각을 논리적으로 정리'));
+     finalPracticeText.includes('제 장점은 협업능력입니다') &&
+     finalPracticeText.includes('많은 사람들 앞에서 발표할 때는 긴장을 많이'));
   ok('마지막 한마디에 1년 목표가 반영되어 있다',
      finalPracticeText.includes('체계적 문헌고찰') &&
      finalPracticeText.includes('선진입 기술 관리 업무를 빠르게 익혀'));
