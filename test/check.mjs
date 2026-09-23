@@ -1091,13 +1091,16 @@ section('면접 준비 페이지 (neca.html)');
   // 트래커 파일(jobtracker.json)을 건드리면 일정이 날아가므로 그것도 본다.
   const GID = 'b'.repeat(32);
   const files = { 'jobtracker.json': '{"institutions":[],"events":[]}' };
-  const wire = (c) => c.route('https://api.github.com/**', (route) => {
+  let lag = 0, patches = 0;
+  const wire = (c) => c.route('https://api.github.com/**', async (route) => {
     const q = route.request();
     if (q.headers()['authorization'] !== 'token TT') return route.fulfill({ status: 401, body: '{}' });
     if (q.method() === 'PATCH') {
+      patches++;
       for (const [k, v] of Object.entries(JSON.parse(q.postData()).files)) files[k] = v.content;
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     }
+    if (lag) await new Promise(r => setTimeout(r, lag));
     const out = {}; for (const [k, v] of Object.entries(files)) out[k] = { content: v, truncated: false };
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: GID, files: out }) });
   });
@@ -1132,6 +1135,64 @@ section('면접 준비 페이지 (neca.html)');
   const a = await doneOf(pc), b2 = await doneOf(phone);
   ok('폰에서 해제한 체크가 PC 에서도 풀린다', !a.includes('c1') && !b2.includes('c1'), JSON.stringify({ a, b2 }));
   ok('PC 에서 새로 한 체크는 폰에도 남는다', a.includes('c5') && b2.includes('c5'), JSON.stringify({ a, b2 }));
+
+  // 다른 기기의 변경을 반영할 때 화면을 통째로 다시 그리면 공부하던 흐름이 끊긴다
+  const remote = (done) => { files['neca-study.json'] = JSON.stringify({ done, review: [], practiced: [], notes: {}, last: 'c1' }); };
+  const wake = async (d) => { await d.evaluate(() => window.dispatchEvent(new Event('focus'))); };
+  const base = JSON.parse(files['neca-study.json']).done;
+  await pc.goto(NECA + '#learn'); await pc.waitForTimeout(300);
+  await pc.fill('#search', 'PICO'); await pc.selectOption('#group', '평가 기초');
+  remote([...base, 'c6']); await wake(pc); await pc.waitForTimeout(900);
+  ok('동기화가 반영돼도 검색어가 남는다', await pc.inputValue('#search') === 'PICO');
+  ok('동기화가 반영돼도 단원 선택이 남는다', await pc.inputValue('#group') === '평가 기초');
+  ok('그러면서도 다른 기기의 체크는 들어온다', (await doneOf(pc)).includes('c6'));
+
+  // 요청을 보낸 뒤에 메모를 쓰기 시작해도 입력창이 새로 만들어지면 안 된다
+  await pc.goto(NECA + '#experience'); await pc.waitForTimeout(300);
+  await pc.evaluate(() => { document.querySelector('#view details').open = true; });
+  remote([...base, 'c6', 'c8']); lag = 700;
+  await wake(pc); await pc.waitForTimeout(250);
+  await pc.click('textarea[data-note]'); await pc.keyboard.type('작성 중');
+  const ta = await pc.evaluateHandle(() => document.activeElement);
+  await pc.waitForTimeout(900); lag = 0;
+  ok('응답이 늦게 와도 쓰던 입력창이 그대로다', await pc.evaluate(el => el.isConnected && el === document.activeElement, ta));
+  ok('쓰던 내용도 그대로다', (await pc.evaluate(el => el.value, ta)) === '작성 중');
+
+  // 요청이 오가는 사이에 한 체크가 다음 주기(최대 1분)까지 밀리면 안 된다
+  await pc.goto(NECA + '#learn'); await pc.waitForTimeout(400);
+  lag = 800; await wake(pc); await pc.waitForTimeout(200);
+  await pc.evaluate(() => document.querySelector('[data-done="c11"]').click());
+  await pc.waitForTimeout(3500); lag = 0;
+  ok('요청 중에 한 체크도 곧바로 올라간다', JSON.parse(files['neca-study.json']).done.includes('c11'));
+
+  // 메모가 어디에 저장되는지 안내가 실제 동작과 같아야 한다
+  await pc.goto(NECA + '#experience'); await pc.waitForTimeout(300);
+  ok('동기화를 켜면 메모가 Gist 에도 저장된다고 안내한다', (await pc.textContent('#view .caution')).includes('GitHub Gist'));
+  const solo = await open({ width: 1280, height: 900 }, 'light', {});
+  await solo.goto(NECA + '#experience'); await solo.waitForTimeout(300);
+  ok('동기화를 안 켜면 이 브라우저에만 저장된다고 안내한다', (await solo.textContent('#view .caution')).includes('현재 브라우저에만'));
+
+  // 모바일에서도 동기화 상태가 보이고, 실패하면 다시 시도할 수 있어야 한다
+  const mc = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await mc.route('https://api.github.com/**', r => r.fulfill({ status: 500, body: '{}' }));
+  const mp = await mc.newPage(); mp.on('pageerror', e => nerr.push(e.message));
+  await mp.goto(NECA);
+  await mp.evaluate((g) => { localStorage.clear(); localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: g })); }, GID);
+  await mp.reload(); await mp.waitForTimeout(800);
+  ok('모바일에서 동기화 실패가 보인다', (await shown(mp, '#sync-state')).visible && (await mp.textContent('#sync-state')).includes('실패'));
+  ok('실패하면 다시 시도 버튼이 있다', (await shown(mp, '#sync-state .retry')).visible);
+  eq('하단 메뉴는 기관·제도로 표시한다', (await texts(mp, 'nav a .s')).pop(), '요약');
+  ok('기관·제도 탭 이름이 한 줄에 들어간다', await mp.evaluate(() => {
+    const a = [...document.querySelectorAll('nav a')].find(x => x.dataset.route === 'agency');
+    return a.querySelector('.s').textContent === '기관·제도' && a.querySelector('.s').getBoundingClientRect().height < 24; }));
+
+  // 모든 카드가 같은 중요도로 보이면 무엇부터 할지 알 수 없다
+  const tr = await open({ width: 1280, height: 900 }, 'light', {});
+  await tr.goto(NECA + '#learn'); await tr.waitForTimeout(300);
+  ok('필수 카드에 필수 배지가 붙는다', (await tr.textContent('#c1 summary')).includes('필수'));
+  await tr.selectOption('#group', '__req'); await tr.waitForTimeout(150);
+  eq('필수 카드만 볼 수 있다', await tr.textContent('#result'), '7개 개념');
+  ok('홈에서 필수 진도를 보여준다', (await (await open({ width: 1280, height: 900 }, 'light', {})).textContent('.hero')).includes('필수 개념 0/7'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
