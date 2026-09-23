@@ -1213,7 +1213,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
-  eq('경험 항목은 8개다', (await ax.$('#view details')).length, 8);
+  eq('경험 항목은 10개다', (await ax.$('#view details')).length, 10);
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
   // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
