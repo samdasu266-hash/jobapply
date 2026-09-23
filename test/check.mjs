@@ -1048,6 +1048,11 @@ section('면접 준비 페이지 (neca.html)');
   let pg = await open({ width: 1280, height: 900 }, 'light', { 'jobtracker.v1': TRACKER });
   eq('D-day 를 트래커 일정에서 읽는다', await pg.textContent('.dday'), 'D-10');
   ok('면접 장소도 함께 보인다', (await pg.textContent('.hero')).includes('능동로 400'));
+  ok('홈은 대형 KPI 카드 대신 학습 섹션을 바로 보여준다', await pg.evaluate(() =>
+     document.querySelectorAll('.study-section').length >= 3 && !document.querySelector('.metric')));
+  ok('D-day는 헤드라인이 아니라 보조 정보 크기다', await pg.evaluate(() =>
+     parseFloat(getComputedStyle(document.querySelector('.dday')).fontSize) <= 18));
+  ok('오늘의 질문이 첫 학습 섹션에 바로 노출된다', (await pg.textContent('.study-section')).includes('1분 자기소개'));
   pg = await open({ width: 1280, height: 900 }, 'light', {});
   ok('면접 일정이 없으면 등록하라고 안내한다',
      !(await pg.$('.dday')) && (await pg.textContent('.hero')).includes('등록하면'));
