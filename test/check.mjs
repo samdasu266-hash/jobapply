@@ -1213,9 +1213,27 @@ section('면접 준비 페이지 (neca.html)');
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
-  eq('경험 항목은 8개다', (await ax.$$('#view details')).length, 8);
+  eq('경험 항목은 8개다', (await ax.$('#view details')).length, 8);
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
+  // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
+  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
+  const practiceText = await ax.textContent('#questions');
+  ok('영어·통계 답변에 제출 점수와 프로그램 실습 수준이 있다',
+     practiceText.includes('TOEIC 740') && practiceText.includes('SPSS') && practiceText.includes('SAS'));
+  ok('문헌고찰은 직접 수행 경험 없음으로 명시한다',
+     practiceText.includes('체계적 문헌고찰을 독립적으로 수행한 경험은 없습니다'));
+  ok('CP는 33종·77개로 구분하고 담당 시점을 2024년으로 둔다',
+     practiceText.includes('33종') && practiceText.includes('77개') && practiceText.includes('2024년 1월'));
+  ok('자동화 성과 두 종류를 섞지 않는다',
+     practiceText.includes('15시간') && practiceText.includes('3시간') &&
+     practiceText.includes('4시간 이상') && practiceText.includes('약 1분'));
+  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  const expText = await ax.textContent('#view');
+  ok('임상 경력은 2017.11~2020.04 회복간호로 구체화한다',
+     expText.includes('2017.11~2020.04') && expText.includes('전신마취'));
+  ok('FMEA 성과는 위험도 감소로 표현한다',
+     expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생건수 감소를 혼동하지 않기'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
