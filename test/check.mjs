@@ -1213,7 +1213,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
-  eq('경험 항목은 8개다', (await ax.$('#view details')).length, 8);
+  eq('경험 항목은 10개다', (await ax.$('#view details')).length, 10);
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
   // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
@@ -1242,6 +1242,28 @@ section('면접 준비 페이지 (neca.html)');
   ok('마지막 한마디에 1년 목표가 반영되어 있다',
      finalPracticeText.includes('체계적 문헌고찰') &&
      finalPracticeText.includes('선진입 기술 관리 업무를 빠르게 익혀'));
+  ok('FMEA 수치의 정확한 기준이 반영되어 있다',
+     finalPracticeText.includes('10개 고장유형 RPN 총합') &&
+     finalPracticeText.includes('사전 RPN이 가장 높았던 단일 고장유형'));
+  ok('SPSS 분석 범위와 생존분석 미경험이 명시되어 있다',
+     finalPracticeText.includes('기술통계') && finalPracticeText.includes('로지스틱 회귀분석') &&
+     finalPracticeText.includes('생존분석은 해보지 않았습니다'));
+  ok('CP 갈등조정 사례가 수용·불수용을 구분한다',
+     finalPracticeText.includes('24시간 이내 예방적 항생제 중단') &&
+     finalPracticeText.includes('약제 변경은 수용하지 않았지만'));
+  ok('왜 NECA·현장형 연구직·박사 지원자 대비 답변이 추가되어 있다',
+     finalPracticeText.includes('왜 병원에 계속 있지 않고 NECA') &&
+     finalPracticeText.includes('현장형 경력인데 연구직') &&
+     finalPracticeText.includes('박사학위 지원자'));
+  ok('실패 경험과 공정성 답변이 추가되어 있다',
+     finalPracticeText.includes('수혈이 약 30분 지연') &&
+     finalPracticeText.includes('불리한 결과도 그대로 보고'));
+  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  const personalizedExpText = await ax.textContent('#view');
+  ok('경험 카드에 KOPS·위원회·본인증 지적 계기가 반영되어 있다',
+     personalizedExpText.includes('월 0~2건') &&
+     personalizedExpText.includes('인증준비대책운영위원회') &&
+     personalizedExpText.includes('본인증 지적사항'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
