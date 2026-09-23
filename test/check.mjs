@@ -1234,6 +1234,14 @@ section('면접 준비 페이지 (neca.html)');
      expText.includes('2017.11~2020.04') && expText.includes('전신마취'));
   ok('FMEA 성과는 위험도 감소로 표현한다',
      expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생건수 감소를 혼동하지 않기'));
+  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
+  const finalPracticeText = await ax.textContent('#questions');
+  ok('장단점 답변이 실제 경험으로 채워져 있다',
+     finalPracticeText.includes('반복되는 업무를 구조화') &&
+     finalPracticeText.includes('즉석에서 생각을 논리적으로 정리'));
+  ok('마지막 한마디에 1년 목표가 반영되어 있다',
+     finalPracticeText.includes('체계적 문헌고찰') &&
+     finalPracticeText.includes('선진입 기술 관리 업무를 빠르게 익혀'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
