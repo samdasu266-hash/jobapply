@@ -1053,6 +1053,18 @@ section('면접 준비 페이지 (neca.html)');
   ok('D-day는 헤드라인이 아니라 보조 정보 크기다', await pg.evaluate(() =>
      parseFloat(getComputedStyle(document.querySelector('.dday')).fontSize) <= 18));
   ok('오늘의 질문이 첫 학습 섹션에 바로 노출된다', (await pg.textContent('.study-section')).includes('1분 자기소개'));
+  ok('오늘의 답변만 약한 집중 카드로 강조한다', await pg.evaluate(() => {
+    const el=document.querySelector('.study-section.focus-card'); if(!el)return false;
+    const s=getComputedStyle(el); return s.backgroundColor==='rgb(255, 255, 255)' && parseFloat(s.borderTopWidth)>=1;
+  }));
+  ok('사이드바 active는 NECA blue 계열의 옅은 배경과 세로선으로 구분한다', await pg.evaluate(() => {
+    const el=document.querySelector('nav a[aria-current="page"]'); const s=getComputedStyle(el);
+    return s.backgroundColor!=='rgba(0, 0, 0, 0)' && parseFloat(s.borderLeftWidth)>=3;
+  }));
+  ok('필수 개념 진행률은 얇은 보조 bar다', await pg.evaluate(() => {
+    const el=document.querySelector('.home-progress'); return el && parseFloat(getComputedStyle(el).height)<=6;
+  }));
+  ok('답변 기준은 별도 callout으로 보인다', !!(await pg.$('.guide-callout')));
   pg = await open({ width: 1280, height: 900 }, 'light', {});
   ok('면접 일정이 없으면 등록하라고 안내한다',
      !(await pg.$('.dday')) && (await pg.textContent('.hero')).includes('등록하면'));

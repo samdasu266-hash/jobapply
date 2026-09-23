@@ -2,8 +2,8 @@
 :root{
   color-scheme:light dark;
   --ink:#1f2933;--muted:#667085;--bg:#f7f8fa;--card:#ffffff;--line:#e2e7ec;
-  --accent:#17324d;--accent-soft:#eef3f7;--accent-ink:#17324d;
-  --green:#216e5b;--green-soft:#edf7f3;--amber:#8a5a18;--amber-soft:#fff7e8;
+  --accent:#0064b3;--accent-hover:#00528f;--accent-soft:#eef5fb;--accent-ink:#0b4f82;
+  --green:#557f00;--green-fill:#77b800;--green-soft:#f1f8e7;--amber:#8a5a18;--amber-soft:#fff7e8;
   --rose:#9a4858;--rose-soft:#fbf0f2;--field:#cbd5df;--stripe:#fafbfc;
 }
 @media(prefers-color-scheme:dark){
@@ -32,7 +32,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   grid-template-columns:190px minmax(0,1fr);gap:46px;
   padding:28px 26px 80px;
 }
-aside{position:sticky;top:24px;align-self:start}
+aside{position:sticky;top:24px;align-self:start;padding-right:22px;border-right:1px solid var(--line);min-height:calc(100vh - 48px)}
 .brand{font-size:21px;font-weight:780;letter-spacing:-.04em;margin:5px 0 2px}
 .eyebrow{
   margin:0 0 8px;font-size:11px;line-height:1.4;letter-spacing:.16em;
@@ -46,17 +46,18 @@ aside{position:sticky;top:24px;align-self:start}
 nav{display:grid;gap:1px;margin:28px 0}
 nav a{
   min-height:40px;display:flex;align-items:center;
-  padding:8px 4px 8px 12px;border-left:3px solid transparent;
-  border-radius:0;text-decoration:none;color:var(--muted);font-weight:620;
+  padding:8px 9px 8px 12px;border-left:3px solid transparent;
+  border-radius:5px;text-decoration:none;color:var(--muted);font-weight:620;
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
 }
-nav a:hover{color:var(--ink);background:transparent}
+nav a:hover{color:var(--ink);background:#f1f4f6}
 nav a[aria-current="page"]{
-  color:var(--ink);font-weight:760;border-left-color:var(--accent);background:transparent;
+  color:var(--accent-ink);font-weight:760;border-left-color:var(--accent);background:var(--accent-soft);
 }
 nav a .s{display:none}
 .side-foot{
-  border-top:1px solid var(--line);padding-top:16px;
-  font-size:12px;line-height:1.65;color:var(--muted)
+  margin-top:18px;padding:12px 13px;border:1px solid var(--line);border-radius:7px;
+  background:#f3f5f7;font-size:12px;line-height:1.65;color:var(--muted)
 }
 
 main{min-width:0}
@@ -75,8 +76,9 @@ button,.button{
   color:var(--ink);padding:8px 13px;text-decoration:none;font-weight:680;
 }
 button:hover,.button:hover{border-color:var(--accent);color:var(--accent)}
-.primary{background:var(--accent);border-color:var(--accent);color:var(--card)}
-.primary:hover{color:var(--card);filter:brightness(.94)}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff}
+.button.secondary{background:#f4f6f8;border-color:#d9e0e6;color:#344054}
 
 .hero{
   background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);
@@ -101,19 +103,41 @@ button:hover,.button:hover{border-color:var(--accent);color:var(--accent)}
 
 .home-title{font-size:30px;margin:6px 0 14px}
 .home-status{
-  display:flex;gap:10px 18px;flex-wrap:wrap;align-items:center;
-  margin:14px 0 2px;font-size:14px;color:var(--muted)
+  display:flex;gap:9px 18px;flex-wrap:wrap;align-items:center;
+  margin:14px 0 9px;font-size:14px;color:var(--muted)
 }
-.home-status strong{color:var(--ink);font-weight:720}
+.home-status strong{color:var(--ink);font-weight:760}
+.home-progress{width:min(520px,100%);height:5px;border-radius:999px;background:#e7ebef;overflow:hidden;margin:8px 0 0}
+.home-progress>span{display:block;height:100%;border-radius:inherit;background:var(--green-fill);transition:width .25s ease}
 .study-section{
-  padding:24px 0;border-bottom:1px solid var(--line);
+  padding:25px 0;border-bottom:1px solid var(--line);
 }
 .study-section:first-of-type{padding-top:6px}
+.study-section.focus-card{
+  margin:4px 0 10px;padding:22px 23px;border:1px solid #d9e6f0;border-radius:8px;
+  background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.035)
+}
+.study-section.guide-callout{
+  margin-top:26px;padding:20px 22px;border:1px solid #dce7ef;border-radius:8px;
+  background:#f2f7fb
+}
+.study-section.guide-callout .study-list li{
+  position:relative;padding:8px 0 8px 28px;border-top:0
+}
+.study-section.guide-callout .study-list li::before{
+  content:'□';position:absolute;left:1px;top:8px;color:var(--accent);font-weight:800
+}
 .section-kicker{
   display:block;margin-bottom:7px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em
 }
 .question-title{font-size:21px;line-height:1.45;margin:6px 0 7px;font-weight:770}
 .question-cue{margin:0 0 14px;color:var(--muted);font-size:14px}
+.cue-flow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0 14px}
+.cue-chip{
+  display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:6px;
+  background:#f0f3f6;color:#3f4d5a;font-size:13px;font-weight:680
+}
+.cue-arrow{color:#94a3b0;font-size:13px}
 .study-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .study-list{margin:6px 0 0;padding:0;list-style:none}
 .study-list li{margin:0}
@@ -140,7 +164,7 @@ progress{width:100%;height:5px;accent-color:var(--accent)}
 }
 .pill.req{background:var(--accent);color:var(--card)}
 .pill.ext{background:transparent;border:1px solid var(--line);color:var(--muted)}
-.pill.done{background:var(--green-soft);color:var(--green)}
+.pill.done{background:var(--green-soft);color:var(--green);border:1px solid #dcebbf}
 .pill.star,.pill.warn{background:var(--amber-soft);color:var(--amber)}
 .pill.rose{background:var(--rose-soft);color:var(--rose)}
 
@@ -225,7 +249,7 @@ li{margin:5px 0}
 
 @media(max-width:800px){
   .shell{display:block;padding:18px 16px calc(88px + env(safe-area-inset-bottom))}
-  aside{position:static}
+  aside{position:static;border-right:0;padding-right:0;min-height:auto}
   aside .eyebrow,aside>.small:not(:first-child),.side-foot{display:none}
   .brand{font-size:19px;margin-top:5px}
   #view{max-width:none}
@@ -234,6 +258,8 @@ li{margin:5px 0}
   .home-title{font-size:27px}
   .grid{grid-template-columns:1fr;gap:10px}
   .study-section{padding:21px 0}
+  .study-section.focus-card{padding:18px 17px;margin-top:8px}
+  .study-section.guide-callout{padding:17px 16px}
   nav{
     position:fixed;left:0;right:0;bottom:0;z-index:20;
     display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:0;
@@ -368,7 +394,7 @@ function interview(){
     return{d,when:ev.start===(ev.end||ev.start)?kd(s):kd(s)+' – '+kd(e),place:ev.place||inst.place||''};
   }catch(e){return null}
 }
-function home(){const next=DATA.questions.find(q=>q.tier==='필수'&&!state.practiced.includes(q.id))||DATA.questions.find(q=>!state.practiced.includes(q.id))||DATA.questions[0];const last=DATA.cards.find(c=>c.id===state.last)||DATA.cards[0];const review=state.review.slice(0,4).map(id=>DATA.cards.find(x=>x.id===id)).filter(Boolean);$('#view').innerHTML=`<section class="hero"><p class="eyebrow">오늘의 학습</p><h1 class="home-title">NECA 면접 준비</h1>${(()=>{const iv=interview();if(!iv)return '<p class="small">면접 일정이 등록되면 날짜와 장소가 여기에 표시됩니다.</p>';return `<div><span class="dday">${iv.d>0?'D-'+iv.d:iv.d===0?'오늘':'진행 중'}</span><span class="dday-when">${iv.when}</span></div>${iv.place?`<p class="place">${esc(iv.place)}</p>`:''}`})()}<div class="home-status"><span>필수 개념 <strong>${DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length}/${DATA.cards.filter(c=>c.tier==='필수').length}</strong></span><span>전체 개념 <strong>${state.done.length}/${DATA.cards.length}</strong></span><span>답변 연습 <strong>${state.practiced.length}/${DATA.questions.length}</strong></span></div><p class="next">필수 개념 ${DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length}/${DATA.cards.filter(c=>c.tier==='필수').length} · 남은 개념 ${DATA.cards.length-state.done.length}개 · 연습 안 한 질문 ${DATA.questions.length-state.practiced.length}개</p></section><section class="study-section"><span class="section-kicker">오늘의 답변 연습 · ${esc(next.group)}</span><h2 class="question-title">${esc(next.title)}</h2><p class="question-cue">${esc(next.cue)}</p><div class="study-actions"><a class="button primary" href="#practice/${next.id}">답변 연습하기 →</a><a class="button" href="#practice">전체 질문 보기</a></div></section><section class="study-section"><span class="section-kicker">이어서 공부하기</span><h2 class="question-title">${esc(last.title)}</h2><p class="question-cue">${esc(last.group)} · ${state.done.includes(last.id)?'설명 가능으로 표시됨':'아직 설명 가능으로 표시하지 않음'}</p><div class="study-actions"><a class="button" href="#learn/${last.id}">개념 열기 →</a><a class="button" href="#summary">면접 직전 요약</a></div></section>${review.length?`<section class="study-section"><span class="section-kicker">다시 볼 개념</span><ul class="study-list">${review.map(c=>`<li><a href="#learn/${c.id}">${esc(c.title)}</a></li>`).join('')}</ul></section>`:''}<section class="study-section"><span class="section-kicker">답변할 때 지킬 기준</span><ul class="study-list"><li><span><b>평가 목적</b> · 안전성과 유효성</span></li><li><span><b>근거 검토</b> · 질문–검색–선정–추출–평가–합성</span></li><li><span><b>경험 답변</b> · 직접 한 일–검증된 수치–남은 한계</span></li></ul></section>`}
+function home(){const next=DATA.questions.find(q=>q.tier==='필수'&&!state.practiced.includes(q.id))||DATA.questions.find(q=>!state.practiced.includes(q.id))||DATA.questions[0];const last=DATA.cards.find(c=>c.id===state.last)||DATA.cards[0];const review=state.review.slice(0,4).map(id=>DATA.cards.find(x=>x.id===id)).filter(Boolean);const reqTotal=DATA.cards.filter(c=>c.tier==='필수').length;const reqDone=DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length;const reqPct=reqTotal?Math.round(reqDone/reqTotal*100):0;const cueFlow=next.cue.includes('→')?'<div class="cue-flow">'+next.cue.split('→').map((x,i,a)=>'<span class="cue-chip">'+esc(x.trim())+'</span>'+(i<a.length-1?'<span class="cue-arrow">→</span>':'')).join('')+'</div>':'<p class="question-cue">'+esc(next.cue)+'</p>';$('#view').innerHTML=`<section class="hero"><p class="eyebrow">오늘의 학습</p><h1 class="home-title">NECA 면접 준비</h1>${(()=>{const iv=interview();if(!iv)return '<p class="small">면접 일정이 등록되면 날짜와 장소가 여기에 표시됩니다.</p>';return `<div><span class="dday">${iv.d>0?'D-'+iv.d:iv.d===0?'오늘':'진행 중'}</span><span class="dday-when">${iv.when}</span></div>${iv.place?`<p class="place">${esc(iv.place)}</p>`:''}`})()}<div class="home-status"><span>필수 개념 <strong>${reqDone}/${reqTotal}</strong></span><span>전체 개념 <strong>${state.done.length}/${DATA.cards.length}</strong></span><span>답변 연습 <strong>${state.practiced.length}/${DATA.questions.length}</strong></span></div><div class="home-progress" aria-label="필수 개념 진행률 ${reqPct}%"><span style="width:${reqPct}%"></span></div><p class="next">남은 필수 개념 ${reqTotal-reqDone}개 · 전체 남은 개념 ${DATA.cards.length-state.done.length}개 · 연습 안 한 질문 ${DATA.questions.length-state.practiced.length}개</p></section><section class="study-section focus-card"><span class="section-kicker">오늘의 답변 연습 · ${esc(next.group)}</span><h2 class="question-title">${esc(next.title)}</h2>${cueFlow}<div class="study-actions"><a class="button primary" href="#practice/${next.id}">답변 연습하기 →</a><a class="button secondary" href="#practice">전체 질문 보기</a></div></section><section class="study-section"><span class="section-kicker">이어서 공부하기</span><h2 class="question-title">${esc(last.title)}</h2><p class="question-cue">${esc(last.group)} · ${state.done.includes(last.id)?'설명 가능으로 표시됨':'아직 설명 가능으로 표시하지 않음'}</p><div class="study-actions"><a class="button primary" href="#learn/${last.id}">개념 열기 →</a><a class="button secondary" href="#summary">면접 직전 요약</a></div></section>${review.length?`<section class="study-section"><span class="section-kicker">다시 볼 개념</span><ul class="study-list">${review.map(c=>`<li><a href="#learn/${c.id}">${esc(c.title)}</a></li>`).join('')}</ul></section>`:''}<section class="study-section guide-callout"><span class="section-kicker">답변할 때 지킬 기준</span><ul class="study-list"><li><span><b>평가 목적</b> · 안전성과 유효성</span></li><li><span><b>근거 검토</b> · 질문–검색–선정–추출–평가–합성</span></li><li><span><b>경험 답변</b> · 직접 한 일–검증된 수치–남은 한계</span></li></ul></section>`}
 function learn(target){$('#view').innerHTML=heading('KNOWLEDGE','직무 지식','답을 보기 전에 먼저 설명해보세요. 아래 카드는 학습용이며, 본인의 수행 경험과 구분합니다.')+`<div class="toolbar"><input id="search" type="search" aria-label="학습 카드 검색" placeholder="PICO, RPN, 근거 확실성…"><select id="group" aria-label="학습 단원"><option value="">전체 단원</option><option value="__req">필수 카드만</option>${[...new Set(DATA.cards.map(c=>c.group))].map(g=>`<option>${g}</option>`).join('')}</select><label><input type="checkbox" id="only-review" ${target==='review'?'checked':''}> 다시 보기만</label></div><p id="result" class="small" role="status"></p><div id="cards"></div>`;
 function draw(){const query=$('#search').value.trim().toLowerCase();const group=$('#group').value;const filtered=DATA.cards.filter(c=>(!query||(c.title+' '+c.text+(c.body.includes('{{AXES}}')?' '+DATA.axes.map(a=>a.name+' '+a.work+' '+a.prep).join(' '):'')).toLowerCase().includes(query))&&(!group||(group==='__req'?c.tier==='필수':c.group===group))&&(!$('#only-review').checked||state.review.includes(c.id)));$('#result').textContent=`${filtered.length}개 개념`;$('#cards').innerHTML=filtered.map(c=>`<details id="${c.id}"><summary><span class="num">${String(c.n).padStart(2,'0')}</span><span class="title">${esc(c.title)}<br><small>${c.group}</small><span class="badges">${cardBadges(c.id)}</span></span></summary><div class="detail-body">${cardBody(c)}<div class="row actions"><button data-done="${c.id}" aria-pressed="${state.done.includes(c.id)}">${state.done.includes(c.id)?'✓ 설명 가능':'설명 가능으로 표시'}</button><button data-review="${c.id}" aria-pressed="${state.review.includes(c.id)}">${state.review.includes(c.id)?'★ 다시 보기':'☆ 다시 보기'}</button></div></div></details>`).join('')||'<p class="empty">해당하는 카드가 없습니다. 검색어나 필터를 바꿔보세요.</p>';$('#cards').querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){state.last=d.id;save()}}));}
 $('#search').addEventListener('input',draw);$('#group').addEventListener('change',draw);$('#only-review').addEventListener('change',draw);draw();openTarget(target);
