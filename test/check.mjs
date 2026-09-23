@@ -1023,6 +1023,119 @@ section('기기 간 동기화 (가짜 Gist)');
      alerted);
 }
 
+section('면접 준비 페이지 (neca.html)');
+{
+  const NECA = 'file://' + join(ROOT, 'neca.html');
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const TRACKER = { institutions: [{ id: 'neca', name: 'NECA (보의연)', color: '#2E6F5E', status: 'active', place: '서울 광진구 능동로 400' }],
+    events: [{ id: 'iv', inst: 'neca', label: '면접', start: dayFromNow(10), end: dayFromNow(12) }] };
+  const nerr = [];
+  const open = async (vp, cs, seed) => {
+    const c = await browser.newContext({ viewport: vp, colorScheme: cs || 'light' });
+    const pg = await c.newPage();
+    pg.on('pageerror', e => nerr.push(e.message));
+    await pg.goto(NECA);
+    await pg.evaluate((sd) => { localStorage.clear();
+      for (const [k, v] of Object.entries(sd || {})) localStorage.setItem(k, JSON.stringify(v)); }, seed);
+    await pg.reload(); await pg.waitForTimeout(300);
+    return pg;
+  };
+
+  // 면접 준비 페이지에서 가장 먼저 보여야 할 것은 면접까지 남은 날이다.
+  // 날짜를 이 페이지에 박으면 트래커에서 일정을 고쳐도 여기는 옛 날짜로 남는다.
+  let pg = await open({ width: 1280, height: 900 }, 'light', { 'jobtracker.v1': TRACKER });
+  eq('D-day 를 트래커 일정에서 읽는다', await pg.textContent('.dday'), 'D-10');
+  ok('면접 장소도 함께 보인다', (await pg.textContent('.hero')).includes('능동로 400'));
+  pg = await open({ width: 1280, height: 900 }, 'light', {});
+  ok('면접 일정이 없으면 등록하라고 안내한다',
+     !(await pg.$('.dday')) && (await pg.textContent('.hero')).includes('등록하면'));
+
+  // 모바일: 메뉴를 위에 두면 본문이 화면 1/3 아래에서 시작하고, 긴 목록 끝에서
+  // 다른 메뉴로 가려면 맨 위로 다시 올라가야 했다.
+  const mb = await open({ width: 390, height: 844 }, 'light', { 'jobtracker.v1': TRACKER });
+  ok('모바일 본문이 화면 위쪽에서 시작한다', await mb.evaluate(() =>
+     document.querySelector('#view').getBoundingClientRect().top < 120));
+  await mb.goto(NECA + '#learn'); await mb.waitForTimeout(250);
+  await mb.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await mb.waitForTimeout(150);
+  ok('긴 목록 끝에서도 메뉴가 화면 안에 있다', await mb.evaluate(() => {
+    const r = document.querySelector('nav').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }));
+  ok('마지막 카드가 하단 메뉴에 가리지 않는다', await mb.evaluate(() =>
+     [...document.querySelectorAll('#cards details')].pop().getBoundingClientRect().bottom
+       <= document.querySelector('nav').getBoundingClientRect().top));
+  ok('체크박스 라벨이 한 줄에 들어간다', await mb.evaluate(() =>
+     document.querySelector('#only-review').closest('label').getBoundingClientRect().height <= 48));
+  eq('탭바에는 짧은 이름이 보인다', await texts(mb, 'nav a[aria-current] .s'), ['지식']);
+  eq('문서 제목에는 긴 이름을 쓴다', await mb.title(), 'NECA · 직무 지식');
+  ok('모바일 가로 스크롤 없음', await mb.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+
+  // 트래커가 다크 모드를 따르므로 넘어왔을 때 밝은 화면이 튀면 안 된다
+  const dk = await open({ width: 390, height: 844 }, 'dark', {});
+  ok('다크 모드에서 배경이 어둡다', await dk.evaluate(() => {
+    const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);
+    return (r + g + b) / 3 < 60; }));
+
+  // 아코디언을 훑을 때 무엇을 해 뒀는지 보여야 한다
+  const bd = await open({ width: 1280, height: 900 }, 'light',
+    { 'jobapply.neca.study.v1': { done: ['c1'], review: [], notes: {}, last: 'c1', practiced: [] } });
+  await bd.goto(NECA + '#learn'); await bd.waitForTimeout(250);
+  ok('설명 가능한 개념은 제목 옆에 표시된다', (await bd.textContent('#c1 summary')).includes('설명 가능'));
+  ok('안 한 개념에는 배지가 없다', !(await bd.textContent('#c2 summary')).includes('설명 가능'));
+  await bd.evaluate(() => document.querySelector('[data-done="c2"]').click()); await bd.waitForTimeout(150);
+  ok('누르면 배지가 바로 붙는다', (await bd.textContent('#c2 summary')).includes('설명 가능'));
+  await bd.goto(NECA + '#practice'); await bd.waitForTimeout(250);
+  ok('질문에는 준비 상태 배지가 붙는다', (await bd.$$('#questions > details > summary .pill')).length >= 16);
+
+  // 기기 간 동기화 — 트래커가 연결해 둔 Gist 에 파일을 하나 더 둔다.
+  // 트래커 파일(jobtracker.json)을 건드리면 일정이 날아가므로 그것도 본다.
+  const GID = 'b'.repeat(32);
+  const files = { 'jobtracker.json': '{"institutions":[],"events":[]}' };
+  const wire = (c) => c.route('https://api.github.com/**', (route) => {
+    const q = route.request();
+    if (q.headers()['authorization'] !== 'token TT') return route.fulfill({ status: 401, body: '{}' });
+    if (q.method() === 'PATCH') {
+      for (const [k, v] of Object.entries(JSON.parse(q.postData()).files)) files[k] = v.content;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    const out = {}; for (const [k, v] of Object.entries(files)) out[k] = { content: v, truncated: false };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: GID, files: out }) });
+  });
+  const device = async () => {
+    const c = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await wire(c);
+    const d = await c.newPage();
+    d.on('pageerror', e => nerr.push(e.message));
+    await d.goto(NECA);
+    await d.evaluate((g) => { localStorage.clear();
+      localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: g })); }, GID);
+    await d.goto(NECA + '#learn'); await d.reload(); await d.waitForTimeout(600);
+    return d;
+  };
+  const doneOf = (d) => d.evaluate(() => JSON.parse(localStorage.getItem('jobapply.neca.study.v1') || '{}').done || []);
+  const pc = await device(), phone = await device();
+
+  await pc.evaluate(() => document.querySelector('[data-done="c1"]').click());
+  await pc.waitForTimeout(2200);
+  ok('PC 진도가 Gist 에 올라간다', JSON.parse(files['neca-study.json'] || '{}').done?.includes('c1'));
+  eq('트래커 파일은 그대로다', files['jobtracker.json'], '{"institutions":[],"events":[]}');
+  await phone.evaluate(() => window.dispatchEvent(new Event('focus'))); await phone.waitForTimeout(900);
+  ok('PC 에서 체크한 개념이 폰에 보인다', (await doneOf(phone)).includes('c1'));
+  ok('폰 화면의 배지도 바뀐다', (await phone.textContent('#c1 summary')).includes('설명 가능'));
+
+  // 폰에서 해제한 체크가 PC 때문에 되살아나면 안 된다 (합집합이면 그렇게 된다)
+  await pc.evaluate(() => document.querySelector('[data-done="c5"]').click());
+  await pc.waitForTimeout(800);
+  await phone.evaluate(() => document.querySelector('[data-done="c1"]').click());
+  await phone.waitForTimeout(2600);
+  await pc.evaluate(() => window.dispatchEvent(new Event('focus'))); await pc.waitForTimeout(900);
+  const a = await doneOf(pc), b2 = await doneOf(phone);
+  ok('폰에서 해제한 체크가 PC 에서도 풀린다', !a.includes('c1') && !b2.includes('c1'), JSON.stringify({ a, b2 }));
+  ok('PC 에서 새로 한 체크는 폰에도 남는다', a.includes('c5') && b2.includes('c5'), JSON.stringify({ a, b2 }));
+
+  ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
+}
+
 section('런타임 오류');
 ok('콘솔/런타임 오류 없음', runtimeErrors.length === 0, runtimeErrors.join(' | ').slice(0, 300));
 
