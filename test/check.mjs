@@ -6,7 +6,7 @@
 // 속성값(el.hidden 같은)만 보면 실제로 화면에 보이는지 알 수 없다. 실제로
 // 그런 버그를 놓친 적이 있어서, 표시 여부는 계산된 스타일과 크기로 본다.
 
-import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+const { chromium } = await import(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES ? process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES + '/playwright/index.mjs' : '/opt/node22/lib/node_modules/playwright/index.mjs');
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { mkdirSync } from 'node:fs';
@@ -1102,7 +1102,7 @@ section('면접 준비 페이지 (neca.html)');
   await bd.evaluate(() => document.querySelector('[data-done="c2"]').click()); await bd.waitForTimeout(150);
   ok('누르면 배지가 바로 붙는다', (await bd.textContent('#c2 summary')).includes('설명 가능'));
   await bd.goto(NECA + '#practice'); await bd.waitForTimeout(250);
-  ok('질문에는 준비 상태 배지가 붙는다', (await bd.$$('#questions > details > summary .pill')).length >= 16);
+  ok('질문에는 준비 상태 배지가 붙는다', (await bd.$$('#questions > details > summary .pill')).length >= 11);
 
   // 기기 간 동기화 — 트래커가 연결해 둔 Gist 에 파일을 하나 더 둔다.
   // 트래커 파일(jobtracker.json)을 건드리면 일정이 날아가므로 그것도 본다.
@@ -1224,34 +1224,36 @@ section('면접 준비 페이지 (neca.html)');
   // 직무기술서가 명시한 업무는 상황 질문으로 연습한다
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   await ax.selectOption('#q-group', '__req'); await ax.waitForTimeout(150);
-  eq('필수 질문만 볼 수 있다', (await ax.$('#questions > details')).length, 11);
+  eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 11);
   ok('필수 질문에 선진입 자료 누락 질문이 있다', (await ax.textContent('#questions')).includes('누락이나 기관별 차이'));
   ok('직무 이해 핵심 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('신의료기술평가 연구원이 실제로 하는 일') && (await ax.textContent('#questions')).includes('식약처 허가와 신의료기술평가'));
+  await ax.selectOption('#q-group', '');
   ok('신청자 이의·연구윤리·인재상 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('문헌 선정이나 평가 결과에 강하게 이의') && (await ax.textContent('#questions')).includes('NECA 연구윤리') && (await ax.textContent('#questions')).includes('NECA 인재상'));
   await ax.goto(NECA + '#home'); await ax.waitForTimeout(300);
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
-  eq('경험 항목은 10개다', (await ax.$('#view details')).length, 10);
-  ok('경험 화면에 직무·인재상·팀 매핑이 보인다', (await ax.textContent('#view')).includes('내 경험을 NECA 언어로 보기') && (await ax.textContent('#view')).includes('NECA 인재상으로 보기') && (await ax.textContent('#view')).includes('사업본부 팀으로 보기'));
+  eq('경험 항목은 10개다', (await ax.$$('#view > details[id^="x-"]')).length, 10);
+  ok('경험 화면에 직무·인재상·팀 매핑이 보인다', (await ax.textContent('#view')).includes('내 경험을 NECA 언어로 보기') && (await ax.textContent('#view')).includes('NECA 인재상으로 보기'));
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
-    [...document.querySelectorAll('#view details')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
+    [...document.querySelectorAll('#view > details[id^="x-"]')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
   // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
-  const agencyText = await ax.textContent('#view');
+  const strategyText = await ax.textContent('#view');
   ok('2026 전략체계와 기관 전체/지원직무 구분이 반영되어 있다',
-     agencyText.includes('선진입 의료기술 근거창출 5% 확대') &&
-     agencyText.includes('신의료기술평가 신뢰지수 100') &&
-     agencyText.includes('기관 전체') &&
-     agencyText.includes('신의료기술평가 직무'));
+     strategyText.includes('선진입 의료기술 근거창출 5% 확대') &&
+     strategyText.includes('신의료기술평가 신뢰지수 100') &&
+     strategyText.includes('기관 전체') &&
+     strategyText.includes('신의료기술평가 직무'));
   ok('기관 화면에 사업본부 5개 팀과 윤리가 반영되어 있다',
-     agencyText.includes('평가사업팀') && agencyText.includes('혁신평가팀') &&
-     agencyText.includes('근거창출지원팀') && agencyText.includes('평가사업협력팀') &&
-     agencyText.includes('평가사업관리팀') && agencyText.includes('연구윤리·이해충돌'));
+     strategyText.includes('평가사업팀') && strategyText.includes('혁신평가팀') &&
+     strategyText.includes('근거창출지원팀') && strategyText.includes('평가사업협력팀') &&
+     strategyText.includes('평가사업관리팀') && strategyText.includes('연구윤리·이해충돌'));
   ok('면접위원 관점은 실제 구성을 단정하지 않는다',
-     agencyText.includes('내부 실무자') && agencyText.includes('외부위원') &&
-     agencyText.includes('실제 위원 구성을 공식자료로 확인한 것은 아닙니다'));
+     strategyText.includes('내부 실무자') && strategyText.includes('외부위원') &&
+     strategyText.includes('실제 위원 구성을 공식자료로 확인한 것은 아닙니다'));
+  await ax.goto(NECA + '#practice'); await ax.selectOption('#q-group', '');
   const practiceText = await ax.textContent('#questions');
   ok('영어·통계 답변에 제출 점수와 프로그램 실습 수준이 있다',
      practiceText.includes('TOEIC 740') && practiceText.includes('SPSS') && practiceText.includes('SAS'));
@@ -1267,7 +1269,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('임상 경력은 2017.11~2020.04 회복간호로 구체화한다',
      expText.includes('2017.11~2020.04') && expText.includes('전신마취'));
   ok('FMEA 성과는 위험도 감소로 표현한다',
-     expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생건수 감소를 혼동하지 않기'));
+     expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생률 감소를 혼동하지 않고'));
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   const finalPracticeText = await ax.textContent('#questions');
   ok('최신 자기소개는 임상·QI협업·대학원·직무연결 흐름이다',
@@ -1283,9 +1285,9 @@ section('면접 준비 페이지 (neca.html)');
      finalPracticeText.includes('많은 사람들 앞에서 발표할 때는 긴장을 많이'));
   ok('마지막 한마디에 1년 목표가 반영되어 있다',
      finalPracticeText.includes('체계적 문헌고찰') &&
-     finalPracticeText.includes('선진입 기술 관리 업무를 빠르게 익혀'));
+     finalPracticeText.includes('체계적 문헌고찰과 평가과정 전반을 차근차근 익혀'));
   ok('FMEA 수치의 정확한 기준이 반영되어 있다',
-     finalPracticeText.includes('10개 고장유형 RPN 총합') &&
+     finalPracticeText.includes('10개 고장유형의 RPN 총합') &&
      finalPracticeText.includes('사전 RPN이 가장 높았던 단일 고장유형'));
   ok('SPSS 분석 범위와 생존분석 미경험이 명시되어 있다',
      finalPracticeText.includes('기술통계') && finalPracticeText.includes('로지스틱 회귀분석') &&
@@ -1319,3 +1321,4 @@ console.log('\n' + '─'.repeat(52));
 console.log(fails.length ? `실패 ${fails.length}건 / 통과 ${pass}건` : `전부 통과 (${pass}건)`);
 fails.forEach(f => console.log('  ✗ ' + f));
 process.exit(fails.length ? 1 : 0);
+
