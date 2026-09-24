@@ -1067,7 +1067,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('답변 기준은 별도 callout으로 보인다', !!(await pg.$('.guide-callout')));
   pg = await open({ width: 1280, height: 900 }, 'light', {});
   ok('면접 일정이 없으면 등록하라고 안내한다',
-     !(await pg.$('.dday')) && (await pg.textContent('.hero')).includes('등록하면'));
+     !(await pg.$('.dday')) && /면접 일정이 등록되?면/.test(await pg.textContent('.hero')));
 
   // 모바일: 메뉴를 위에 두면 본문이 화면 1/3 아래에서 시작하고, 긴 목록 끝에서
   // 다른 메뉴로 가려면 맨 위로 다시 올라가야 했다.
@@ -1075,7 +1075,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('모바일 본문이 화면 위쪽에서 시작한다', await mb.evaluate(() =>
      document.querySelector('#view').getBoundingClientRect().top < 120));
   await mb.goto(NECA + '#learn'); await mb.waitForTimeout(250);
-  await mb.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await mb.waitForTimeout(150);
+  await mb.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await mb.waitForTimeout(150);
   ok('긴 목록 끝에서도 메뉴가 화면 안에 있다', await mb.evaluate(() => {
     const r = document.querySelector('nav').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }));
   ok('마지막 카드가 하단 메뉴에 가리지 않는다', await mb.evaluate(() =>
@@ -1177,6 +1177,8 @@ section('면접 준비 페이지 (neca.html)');
 
   // 요청이 오가는 사이에 한 체크가 다음 주기(최대 1분)까지 밀리면 안 된다
   await pc.goto(NECA + '#learn'); await pc.waitForTimeout(400);
+  // 화면별 검색·단원 필터는 기억된다 — 앞에서 걸어 둔 '평가 기초'를 풀어야 c11 이 보인다
+  await pc.fill('#search', ''); await pc.selectOption('#group', ''); await pc.waitForTimeout(150);
   lag = 800; await wake(pc); await pc.waitForTimeout(200);
   await pc.evaluate(() => document.querySelector('[data-done="c11"]').click());
   await pc.waitForTimeout(3500); lag = 0;
@@ -1258,7 +1260,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('영어·통계 답변에 제출 점수와 프로그램 실습 수준이 있다',
      practiceText.includes('TOEIC 740') && practiceText.includes('SPSS') && practiceText.includes('SAS'));
   ok('문헌고찰은 직접 수행 경험 없음으로 명시한다',
-     practiceText.includes('체계적 문헌고찰을 독립적으로 수행한 경험은 없습니다'));
+     /체계적 문헌고찰을 (독립적으로 )?수행한 경험은 없습니다/.test(practiceText));
   ok('CP는 33종·77개로 구분하고 담당 시점을 2024년으로 둔다',
      practiceText.includes('33종') && practiceText.includes('77개') && practiceText.includes('2024년 1월'));
   ok('자동화 성과 두 종류를 섞지 않는다',
@@ -1272,17 +1274,16 @@ section('면접 준비 페이지 (neca.html)');
      expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생률 감소를 혼동하지 않고'));
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   const finalPracticeText = await ax.textContent('#questions');
-  ok('최신 자기소개는 임상·QI협업·대학원·직무연결 흐름이다',
-     finalPracticeText.includes('임상과 행정을 모두 경험한 지원자') &&
-     finalPracticeText.includes('병원의 질 향상이라는 공통 목표') &&
-     finalPracticeText.includes('역학과 보건통계를 공부했습니다'));
-  ok('장단점은 협업 강점과 발표 긴장 보완행동으로 갱신되어 있다',
-     finalPracticeText.includes('제 장점은 협업능력입니다') &&
-     finalPracticeText.includes('대본을 꼼꼼히 작성') &&
-     finalPracticeText.includes('이미지트레이닝'));
+  // 임상 경력은 우대사항이라 짧은 자기소개에서도 빠지면 안 된다
+  ok('자기소개에 임상·QI·대학원이 모두 들어 있다',
+     finalPracticeText.includes('회복실') && finalPracticeText.includes('QI팀') &&
+     finalPracticeText.includes('역학과 보건통계를 전공'));
+  ok('장단점은 호기심·적용과 누락 걱정 보완행동이다',
+     finalPracticeText.includes('궁금한 게 생기면 찾아보고') &&
+     finalPracticeText.includes('빠뜨린 게 없는지') &&
+     finalPracticeText.includes('중요한 것부터'));
   ok('장단점 답변이 실제 경험으로 채워져 있다',
-     finalPracticeText.includes('제 장점은 협업능력입니다') &&
-     finalPracticeText.includes('많은 사람들 앞에서 발표할 때는 긴장을 많이'));
+     finalPracticeText.includes('자동화를 적용해 봤습니다'));
   ok('마지막 한마디에 1년 목표가 반영되어 있다',
      finalPracticeText.includes('체계적 문헌고찰') &&
      finalPracticeText.includes('체계적 문헌고찰과 평가과정 전반을 차근차근 익혀'));
@@ -1301,13 +1302,19 @@ section('면접 준비 페이지 (neca.html)');
      finalPracticeText.includes('박사학위 지원자'));
   ok('실패 경험과 공정성 답변이 추가되어 있다',
      finalPracticeText.includes('수혈이 약 30분 지연') &&
-     finalPracticeText.includes('불리한 결과도 그대로 보고'));
+     finalPracticeText.includes('불리하게 나왔다고 빼지 않았'));
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
   const personalizedExpText = await ax.textContent('#view');
   ok('경험 카드에 KOPS·위원회·본인증 지적 계기가 반영되어 있다',
      personalizedExpText.includes('월 0~2건') &&
      personalizedExpText.includes('인증준비대책운영위원회') &&
      personalizedExpText.includes('본인증 지적사항'));
+
+  await ax.goto(NECA + '#summary'); await ax.waitForTimeout(300);
+  const sumText = await ax.textContent('#view');
+  ok('면접 직전 요약의 장단점이 답변 연습과 같다',
+     sumText.includes('궁금하면 찾아보고') && sumText.includes('누락 걱정') && !sumText.includes('장점: 협업능력'));
+  ok('협진 1분은 어디서나 1차 자료 작성 단계로 적는다', !(await ax.content()).includes('협진 분석 4시간'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
