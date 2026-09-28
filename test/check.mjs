@@ -1226,7 +1226,7 @@ section('면접 준비 페이지 (neca.html)');
   // 직무기술서가 명시한 업무는 상황 질문으로 연습한다
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   await ax.selectOption('#q-group', '__req'); await ax.waitForTimeout(150);
-  eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 11);
+  eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 16);
   ok('필수 질문에 선진입 자료 누락 질문이 있다', (await ax.textContent('#questions')).includes('누락이나 기관별 차이'));
   ok('직무 이해 핵심 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('신의료기술평가 연구원이 실제로 하는 일') && (await ax.textContent('#questions')).includes('식약처 허가와 신의료기술평가'));
   await ax.selectOption('#q-group', '');
@@ -1235,7 +1235,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
-  eq('경험 항목은 10개다', (await ax.$$('#view > details[id^="x-"]')).length, 10);
+  eq('경험 항목은 11개다', (await ax.$$('#view > details[id^="x-"]')).length, 11);
   ok('경험 화면에 직무·인재상·팀 매핑이 보인다', (await ax.textContent('#view')).includes('내 경험을 NECA 언어로 보기') && (await ax.textContent('#view')).includes('NECA 인재상으로 보기'));
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view > details[id^="x-"]')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
@@ -1260,18 +1260,18 @@ section('면접 준비 페이지 (neca.html)');
   ok('영어·통계 답변에 제출 점수와 프로그램 실습 수준이 있다',
      practiceText.includes('TOEIC 740') && practiceText.includes('SPSS') && practiceText.includes('SAS'));
   ok('문헌고찰은 직접 수행 경험 없음으로 명시한다',
-     /체계적 문헌고찰을 (독립적으로 )?수행한 경험은 없습니다/.test(practiceText));
+     practiceText.includes('직접 수행한 연구는 없습니다'));
   ok('CP는 33종·77개로 구분하고 담당 시점을 2024년으로 둔다',
      practiceText.includes('33종') && practiceText.includes('77개') && practiceText.includes('2024년 1월'));
-  ok('자동화 성과 두 종류를 섞지 않는다',
-     practiceText.includes('15시간') && practiceText.includes('3시간') &&
-     practiceText.includes('4시간 이상') && practiceText.includes('약 1분'));
+  ok('제출본에 없는 15시간→3시간은 어떤 답변에도 없다', await ax.evaluate(() =>
+     DATA.questions.every(q => ![q.answer, ...(q.variants || []).map(v => v.answer)].some(a => /15\s*(시간|h)/.test(a)))));
+  ok('협진 1분은 1차 자료 작성 단계로만 말한다', practiceText.includes('1차 자료 작성을 1분 안으로'));
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
   const expText = await ax.textContent('#view');
   ok('임상 경력은 2017.11~2020.04 회복간호로 구체화한다',
      expText.includes('2017.11~2020.04') && expText.includes('전신마취'));
   ok('FMEA 성과는 위험도 감소로 표현한다',
-     expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('발생률 감소를 혼동하지 않고'));
+     expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('치명도 감소와 실제 낙상 감소를 혼동하지 않기'));
   await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
   const finalPracticeText = await ax.textContent('#questions');
   // 임상 경력은 우대사항이라 짧은 자기소개에서도 빠지면 안 된다
@@ -1279,17 +1279,17 @@ section('면접 준비 페이지 (neca.html)');
      finalPracticeText.includes('회복실') && finalPracticeText.includes('QI팀') &&
      finalPracticeText.includes('역학과 보건통계를 전공'));
   ok('장단점은 호기심·적용과 누락 걱정 보완행동이다',
-     finalPracticeText.includes('궁금한 게 생기면 찾아보고') &&
-     finalPracticeText.includes('빠뜨린 게 없는지') &&
+     finalPracticeText.includes('궁금하면 찾아보고 직접 적용') &&
+     finalPracticeText.includes('누락을 걱정해') &&
      finalPracticeText.includes('중요한 것부터'));
   ok('장단점 답변이 실제 경험으로 채워져 있다',
-     finalPracticeText.includes('자동화를 적용해 봤습니다'));
+     finalPracticeText.includes('산출 도구를 만들어'));
   ok('마지막 한마디에 1년 목표가 반영되어 있다',
      finalPracticeText.includes('체계적 문헌고찰') &&
      finalPracticeText.includes('체계적 문헌고찰과 평가과정 전반을 차근차근 익혀'));
   ok('FMEA 수치의 정확한 기준이 반영되어 있다',
-     finalPracticeText.includes('10개 고장유형의 RPN 총합') &&
-     finalPracticeText.includes('사전 RPN이 가장 높았던 단일 고장유형'));
+     finalPracticeText.includes('10개 단계 합계 9,695→2,658') &&
+     finalPracticeText.includes('1순위 고위험군 예방활동 3,874→768'));
   ok('SPSS 분석 범위와 생존분석 미경험이 명시되어 있다',
      finalPracticeText.includes('기술통계') && finalPracticeText.includes('로지스틱 회귀분석') &&
      finalPracticeText.includes('생존분석은 해보지 않았습니다'));
@@ -1301,12 +1301,12 @@ section('면접 준비 페이지 (neca.html)');
      finalPracticeText.includes('현장형 경력인데 연구직') &&
      finalPracticeText.includes('박사학위 지원자'));
   ok('실패 경험과 공정성 답변이 추가되어 있다',
-     finalPracticeText.includes('수혈이 약 30분 지연') &&
-     finalPracticeText.includes('불리하게 나왔다고 빼지 않았'));
+     finalPracticeText.includes('수혈이 약 30분 늦어진') &&
+     finalPracticeText.includes('전부 보고하고 정정했습니다'));
   await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
   const personalizedExpText = await ax.textContent('#view');
   ok('경험 카드에 KOPS·위원회·본인증 지적 계기가 반영되어 있다',
-     personalizedExpText.includes('월 0~2건') &&
+     personalizedExpText.includes('KOPS') &&
      personalizedExpText.includes('인증준비대책운영위원회') &&
      personalizedExpText.includes('본인증 지적사항'));
 
@@ -1315,6 +1315,38 @@ section('면접 준비 페이지 (neca.html)');
   ok('면접 직전 요약의 장단점이 답변 연습과 같다',
      sumText.includes('궁금하면 찾아보고') && sumText.includes('누락 걱정') && !sumText.includes('장점: 협업능력'));
   ok('협진 1분은 어디서나 1차 자료 작성 단계로 적는다', !(await ax.content()).includes('협진 분석 4시간'));
+
+  // 지시서 v3 — 제출서류 대조 질문, 꼬리질문 근거, 경험↔질문 연결
+  const v3 = await open({ width: 1280, height: 900 }, 'light', {});
+  await v3.goto(NECA + '#practice'); await v3.waitForTimeout(300);
+  await v3.selectOption('#q-group', '제출서류 대조'); await v3.waitForTimeout(150);
+  eq('제출서류 대조 질문 8개가 필터로 모인다', (await v3.$$('#questions > details')).length, 8);
+  await v3.goto(NECA + '#practice/q43'); await v3.waitForTimeout(400);
+  ok('꼬리질문 근거는 기본으로 접혀 있다', await v3.evaluate(() => {
+    const b = document.querySelector('#q43 details.basis'); return !!b && !b.open; }));
+  ok('경험 질문 근거는 내 행동·판단 이유·결과 근거·한계로 나온다', await v3.evaluate(() =>
+    ['내 행동', '판단 이유', '결과 근거', '한계'].every(l => document.querySelector('#q43 details.basis').textContent.includes(l))));
+  ok('비어 있는 근거는 본인 확인 후 작성으로 표시한다', await v3.evaluate(() =>
+    document.querySelector('#q44 details.basis').textContent.includes('[본인 확인 후 작성]')));
+  ok('상황 질문 근거는 확인할 사실·판단 기준·조치·보고 범위로 나온다', await v3.evaluate(() =>
+    ['확인할 사실', '판단 기준', '필요한 조치', '보고 및 협의 범위'].every(l => document.querySelector('#q12 details.basis').textContent.includes(l))));
+  await v3.click('#q43 a[href="#experience/x-e10"]'); await v3.waitForTimeout(400);
+  ok('관련 경험 링크를 누르면 그 경험이 펼쳐진다', await v3.evaluate(() =>
+    location.hash === '#experience/x-e10' && document.getElementById('x-e10').open));
+  ok('경험에서 이 경험으로 답할 질문을 보여준다', await v3.evaluate(() =>
+    document.getElementById('x-e10').textContent.includes('이 경험으로 답할 질문') &&
+    !!document.querySelector('#x-e10 a[href="#practice/q43"]')));
+  eq('지표 코칭 챗봇 경험이 추가되어 있다', await v3.evaluate(() => !!document.getElementById('x-e11')), true);
+  await v3.goto(NECA + '#home'); await v3.waitForTimeout(300);
+  ok('홈의 cue 칩이 → 로 나뉘어 나온다', (await v3.$$('.cue-flow .cue-chip')).length >= 3);
+  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  const v3sum = await v3.textContent('#view');
+  ok('요약 화면은 혼동하지 않을 여덟 가지와 보고율 구분을 보여준다',
+     v3sum.includes('혼동하지 않을 여덟 가지') && v3sum.includes('보고율 감소 ≠ 안전해짐') && v3sum.includes('치명도 감소 ≠ 실제 낙상 감소'));
+  ok('요약의 자동화 줄은 15h→3h 를 성과로 쓰지 않는다', /15h→3h는 말하지 않음/.test(v3sum) && !v3sum.includes('CP 월보고 15h→3h(엑셀)'));
+  await v3.goto(NECA + '#agency'); await v3.waitForTimeout(300);
+  ok('기관·제도에 공부 순서가 있다', (await v3.textContent('#view')).includes('공고·직무기술서·면접 안내 → 제출서류 사실 확인'));
+  ok('경험 화면의 인재상 줄에도 15h→3h 가 없다', !(await v3.content()).includes('CP 보고 15h→3h'));
 
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
