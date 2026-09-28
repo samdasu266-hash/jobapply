@@ -1364,6 +1364,17 @@ section('면접 준비 페이지 (neca.html)');
   ok('q25 근거에 재발 대비가 들어 있다', await v3.evaluate(() =>
     (document.querySelector('#q25 details.basis') || {}).textContent?.includes('재발 대비')));
 
+  // 기출에서 비어 있던 네 문항 — 20~40초 분량(공백 포함 130~250자), 첫 문장에서 답
+  const gap = await v3.evaluate(() => ['q52', 'q53', 'q54', 'q55'].map(id => {
+    const q = DATA.questions.find(x => x.id === id); return q ? [id, q.answer.length] : [id, 0]; }));
+  ok('기출 빈칸 네 문항이 모두 있다', gap.every(([, n]) => n > 0), JSON.stringify(gap));
+  ok('네 문항 모두 20~40초 분량이다', gap.every(([, n]) => n >= 130 && n <= 250), JSON.stringify(gap));
+  ok('새 답변에 확신 없는 말투가 없다', await v3.evaluate(() =>
+    ['q52', 'q53', 'q54', 'q55'].every(id => !/것 같습니다/.test(DATA.questions.find(x => x.id === id).answer))));
+  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  ok('평가 항목 표에서 새 질문으로 이동할 수 있다', await v3.evaluate(() =>
+    ['q52', 'q53', 'q54', 'q55'].every(id => !!document.querySelector('#view a[href="#practice/' + id + '"]'))));
+
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
 

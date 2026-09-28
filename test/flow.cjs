@@ -7,9 +7,9 @@ const ctx=vm.createContext({console,Event:class{},localStorage:{getItem:k=>mem[k
 const run=s=>vm.runInContext(s,ctx);
 run(js.slice(0,js.indexOf("document.addEventListener('click'")));
 let n=0;const check=(title,f)=>{f();n++;console.log('PASS '+title)};
-check('all IDs retained',()=>{for(const [k,prefix,n] of [['cards','c',30],['questions','q',51],['experiences','e',11]]){const ids=JSON.parse(run(`JSON.stringify(DATA.${k}.map(x=>x.id))`));assert.equal(ids.length,n);for(let i=1;i<=n;i++)assert(ids.includes(prefix+i))}});
+check('all IDs retained',()=>{for(const [k,prefix,n] of [['cards','c',30],['questions','q',55],['experiences','e',11]]){const ids=JSON.parse(run(`JSON.stringify(DATA.${k}.map(x=>x.id))`));assert.equal(ids.length,n);for(let i=1;i<=n;i++)assert(ids.includes(prefix+i))}});
 run(`state.notes={q2:'나의 지원동기\\n둘째 줄 <script>',e3:'CP 경험 메모'};practice()`);
-check('default practice hides only strategy',()=>assert.equal((nodes['#questions'].innerHTML.match(/<details id="q/g)||[]).length,50));
+check('default practice hides only strategy',()=>assert.equal((nodes['#questions'].innerHTML.match(/<details id="q/g)||[]).length,54));
 check('next question and related links',()=>assert(nodes['#questions'].innerHTML.includes('다음 필수 질문')&&nodes['#questions'].innerHTML.includes('비슷한 질문')));
 check('uniform badges removed',()=>assert(!nodes['#questions'].innerHTML.includes('연습 가능')));
 check('saved answer editable',()=>assert(nodes['#questions'].innerHTML.includes('나의 지원동기')));
