@@ -7,9 +7,9 @@ const ctx=vm.createContext({console,Event:class{},localStorage:{getItem:k=>mem[k
 const run=s=>vm.runInContext(s,ctx);
 run(js.slice(0,js.indexOf("document.addEventListener('click'")));
 let n=0;const check=(title,f)=>{f();n++;console.log('PASS '+title)};
-check('all IDs retained',()=>{for(const [k,prefix,n] of [['cards','c',30],['questions','q',42],['experiences','e',10]]){const ids=JSON.parse(run(`JSON.stringify(DATA.${k}.map(x=>x.id))`));assert.equal(ids.length,n);for(let i=1;i<=n;i++)assert(ids.includes(prefix+i))}});
+check('all IDs retained',()=>{for(const [k,prefix,n] of [['cards','c',30],['questions','q',50],['experiences','e',11]]){const ids=JSON.parse(run(`JSON.stringify(DATA.${k}.map(x=>x.id))`));assert.equal(ids.length,n);for(let i=1;i<=n;i++)assert(ids.includes(prefix+i))}});
 run(`state.notes={q2:'나의 지원동기\\n둘째 줄 <script>',e3:'CP 경험 메모'};practice()`);
-check('default practice hides only strategy',()=>assert.equal((nodes['#questions'].innerHTML.match(/<details id="q/g)||[]).length,41));
+check('default practice hides only strategy',()=>assert.equal((nodes['#questions'].innerHTML.match(/<details id="q/g)||[]).length,49));
 check('next question and related links',()=>assert(nodes['#questions'].innerHTML.includes('다음 필수 질문')&&nodes['#questions'].innerHTML.includes('비슷한 질문')));
 check('uniform badges removed',()=>assert(!nodes['#questions'].innerHTML.includes('연습 가능')));
 check('saved answer editable',()=>assert(nodes['#questions'].innerHTML.includes('나의 지원동기')));
@@ -17,7 +17,7 @@ run('experience()');check('experience cards precede supporting map',()=>assert(n
 run('summary()');check('summary includes personal answer and experience safely',()=>assert(nodes['#view'].innerHTML.includes('나의 지원동기')&&nodes['#view'].innerHTML.includes('CP 경험 메모')&&nodes['#view'].innerHTML.includes('&lt;script&gt;')));
 check('body used in search',()=>assert(run(`searchText(DATA.cards.find(c=>c.id==='c26')).includes('위촉')`)));
 check('no duplicate search text',()=>assert(run(`DATA.cards.every(c=>!('text' in c))`)));
-check('interest not predetermined',()=>assert(run(`DATA.questions.find(q=>q.id==='q38').answer.includes('정해두지는 않았습니다')`)));
+check('interest not predetermined',()=>assert(run(`DATA.questions.find(q=>q.id==='q38').answer.match(/정해두지는 않았습니다|정하지는 않았습니다/)`)));
 run('home()');check('home renders next action',()=>assert(nodes['#view'].innerHTML.includes('답변 연습하기')));
 run(`state.practiced=DATA.questions.filter(q=>q.group!=='준비 전략').map(q=>q.id);home()`);check('finished practice shows review',()=>assert(nodes['#view'].innerHTML.includes('모든 질문을 한 번씩 연습했습니다')));
 node('#search').value='위촉';node('#group').value='기관과 제도';node('#only-review').checked=true;
