@@ -1121,8 +1121,19 @@ section('면접 준비 페이지 (neca.html)');
     const out = {}; for (const [k, v] of Object.entries(files)) out[k] = { content: v, truncated: false };
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: GID, files: out }) });
   });
+  // neca.html 은 바뀐 내용을 1.5초 모았다가 올린다(syncSoon(1500)). 실제로 그만큼
+  // 잠들면 검사 하나가 4초를 넘겼다. 가짜 시계로 그 1.5초만 건너뛰고, 결과는
+  // 정해진 시간 대신 조건이 채워질 때까지 기다린다. 설치해도 시간은 평소처럼
+  // 흐르고 runFor() 를 부를 때만 앞으로 건너뛴다.
+  const until = async (fn, ms = 5000) => {
+    const t0 = Date.now();
+    while (Date.now() - t0 < ms) { if (await fn()) return true; await new Promise(r => setTimeout(r, 20)); }
+    return false;
+  };
+  const remoteDone = () => JSON.parse(files['neca-study.json'] || '{}').done || [];
   const device = async () => {
     const c = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await c.clock.install();
     await wire(c);
     const d = await c.newPage();
     d.on('pageerror', e => nerr.push(e.message));
@@ -1136,19 +1147,27 @@ section('면접 준비 페이지 (neca.html)');
   const pc = await device(), phone = await device();
 
   await pc.evaluate(() => document.querySelector('[data-done="c1"]').click());
-  await pc.waitForTimeout(2200);
-  ok('PC 진도가 Gist 에 올라간다', JSON.parse(files['neca-study.json'] || '{}').done?.includes('c1'));
+  // 1.5초를 모으는 동작 자체도 검사한다 — 건너뛰기 때문에 빠진 게 아니다
+  // (시계는 멈추지 않고 실제 시간도 흐르므로 경계에 붙이지 않고 1초에서 본다)
+  await pc.clock.runFor(1000); await new Promise(r => setTimeout(r, 100));
+  ok('체크 직후 1초 안에는 아직 올리지 않는다', !remoteDone().includes('c1'), JSON.stringify(remoteDone()));
+  await pc.clock.runFor(500);
+  ok('PC 진도가 Gist 에 올라간다', await until(() => remoteDone().includes('c1')), JSON.stringify(remoteDone()));
   eq('트래커 파일은 그대로다', files['jobtracker.json'], '{"institutions":[],"events":[]}');
   await phone.evaluate(() => window.dispatchEvent(new Event('focus'))); await phone.waitForTimeout(900);
   ok('PC 에서 체크한 개념이 폰에 보인다', (await doneOf(phone)).includes('c1'));
   ok('폰 화면의 배지도 바뀐다', (await phone.textContent('#c1 summary')).includes('설명 가능'));
 
   // 폰에서 해제한 체크가 PC 때문에 되살아나면 안 된다 (합집합이면 그렇게 된다)
+  // PC 가 먼저 올리고, 폰은 그 사실을 모른 채 체크를 푼 다음 올린다
   await pc.evaluate(() => document.querySelector('[data-done="c5"]').click());
-  await pc.waitForTimeout(800);
+  await pc.clock.runFor(1500);
+  await until(() => remoteDone().includes('c5'));
   await phone.evaluate(() => document.querySelector('[data-done="c1"]').click());
-  await phone.waitForTimeout(2600);
-  await pc.evaluate(() => window.dispatchEvent(new Event('focus'))); await pc.waitForTimeout(900);
+  await phone.clock.runFor(1500);
+  await until(() => remoteDone().includes('c5') && !remoteDone().includes('c1'));
+  await pc.evaluate(() => window.dispatchEvent(new Event('focus'))); await pc.clock.runFor(200);
+  await until(async () => !(await doneOf(pc)).includes('c1'));
   const a = await doneOf(pc), b2 = await doneOf(phone);
   ok('폰에서 해제한 체크가 PC 에서도 풀린다', !a.includes('c1') && !b2.includes('c1'), JSON.stringify({ a, b2 }));
   ok('PC 에서 새로 한 체크는 폰에도 남는다', a.includes('c5') && b2.includes('c5'), JSON.stringify({ a, b2 }));
@@ -1181,8 +1200,11 @@ section('면접 준비 페이지 (neca.html)');
   await pc.fill('#search', ''); await pc.selectOption('#group', ''); await pc.waitForTimeout(150);
   lag = 800; await wake(pc); await pc.waitForTimeout(200);
   await pc.evaluate(() => document.querySelector('[data-done="c11"]').click());
-  await pc.waitForTimeout(3500); lag = 0;
-  ok('요청 중에 한 체크도 곧바로 올라간다', JSON.parse(files['neca-study.json']).done.includes('c11'));
+  // 모으는 1.5초를 건너뛰면 앞 요청(800ms 지연)이 아직 오가는 중이다. 그 요청이
+  // 끝나면 한 번 더 돌아(syncSoon(300)) c11 을 올려야 한다.
+  await pc.clock.runFor(1500);
+  ok('요청 중에 한 체크도 곧바로 올라간다', await until(() => remoteDone().includes('c11')), JSON.stringify(remoteDone()));
+  lag = 0;
 
   // 메모가 어디에 저장되는지 안내가 실제 동작과 같아야 한다
   await pc.goto(NECA + '#experience'); await pc.waitForTimeout(300);
