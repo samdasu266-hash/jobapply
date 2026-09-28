@@ -1348,6 +1348,22 @@ section('면접 준비 페이지 (neca.html)');
   ok('기관·제도에 공부 순서가 있다', (await v3.textContent('#view')).includes('공고·직무기술서·면접 안내 → 제출서류 사실 확인'));
   ok('경험 화면의 인재상 줄에도 15h→3h 가 없다', !(await v3.content()).includes('CP 보고 15h→3h'));
 
+  // 지시서 v3 §3-6·§3-7 — 평가 항목별 답변 표와 연구비 질문
+  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  ok('요약 화면에 평가 항목별로 꺼낼 답변 표가 있다', await v3.evaluate(() => {
+    const h = [...document.querySelectorAll('#view h2')].find(x => x.textContent === '평가 항목별로 꺼낼 답변');
+    const box = h && h.closest('section');
+    return !!box && box.querySelectorAll('tbody tr').length === 5 && !!box.querySelector('a[href="#practice/q26"]') &&
+      box.textContent.includes('NECA의 실제 채점표가 아니며'); }));
+  ok('공공가치 사례 3개가 질문으로 이어진다', await v3.evaluate(() =>
+    ['q43', 'q6', 'q31'].every(id => !!document.querySelector('#view ol a[href="#practice/' + id + '"]'))));
+  await v3.goto(NECA + '#practice/q51'); await v3.waitForTimeout(400);
+  ok('연구비·예산 질문(q51)이 있다', await v3.evaluate(() => !!document.getElementById('q51') && document.getElementById('q51').open));
+  ok('경험형 근거의 한계 칸은 재발 대비까지 적게 되어 있다', await v3.evaluate(() =>
+    document.querySelector('#q25 details.basis').textContent.includes('한계·재발 대비')));
+  ok('q25 근거에 재발 대비가 들어 있다', await v3.evaluate(() =>
+    (document.querySelector('#q25 details.basis') || {}).textContent?.includes('재발 대비')));
+
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
 
