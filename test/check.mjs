@@ -61,7 +61,7 @@ const boot = async (p, state, ui) => {
     if (u) localStorage.setItem('jobtracker.ui.v2', JSON.stringify(u));
   }, [s, ui ?? null]);
   await p.reload();
-  await p.waitForTimeout(400);
+  await settle(p);
 
   if (state?.institutions) {
     const extra = await p.evaluate((ids) =>
@@ -73,6 +73,11 @@ const boot = async (p, state, ui) => {
       '\n  → index.html 에 새 시드가 생겼습니다. test/check.mjs 의 SEED_KEYS 에 그 키를 추가하세요.');
   }
 };
+
+// 클릭·입력 뒤 화면이 다시 그려지기를 기다린다. 이 앱들은 이벤트 안에서
+// 동기로 다시 그리므로 두 프레임이면 충분하다 — 예전에는 매번 150~300ms 를
+// 고정으로 잤고 그게 모여 수십 초가 됐다.
+const settle = (p) => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 
 const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')));
 const texts = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s)].map(e => e.textContent.trim()), sel);
@@ -104,7 +109,7 @@ section('결과 기록 — 세 경로');
 for (const [label, sel] of [['진행 현황 칩', '.pipe .step'], ['다가오는 일정 카드', '.up-card'], ['달력 막대', '.bar']]) {
   await boot(p);
   await p.click(sel);
-  await p.waitForTimeout(150);
+  await settle(p);
   ok(label + ': 메뉴가 실제로 보인다', (await shown(p, '#rmenu')).visible);
   ok(label + ': 메뉴가 화면 안에 있다', await p.evaluate(() => {
     const r = document.getElementById('rmenu').getBoundingClientRect();
@@ -112,18 +117,18 @@ for (const [label, sel] of [['진행 현황 칩', '.pipe .step'], ['다가오는
   }));
   const mark = await p.textContent('#rmenuSet');
   await p.click('#rmenuSet');
-  await p.waitForTimeout(300);
+  await settle(p);
   const saved = (await store(p)).events.filter(e => e.result === mark).length;
   ok(label + ': 표시가 저장된다 (' + mark + ')', saved === 1, 'saved=' + saved);
   ok(label + ': 선택 후 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
 }
 
 await boot(p);
-await p.click('.pipe .step'); await p.waitForTimeout(150);
-await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+await p.click('.pipe .step'); await settle(p);
+await p.keyboard.press('Escape'); await settle(p);
 ok('ESC 로 닫힌다', !(await shown(p, '#rmenu')).visible);
-await p.click('.pipe .step'); await p.waitForTimeout(150);
-await p.click('h1'); await p.waitForTimeout(150);
+await p.click('.pipe .step'); await settle(p);
+await p.click('h1'); await settle(p);
 ok('바깥 클릭으로 닫힌다', !(await shown(p, '#rmenu')).visible);
 
 /* ─────────────────────────────────────────────── */
@@ -135,23 +140,23 @@ const chipInfo = await p.evaluate(() => {
 });
 const chipLabel = await p.evaluate(() =>
   document.querySelector('.pipe .step').textContent.replace(/\s+\d+\/\d+\(.\)$/, '').trim());
-await p.click('.pipe .step'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-action="edit-event"]'); await p.waitForTimeout(300);
+await p.click('.pipe .step'); await settle(p);
+await p.click('.rmenu button[data-action="edit-event"]'); await settle(p);
 ok('일정 수정: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
 // 드로어를 열고 폼까지 스크롤하던 땜질 대신 그 일정 시트를 바로 띄운다
 ok('일정 수정: 일정 시트가 바로 열린다', (await shown(p, '#evSheet')).visible);
 ok('일정 수정: 드로어는 열리지 않는다',
    !(await p.getAttribute('#drawer', 'class')).includes('open'));
 eq('일정 수정: 그 일정이 채워져 있다', await p.inputValue('#evLabel'), chipLabel);
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 ok('일정 시트는 ESC 로 닫힌다', !(await shown(p, '#evSheet')).visible);
 
-await p.click('.pipe .step'); await p.waitForTimeout(150);
-await p.click('.rmenu button[data-action="edit-inst"]'); await p.waitForTimeout(300);
+await p.click('.pipe .step'); await settle(p);
+await p.click('.rmenu button[data-action="edit-inst"]'); await settle(p);
 ok('기관 정보: 결과 메뉴가 닫힌다', !(await shown(p, '#rmenu')).visible);
 ok('기관 정보: 기관 시트가 바로 열린다', (await shown(p, '#instSheet')).visible);
 eq('기관 정보: 그 기관이 채워져 있다', await p.inputValue('#instName'), chipInfo.instName);
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 
 /* ─────────────────────────────────────────────── */
 section('불합격 → 기관 탈락 연동');
@@ -160,8 +165,8 @@ await p.evaluate(() => {
   const c = [...document.querySelectorAll('.up-card')].find(x => x.querySelector('.up-inst').textContent.includes('NIKOM'));
   c.dataset.probe = '1';
 });
-await p.click('.up-card[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('#rmenuSet'); await p.waitForTimeout(350);
+await p.click('.up-card[data-probe="1"]'); await settle(p);
+await p.click('#rmenuSet'); await settle(p);
 const afterFail = await store(p);
 eq('기관이 탈락으로 바뀐다', afterFail.institutions.find(i => i.id === 'nikom').status, 'rejected');
 // 탈락 기관은 취소선을 친 채로 남기지 않고 화면에서 뺀다
@@ -174,10 +179,10 @@ ok('겹침 경고에서도 빠진다', !(await p.evaluate(() =>
    [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('NIKOM')))));
 // 숨긴 것이지 지운 게 아니다 — 칩을 다시 켜면 돌아온다.
 // 탈락하면서 칩이 뒤로 밀려 '+N' 안으로 들어갔으니 먼저 펼친다
-await p.click('.chip.more'); await p.waitForTimeout(150);
+await p.click('.chip.more'); await settle(p);
 await p.evaluate(() => [...document.querySelectorAll('.chip:not(.all):not(.more)')]
   .find(c => c.textContent.includes('NIKOM')).click());
-await p.waitForTimeout(250);
+await settle(p);
 ok('칩을 켜면 진행 현황에 다시 나온다', (await texts(p, '.pipe-name')).some(t => t.includes('NIKOM')));
 ok('되살리면 탈락 배지가 붙어 있다', (await texts(p, '.pipe .badge')).includes('탈락'));
 
@@ -197,30 +202,30 @@ const menuFor = async (t) => {
     const m = document.querySelector('.pipe .step.more');
     if (m && m.textContent !== '접기') m.click();
   }, t);
-  await p.waitForTimeout(200);
+  await settle(p);
   await p.evaluate((txt) => {
     [...document.querySelectorAll('.pipe .step:not(.more)')]
       .find(s => s.textContent.includes(txt)).dataset.probe = '1';
   }, t);
-  await p.click('.step[data-probe="1"]'); await p.waitForTimeout(200);
+  await p.click('.step[data-probe="1"]'); await settle(p);
 };
 await menuFor('서류마감');
 eq('서류마감은 제출완료만 물어본다', await p.textContent('#rmenuSet'), '제출완료');
 ok('아직 켠 게 없으면 지우기는 숨는다', !(await shown(p, '#rmenuClear')).visible);
-await p.click('#rmenuSet'); await p.waitForTimeout(300);
+await p.click('#rmenuSet'); await settle(p);
 eq('서류마감에 제출완료가 기록된다',
    (await store(p)).events.find(e => e.id === 's1').result, '제출완료');
 eq('제출완료는 기관을 탈락으로 돌리지 않는다',
    (await store(p)).institutions[0].status, 'active');
 await menuFor('서류마감');
 ok('켜 둔 뒤에는 지우기가 나온다', (await shown(p, '#rmenuClear')).visible);
-await p.click('#rmenuClear'); await p.waitForTimeout(300);
+await p.click('#rmenuClear'); await settle(p);
 ok('지우면 표시가 없어진다', !(await store(p)).events.find(e => e.id === 's1').result);
 await menuFor('증빙서류 등록');
 eq('등록 일정도 제출완료로 본다', await p.textContent('#rmenuSet'), '제출완료');
 await menuFor('면접');
 eq('그 밖의 일정은 불합격만 물어본다', await p.textContent('#rmenuSet'), '불합격');
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 
 // 예전 데이터의 '합격'과, 종류가 안 맞는 표시는 지울 수도 없는 값으로 남는다
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
@@ -255,8 +260,8 @@ await p.evaluate(() => {
   const heads = [...document.querySelectorAll('.pipe .round-head')];
   heads[0].nextElementSibling.querySelector('.step:not(.more)').dataset.probe = '1';
 });
-await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('#rmenuSet'); await p.waitForTimeout(300);
+await p.click('.step[data-probe="1"]'); await settle(p);
+await p.click('#rmenuSet'); await settle(p);
 let st = await store(p);
 eq('지난 차수 불합격: 기관은 그대로 진행중이다', st.institutions.find(i => i.id === 'a').status, 'active');
 ok('그 차수 일정에 불합격이 기록된다', st.events.some(e => e.round === '2026-1차' && e.result === '불합격'));
@@ -268,14 +273,14 @@ await p.evaluate(() => {
   const heads = [...document.querySelectorAll('.pipe .round-head')];
   heads[1].nextElementSibling.querySelector('.step.more').click();
 });
-await p.waitForTimeout(250);
+await settle(p);
 await p.evaluate(() => {
   const heads = [...document.querySelectorAll('.pipe .round-head')];
   [...heads[1].nextElementSibling.querySelectorAll('.step:not(.more)')]
     .find(s => s.textContent.includes('면접')).dataset.probe = '2';
 });
-await p.click('.step[data-probe="2"]'); await p.waitForTimeout(150);
-await p.click('#rmenuSet'); await p.waitForTimeout(300);
+await p.click('.step[data-probe="2"]'); await settle(p);
+await p.click('#rmenuSet'); await settle(p);
 st = await store(p);
 eq('최신 차수 불합격: 기관이 탈락으로 바뀐다', st.institutions.find(i => i.id === 'a').status, 'rejected');
 
@@ -326,7 +331,7 @@ await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 'f2', inst: 'a', label: '최종발표', start: '2026-10-20', end: '2026-10-20' },
 ]});
 eq('기본은 다음 단계 하나와 +N', await texts(p, '.pipe .step'), ['면접 10/6(화)', '+3']);
-await p.click('.step.more'); await p.waitForTimeout(250);
+await p.click('.step.more'); await settle(p);
 eq('펼치면 전 단계가 나온다', (await texts(p, '.pipe .step')).length, 5);
 ok('접혀 있던 결과 기록이 살아 있다',
    (await texts(p, '.pipe .step.pass')).some(t => t.includes('서류마감')));
@@ -334,10 +339,10 @@ ok('접혀 있던 결과 기록이 살아 있다',
 // (불합격은 기관을 숨기므로, 상태를 바꾸지 않는 제출완료로 확인한다)
 await p.evaluate(() => [...document.querySelectorAll('.pipe .step')]
   .find(s => s.textContent.includes('서류마감')).dataset.probe = '1');
-await p.click('.step[data-probe="1"]'); await p.waitForTimeout(150);
-await p.click('#rmenuSet'); await p.waitForTimeout(350);
+await p.click('.step[data-probe="1"]'); await settle(p);
+await p.click('#rmenuSet'); await settle(p);
 ok('결과를 적어도 펼침이 유지된다', (await p.textContent('.step.more')) === '접기');
-await p.click('.step.more'); await p.waitForTimeout(250);
+await p.click('.step.more'); await settle(p);
 eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
 
 // 전부 지난 기관은 마지막 단계를 보여준다 (빈 줄이 되지 않게)
@@ -354,11 +359,11 @@ await boot(p);
 const barInsts = () => p.evaluate(() =>
   [...new Set([...document.querySelectorAll('.bar')].map(b => (b.title || '').split(' · ')[0]))].length);
 const n0 = await barInsts();
-await p.click('.chip:not(.all)'); await p.waitForTimeout(200);
+await p.click('.chip:not(.all)'); await settle(p);
 ok('칩으로 기관을 끌 수 있다', await barInsts() === n0 - 1);
-await p.click('.chip.all'); await p.waitForTimeout(200);
+await p.click('.chip.all'); await settle(p);
 eq('전체 해제', await barInsts(), 0);
-await p.click('.chip.all'); await p.waitForTimeout(200);
+await p.click('.chip.all'); await settle(p);
 ok('전체 선택', await barInsts() === n0);
 
 await boot(p,
@@ -367,7 +372,7 @@ await boot(p,
 ok('탈락 기관은 기본으로 숨는다', await barInsts() === 0);
 await p.evaluate(() => [...document.querySelectorAll('.chip:not(.all)')]
   .find(c => c.textContent.includes('B탈락')).click());
-await p.waitForTimeout(200);
+await settle(p);
 ok('숨기기가 켜져 있어도 칩으로 되살릴 수 있다', await barInsts() === 1);
 ok('체크박스는 켜진 채 유지', await p.evaluate(() => document.querySelector('.toggle input').checked));
 
@@ -380,10 +385,10 @@ await boot(p, {
 });
 eq('기본은 칩 4개만 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 4);
 eq('나머지는 +N 으로 접힌다', await p.textContent('.chip.more'), '+2');
-await p.click('.chip.more'); await p.waitForTimeout(150);
+await p.click('.chip.more'); await settle(p);
 eq('펼치면 전 기관이 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 6);
 eq('펼친 뒤엔 접기로 바뀐다', await p.textContent('.chip.more'), '접기');
-await p.click('.chip.more'); await p.waitForTimeout(150);
+await p.click('.chip.more'); await settle(p);
 eq('접으면 다시 4개만 보인다', (await texts(p, '.chip:not(.all):not(.more)')).length, 4);
 
 // 끝난 기관이 앞자리를 차지하면 정작 볼 기관이 '+N' 뒤로 밀린다
@@ -400,7 +405,7 @@ await boot(p, {
 }, { hidden: {}, hideInactive: false });
 eq('탈락·포기 기관은 앞자리를 차지하지 않는다',
    await texts(p, '.chip:not(.all):not(.more)'), ['가', '다', '라', '마']);
-await p.click('.chip.more'); await p.waitForTimeout(150);
+await p.click('.chip.more'); await settle(p);
 eq('펼치면 끝난 기관이 뒤에 붙어 나온다',
    await texts(p, '.chip:not(.all):not(.more)'), ['가', '다', '라', '마', '나탈락', '바포기']);
 
@@ -416,11 +421,11 @@ ok('접힌 달에 일정이 있으면 버튼이 알린다',
    (await p.textContent('#moreMonths')).includes('12월까지 일정이 더 있습니다'),
    await p.textContent('#moreMonths'));
 ok('기본 상태에서는 접기 버튼이 없다', !(await shown(p, '#collapseMonths')).visible);
-await p.click('#moreMonths'); await p.waitForTimeout(250);
+await p.click('#moreMonths'); await settle(p);
 eq('더 보기로 마지막 일정 달까지 펼쳐진다', (await texts(p, '.month h3')).length, 4);
 ok('더 보여줄 달이 없으면 더 보기 버튼이 사라진다', !(await shown(p, '#moreMonths')).visible);
 ok('더 펼친 상태에서는 접기 버튼이 나타난다', (await shown(p, '#collapseMonths')).visible);
-await p.click('#collapseMonths'); await p.waitForTimeout(250);
+await p.click('#collapseMonths'); await settle(p);
 eq('접기를 누르면 기본(2개월)으로 돌아간다', (await texts(p, '.month h3')).length, 2);
 ok('기본으로 돌아오면 더 보기 버튼이 다시 나타난다', (await shown(p, '#moreMonths')).visible);
 ok('기본으로 돌아오면 접기 버튼이 다시 사라진다', !(await shown(p, '#collapseMonths')).visible);
@@ -449,7 +454,7 @@ ok('장소 링크는 새 탭 + noopener', await p.evaluate(() => {
 }));
 await p.evaluate(() => { window.__opened = []; window.open = u => (window.__opened.push(u), null); });
 await p.evaluate(() => document.querySelector('.up-card .up-place a').click());
-await p.waitForTimeout(200);
+await settle(p);
 ok('장소 링크를 눌러도 결과 메뉴가 뜨지 않는다', !(await shown(p, '#rmenu')).visible);
 
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E', { url: 'javascript:alert(1)' })], events: [] });
@@ -509,19 +514,19 @@ eq('토요일 필기시험이 그날 그대로 그려진다',
    await p.evaluate(() => [...document.querySelectorAll('.bar')]
      .filter(b => (b.title || '').includes('심평원 · 필기시험')).map(b => b.style.gridColumn)),
    ['7 / span 1']);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
 await p.evaluate(() => [...document.querySelectorAll('.mgr-item')]
   .find(r => r.querySelector('.nm').textContent === '건보공단').querySelector('.inst-more').click());
-await p.waitForTimeout(250);
+await settle(p);
 await p.click('#instDelete');
-await p.waitForTimeout(300);
-await p.reload(); await p.waitForTimeout(400);
+await settle(p);
+await p.reload(); await settle(p);
 ok('지운 뒤에는 다시 생기지 않는다', !(await store(p)).institutions.some(i => i.id === 'nhis'));
 
 /* ─────────────────────────────────────────────── */
 section('관리 드로어 — 목록만 두고 편집은 시트에서');
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
 ok('목록에는 편집 입력칸이 없다', await p.evaluate(() =>
   document.querySelectorAll('#instList input, #instList select').length === 0));
 ok('기관 이름 아래에 그 기관 일정이 중첩되어 보인다', await p.evaluate(() => {
@@ -538,24 +543,24 @@ ok('소속 없는 일정 목록은 고아 일정이 없으면 숨겨진다',
    (await shown(p, '#evListHead')).visible === false);
 
 // 기관 편집은 ⋯ → 시트에서, 저장을 눌러야 반영된다
-await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+await p.click('.mgr-item .inst-more'); await settle(p);
 ok('⋯ 로 기관 시트가 열린다', (await shown(p, '#instSheet')).visible);
 eq('그 기관 이름이 채워져 있다', await p.inputValue('#instName'), 'NECA (보의연)');
 await p.fill('#instName', 'NECA(이름바꿈)');
-await p.click('#instSave'); await p.waitForTimeout(300);
+await p.click('#instSave'); await settle(p);
 eq('기관 이름 변경이 저장된다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
 ok('저장하면 시트가 닫힌다', !(await shown(p, '#instSheet')).visible);
 
-await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+await p.click('.mgr-item .inst-more'); await settle(p);
 await p.fill('#instName', '');
-await p.click('#instSave'); await p.waitForTimeout(250);
+await p.click('#instSave'); await settle(p);
 eq('빈 이름으로는 저장되지 않는다', (await store(p)).institutions[0].name, 'NECA(이름바꿈)');
 ok('빈 이름이면 시트가 닫히지 않는다', (await shown(p, '#instSheet')).visible);
 
 // 상태는 목록이 아니라 시트에서 바꾸고, 탈락·포기일 때만 배지가 붙는다
 await p.fill('#instName', 'NECA(이름바꿈)');
 await p.click('#instStatus button[data-status="rejected"]');
-await p.click('#instSave'); await p.waitForTimeout(300);
+await p.click('#instSave'); await settle(p);
 eq('상태 변경이 저장된다', (await store(p)).institutions[0].status, 'rejected');
 ok('탈락이면 목록에 배지가 붙는다', (await texts(p, '#instList .badge')).includes('탈락'));
 
@@ -566,8 +571,8 @@ ok('기본 기관 색이 겹치지 않는다', await p.evaluate(() => {
   const c = JSON.parse(localStorage.getItem('jobtracker.v1')).institutions.map(i => i.color);
   return new Set(c).size === c.length;
 }));
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('.mgr-item .inst-more'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
+await p.click('.mgr-item .inst-more'); await settle(p);
 ok('다른 기관이 쓰는 색은 고를 수 없다', await p.evaluate(() =>
   [...document.querySelectorAll('#instSwatch button')].some(b => b.disabled)));
 // 자기 색까지 잠그면 기관 시트를 열자마자 선택된 색이 사라진다
@@ -580,7 +585,7 @@ const newColor = await p.evaluate(() => {
   b.click();
   return b.style.backgroundColor;
 });
-await p.click('#instSave'); await p.waitForTimeout(300);
+await p.click('#instSave'); await settle(p);
 ok('고른 색이 저장된다', await p.evaluate((want) => {
   const it = JSON.parse(localStorage.getItem('jobtracker.v1')).institutions[0];
   const el = document.createElement('div'); el.style.backgroundColor = it.color;
@@ -590,56 +595,56 @@ ok('고른 색이 저장된다', await p.evaluate((want) => {
 /* ─────────────────────────────────────────────── */
 section('일정 편집');
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
 const before = (await store(p)).events.length;
-await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+await p.click('.inst-events .ev-item'); await settle(p);
 ok('줄을 누르면 그 일정 시트가 열린다', (await shown(p, '#evSheet')).visible);
 eq('수정일 때는 제목이 일정 수정', await p.textContent('#evSheetTitle'), '일정 수정');
 ok('수정일 때는 삭제 버튼이 있다', (await shown(p, '#evDelete')).visible);
 await p.fill('#evStart', '2026-11-05');
 await p.fill('#evEnd', '2026-11-05');
-await p.click('#evSave'); await p.waitForTimeout(300);
+await p.click('#evSave'); await settle(p);
 eq('수정해도 일정이 늘지 않는다', (await store(p)).events.length, before);
 ok('수정이 반영된다', (await store(p)).events.some(e => e.start === '2026-11-05'));
 
 // 값이 없는 선택 항목은 접혀 있다가 눌러야 펼쳐진다.
 // 시드 일정은 대부분 메모를 갖고 있으므로, 빈 상태는 '추가' 시트로 확인한다.
-await p.click('#newEventBtn'); await p.waitForTimeout(250);
+await p.click('#newEventBtn'); await settle(p);
 eq('추가 시트에서는 선택 항목 셋이 모두 접혀 있다',
    await p.evaluate(() => [...document.querySelectorAll('.opt-field')].filter(f => !f.hidden).length), 0);
-await p.click('#evOptRow .opt[data-opt="memo"]'); await p.waitForTimeout(150);
+await p.click('#evOptRow .opt[data-opt="memo"]'); await settle(p);
 ok('누르면 펼쳐진다', (await shown(p, '.opt-field[data-optfield="memo"]')).visible);
 ok('펼친 항목의 버튼은 사라진다',
    !(await shown(p, '#evOptRow .opt[data-opt="memo"]')).visible);
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 
 // 값이 있으면 펼친 채로 연다
 await boot(p, {
   institutions: [INST('a', 'A', '#2E6F5E')],
   events: [{ id: 'm', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06', memo: '정장 착용' }],
 });
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
+await p.click('.inst-events .ev-item'); await settle(p);
 ok('값이 있는 항목은 펼친 채로 열린다', (await shown(p, '.opt-field[data-optfield="memo"]')).visible);
 eq('그 값이 채워져 있다', await p.inputValue('#evMemo'), '정장 착용');
 ok('값이 없는 항목은 여전히 접혀 있다', !(await shown(p, '.opt-field[data-optfield="round"]')).visible);
 await p.fill('#evMemo', '고침');
-await p.click('#evSave'); await p.waitForTimeout(300);
+await p.click('#evSave'); await settle(p);
 eq('펼친 항목의 수정이 저장된다', (await store(p)).events[0].memo, '고침');
 
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
 
 // 추가는 같은 시트를 빈 채로 연다
-await p.click('#newEventBtn'); await p.waitForTimeout(250);
+await p.click('#newEventBtn'); await settle(p);
 eq('추가일 때는 제목이 일정 추가', await p.textContent('#evSheetTitle'), '일정 추가');
 ok('추가일 때는 삭제 버튼이 없다', !(await shown(p, '#evDelete')).visible);
-await p.selectOption('#evInst', '__new__'); await p.waitForTimeout(150);
+await p.selectOption('#evInst', '__new__'); await settle(p);
 ok('새 기관 입력칸이 나타난다', (await shown(p, '#evNewInstField')).visible);
 await p.fill('#evNewInst', '테스트기관');
 await p.fill('#evLabel', '면접');
 await p.fill('#evStart', '2026-11-10');
-await p.click('#evSave'); await p.waitForTimeout(300);
+await p.click('#evSave'); await settle(p);
 ok('목록에 없는 기관이 만들어진다', (await store(p)).institutions.some(i => i.name === '테스트기관'));
 ok('만들어진 기관은 목록에서 바로 ⋯ 로 열 수 있다', await p.evaluate(() =>
   [...document.querySelectorAll('.mgr-item')].some(r =>
@@ -647,16 +652,16 @@ ok('만들어진 기관은 목록에서 바로 ⋯ 로 열 수 있다', await p.
 
 // 삭제는 시트 안에서만 — 목록에서 실수로 눌릴 일이 없다
 const beforeDel = (await store(p)).events.length;
-await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
-await p.click('#evDelete'); await p.waitForTimeout(300);
+await p.click('.inst-events .ev-item'); await settle(p);
+await p.click('#evDelete'); await settle(p);
 eq('시트에서 삭제하면 일정이 준다', (await store(p)).events.length, beforeDel - 1);
 ok('삭제 후 시트가 닫힌다', !(await shown(p, '#evSheet')).visible);
 
 /* ─────────────────────────────────────────────── */
 section('전형 단계 일괄 추가');
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
+await p.click('#newBulkBtn'); await settle(p);
 ok('일괄 추가 시트가 열린다', (await shown(p, '#bulkSheet')).visible);
 const b0 = (await store(p)).events.length;
 await p.evaluate(() => {
@@ -666,13 +671,13 @@ await p.evaluate(() => {
   };
   set('서류결과', '2026-11-02'); set('면접', '2026-11-09');
 });
-await p.click('#bulkAdd'); await p.waitForTimeout(300);
+await p.click('#bulkAdd'); await settle(p);
 eq('채운 날짜만 추가된다', (await store(p)).events.length - b0, 2);
 ok('추가하면 시트가 닫힌다', !(await shown(p, '#bulkSheet')).visible);
-await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.click('#newBulkBtn'); await settle(p);
 ok('입력칸이 비워진다', await p.evaluate(() =>
   [...document.querySelectorAll('#bulkRows input')].every(i => !i.value)));
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 
 /* ─────────────────────────────────────────────── */
 section('데이터 오염 방지');
@@ -680,58 +685,58 @@ section('데이터 오염 방지');
 // 눌렀을 때 일정 없는 빈 기관만 남고 다음 저장에 딸려 들어간다.
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 'x', inst: 'a', label: '면접', start: '2026-10-06', end: '2026-10-06' }]});
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('#newBulkBtn'); await p.waitForTimeout(250);
-await p.selectOption('#bulkInst', '__new__'); await p.waitForTimeout(150);
+await p.click('#openDrawer'); await settle(p);
+await p.click('#newBulkBtn'); await settle(p);
+await p.selectOption('#bulkInst', '__new__'); await settle(p);
 await p.fill('#bulkNewInst', '빈기관');
-await p.click('#bulkAdd'); await p.waitForTimeout(300);
+await p.click('#bulkAdd'); await settle(p);
 ok('날짜를 안 채우면 기관이 만들어지지 않는다', await p.evaluate(() =>
   ![...document.querySelectorAll('#bulkInst option')].some(o => o.textContent === '빈기관')));
 // 메모리에만 생겼다가 다음 저장에 딸려 들어가는 경로까지 막혔는지 본다
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-await p.click('#closeDrawer'); await p.waitForTimeout(250);
-await p.click('.pipe .step'); await p.waitForTimeout(200);
-await p.click('#rmenuSet'); await p.waitForTimeout(400);
+await p.keyboard.press('Escape'); await settle(p);
+await p.click('#closeDrawer'); await settle(p);
+await p.click('.pipe .step'); await settle(p);
+await p.click('#rmenuSet'); await settle(p);
 ok('다른 저장이 일어나도 빈 기관이 저장되지 않는다',
    !(await store(p)).institutions.some(i => i.name === '빈기관'));
 
 // 같은 기관·내용·기간·차수면 같은 일정이다
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [] });
-await p.click('#openDrawer'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
 for (let k = 0; k < 2; k++) {
-  await p.click('#newEventBtn'); await p.waitForTimeout(250);
+  await p.click('#newEventBtn'); await settle(p);
   await p.fill('#evLabel', '면접');
   await p.fill('#evStart', '2026-11-11');
-  await p.click('#evSave'); await p.waitForTimeout(300);
+  await p.click('#evSave'); await settle(p);
 }
 eq('같은 일정을 두 번 저장해도 하나만 남는다',
    (await store(p)).events.filter(e => e.label === '면접').length, 1);
 // 중복을 거부당한 시트는 열린 채로 남는다 (고쳐서 다시 저장할 수 있게)
 ok('중복이면 시트가 닫히지 않는다', (await shown(p, '#evSheet')).visible);
-await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+await p.keyboard.press('Escape'); await settle(p);
 
 // 차수가 다르면 다른 일정이다
-await p.click('#newEventBtn'); await p.waitForTimeout(250);
+await p.click('#newEventBtn'); await settle(p);
 await p.fill('#evLabel', '면접');
 await p.fill('#evStart', '2026-11-11');
-await p.click('#evOptRow .opt[data-opt="round"]'); await p.waitForTimeout(150);
+await p.click('#evOptRow .opt[data-opt="round"]'); await settle(p);
 await p.fill('#evRound', '2차');
-await p.click('#evSave'); await p.waitForTimeout(300);
+await p.click('#evSave'); await settle(p);
 eq('차수가 다르면 따로 등록된다',
    (await store(p)).events.filter(e => e.label === '면접').length, 2);
 // 수정할 때 자기 자신을 중복으로 잡으면 안 된다
-await p.click('.inst-events .ev-item'); await p.waitForTimeout(250);
-await p.click('#evOptRow .opt[data-opt="memo"]'); await p.waitForTimeout(150);
+await p.click('.inst-events .ev-item'); await settle(p);
+await p.click('#evOptRow .opt[data-opt="memo"]'); await settle(p);
 await p.fill('#evMemo', '자기중복아님');
-await p.click('#evSave'); await p.waitForTimeout(300);
+await p.click('#evSave'); await settle(p);
 ok('수정 시 자기 자신은 중복으로 보지 않는다',
    (await store(p)).events.some(e => e.memo === '자기중복아님'));
 
 // 일괄 추가도 같은 기준으로 건너뛴다
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 'd', inst: 'a', label: '서류결과', start: '2026-11-02', end: '2026-11-02' }]});
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
+await p.click('#newBulkBtn'); await settle(p);
 await p.evaluate(() => {
   const set = (stage, v) => {
     const i = [...document.querySelectorAll('#bulkRows input')].find(x => x.dataset.stage === stage);
@@ -739,7 +744,7 @@ await p.evaluate(() => {
   };
   set('서류결과', '2026-11-02'); set('면접', '2026-11-09');
 });
-await p.click('#bulkAdd'); await p.waitForTimeout(300);
+await p.click('#bulkAdd'); await settle(p);
 eq('일괄 추가는 이미 있는 일정을 건너뛴다', (await store(p)).events.length, 2);
 
 /* ─────────────────────────────────────────────── */
@@ -806,13 +811,13 @@ eq('기관이 넉넉하면 전부 다른 기관으로 채운다',
 section('시트 포커스');
 // 시트가 열리자마자 텍스트 입력칸을 잡으면 모바일에서 키보드가 화면을 덮는다
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('.mgr-item .inst-more'); await p.waitForTimeout(300);
+await p.click('#openDrawer'); await settle(p);
+await p.click('.mgr-item .inst-more'); await settle(p);
 ok('기관 시트를 열어도 입력칸에 포커스가 가지 않는다', await p.evaluate(() =>
   document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'));
 ok('닫기 버튼에 포커스가 간다', await p.evaluate(() =>
   document.activeElement.classList.contains('sheet-close')));
-await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+await p.keyboard.press('Escape'); await settle(p);
 ok('시트를 닫으면 열었던 버튼으로 돌아온다', await p.evaluate(() =>
   document.activeElement.classList.contains('inst-more')));
 
@@ -821,36 +826,36 @@ section('[hidden] 이 실제로 숨겨지는가');
 // display 를 주는 규칙(.field, .sheet, .rmenu)이 [hidden] 을 이겨서 "속성은
 // hidden 인데 화면엔 보이는" 버그를 세 번 냈다. 속성이 아니라 계산된 스타일로 본다.
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(250);
-await p.click('#newEventBtn'); await p.waitForTimeout(250);
+await p.click('#openDrawer'); await settle(p);
+await p.click('#newEventBtn'); await settle(p);
 ok('기관을 고른 상태면 새 기관 이름 칸은 보이지 않는다',
    !(await shown(p, '#evNewInstField')).visible);
 eq('접힌 선택 항목은 계산된 스타일로도 숨겨져 있다',
    await p.evaluate(() => [...document.querySelectorAll('.opt-field')]
      .filter(f => getComputedStyle(f).display !== 'none').length), 0);
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 ok('닫은 시트는 계산된 스타일로도 숨겨진다', !(await shown(p, '#evSheet')).visible);
 ok('시트 스크림도 함께 숨겨진다', !(await shown(p, '#sheetScrim')).visible);
-await p.click('#newBulkBtn'); await p.waitForTimeout(250);
+await p.click('#newBulkBtn'); await settle(p);
 ok('일괄 추가 시트에서도 새 기관 칸은 숨겨져 있다',
    !(await shown(p, '#bulkNewInstField')).visible);
-await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+await p.keyboard.press('Escape'); await settle(p);
 
 /* ─────────────────────────────────────────────── */
 section('드로어 접근성');
 await boot(p);
-await p.click('#openDrawer'); await p.waitForTimeout(300);
+await p.click('#openDrawer'); await settle(p);
 ok('열면 포커스가 드로어 안으로 간다', await p.evaluate(() =>
   document.getElementById('drawer').contains(document.activeElement)));
 await p.keyboard.down('Shift'); await p.keyboard.press('Tab'); await p.keyboard.up('Shift');
-await p.waitForTimeout(150);
+await settle(p);
 ok('탭이 드로어 밖으로 새지 않는다', await p.evaluate(() =>
   document.getElementById('drawer').contains(document.activeElement)));
 ok('dialog 역할이 지정되어 있다', await p.evaluate(() => {
   const d = document.getElementById('drawer');
   return d.getAttribute('role') === 'dialog' && d.getAttribute('aria-modal') === 'true';
 }));
-await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+await p.keyboard.press('Escape'); await settle(p);
 eq('닫으면 포커스가 열기 버튼으로 돌아온다', await p.evaluate(() => document.activeElement.id), 'openDrawer');
 
 /* ─────────────────────────────────────────────── */
@@ -862,7 +867,7 @@ ok('가로 스크롤이 없다', await mp.evaluate(() =>
   document.documentElement.scrollWidth === document.documentElement.clientWidth));
 ok('달력 막대가 칸을 넘치지 않는다', await mp.evaluate(() =>
   [...document.querySelectorAll('.bar')].every(b => b.getBoundingClientRect().right <= innerWidth + 1)));
-await mp.click('.bar'); await mp.waitForTimeout(200);
+await mp.click('.bar'); await settle(mp);
 ok('결과 메뉴가 화면 안에 들어온다', await mp.evaluate(() => {
   const r = document.getElementById('rmenu').getBoundingClientRect();
   return r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight && r.top >= 0;
@@ -940,35 +945,52 @@ section('기기 간 동기화 (가짜 Gist)');
   const device = async () => {
     const c = await browser.newContext({ viewport: { width: 1200, height: 950 } });
     await wire(c);
+    await c.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
+      const n = document.getElementById('saveNote');
+      new MutationObserver(() => { if (/^동기화(됨| 실패)/.test(n.textContent))
+        window.__syncRounds = (window.__syncRounds || 0) + 1; })
+        .observe(n, { childList: true, characterData: true, subtree: true });
+    }));
     return c.newPage();
   };
   // 편집을 UI 대신 저장소에 직접 넣고 새로고침한다 — 여기서 보는 것은
   // 편집 방법이 아니라 그 편집이 다른 기기까지 가느냐다.
+  // 고정 시간을 자는 대신 동기화 한 바퀴가 끝나기를 기다린다. 한 바퀴는
+  // 늘 상태 문구(#saveNote)를 '동기화됨…' 이나 '동기화 실패…' 로 바꾸며 끝나므로,
+  // 그렇게 바뀐 횟수를 세어 두고 그 수가 늘기를 본다.
+  const rounds = (pg) => pg.evaluate(() => window.__syncRounds || 0);
+  const synced = (pg, after = 0) => pg.waitForFunction(
+    (n) => (window.__syncRounds || 0) > n, after, { polling: 20, timeout: 5000 });
   const edit = async (pg, fn) => {
     await pg.evaluate((src) => {
       const s = JSON.parse(localStorage.getItem('jobtracker.v1'));
       (new Function('s', src))(s);
       localStorage.setItem('jobtracker.v1', JSON.stringify(s));
     }, '(' + fn + ')(s)');
-    await pg.reload(); await pg.waitForTimeout(800);
+    await pg.reload(); await synced(pg);   // 켜질 때 바로 한 번 돈다
   };
   const wake = async (pg) => {
+    const t = await rounds(pg);
     await pg.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await pg.waitForTimeout(800);
+    await synced(pg, t);
   };
   const seed = async (pg, st) => {
     await pg.goto(PAGE);
     await pg.evaluate((v) => { localStorage.clear();
       localStorage.setItem('jobtracker.v1', JSON.stringify(v)); }, st);
-    await pg.reload(); await pg.waitForTimeout(300);
+    await pg.reload();
+  };
+  // 연결은 성공이든 실패든 alert 로 끝난다 — 그 alert 를 기다린다
+  const submit = (pg) => {
+    const said = new Promise(r => pg.once('dialog', d => { r(d.message()); d.accept(); }));
+    return pg.click('#syncSave').then(() => said);
   };
   const connect = async (pg, gid) => {
-    await pg.click('#openDrawer'); await pg.waitForTimeout(250);
-    await pg.click('#syncBtn'); await pg.waitForTimeout(250);
+    await pg.click('#openDrawer');
+    await pg.click('#syncBtn');
     await pg.fill('#syncToken', 'TT');
     await pg.fill('#syncGist', gid);
-    pg.once('dialog', d => d.accept());
-    await pg.click('#syncSave'); await pg.waitForTimeout(800);
+    await submit(pg);
   };
   const SEEDED = Object.fromEntries(SEED_KEYS.map(k => [k, true]));
   const st = (pg) => pg.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')));
@@ -1011,12 +1033,10 @@ section('기기 간 동기화 (가짜 Gist)');
   // 토큰이 틀리면 조용히 넘어가지 않고 이 기기 저장으로 남아야 한다
   const bad = await device();
   await seed(bad, { seeded: SEEDED, institutions: [], events: [] });
-  await bad.click('#openDrawer'); await bad.waitForTimeout(250);
-  await bad.click('#syncBtn'); await bad.waitForTimeout(250);
+  await bad.click('#openDrawer');
+  await bad.click('#syncBtn');
   await bad.fill('#syncToken', 'WRONG'); await bad.fill('#syncGist', GID);
-  let alerted = '';
-  bad.once('dialog', d => { alerted = d.message(); d.accept(); });
-  await bad.click('#syncSave'); await bad.waitForTimeout(800);
+  const alerted = await submit(bad);
   ok('토큰이 거부되면 알려주고 연결하지 않는다',
      alerted.includes('연결하지 못했습니다') &&
      !(await bad.evaluate(() => localStorage.getItem('jobtracker.sync.v1') || '')).includes('WRONG'),
@@ -1039,7 +1059,7 @@ section('면접 준비 페이지 (neca.html)');
     await pg.goto(NECA);
     await pg.evaluate((sd) => { localStorage.clear();
       for (const [k, v] of Object.entries(sd || {})) localStorage.setItem(k, JSON.stringify(v)); }, seed);
-    await pg.reload(); await pg.waitForTimeout(300);
+    await pg.reload(); await settle(pg);
     return pg;
   };
 
@@ -1074,8 +1094,8 @@ section('면접 준비 페이지 (neca.html)');
   const mb = await open({ width: 390, height: 844 }, 'light', { 'jobtracker.v1': TRACKER });
   ok('모바일 본문이 화면 위쪽에서 시작한다', await mb.evaluate(() =>
      document.querySelector('#view').getBoundingClientRect().top < 120));
-  await mb.goto(NECA + '#learn'); await mb.waitForTimeout(250);
-  await mb.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await mb.waitForTimeout(150);
+  await mb.goto(NECA + '#learn'); await settle(mb);
+  await mb.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await settle(mb);
   ok('긴 목록 끝에서도 메뉴가 화면 안에 있다', await mb.evaluate(() => {
     const r = document.querySelector('nav').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight + 1; }));
   ok('마지막 카드가 하단 메뉴에 가리지 않는다', await mb.evaluate(() =>
@@ -1096,27 +1116,29 @@ section('면접 준비 페이지 (neca.html)');
   // 아코디언을 훑을 때 무엇을 해 뒀는지 보여야 한다
   const bd = await open({ width: 1280, height: 900 }, 'light',
     { 'jobapply.neca.study.v1': { done: ['c1'], review: [], notes: {}, last: 'c1', practiced: [] } });
-  await bd.goto(NECA + '#learn'); await bd.waitForTimeout(250);
+  await bd.goto(NECA + '#learn'); await settle(bd);
   ok('설명 가능한 개념은 제목 옆에 표시된다', (await bd.textContent('#c1 summary')).includes('설명 가능'));
   ok('안 한 개념에는 배지가 없다', !(await bd.textContent('#c2 summary')).includes('설명 가능'));
-  await bd.evaluate(() => document.querySelector('[data-done="c2"]').click()); await bd.waitForTimeout(150);
+  await bd.evaluate(() => document.querySelector('[data-done="c2"]').click()); await settle(bd);
   ok('누르면 배지가 바로 붙는다', (await bd.textContent('#c2 summary')).includes('설명 가능'));
-  await bd.goto(NECA + '#practice'); await bd.waitForTimeout(250);
+  await bd.goto(NECA + '#practice'); await settle(bd);
   ok('질문에는 준비 상태 배지가 붙는다', (await bd.$$('#questions > details > summary .pill')).length >= 11);
 
   // 기기 간 동기화 — 트래커가 연결해 둔 Gist 에 파일을 하나 더 둔다.
   // 트래커 파일(jobtracker.json)을 건드리면 일정이 날아가므로 그것도 본다.
   const GID = 'b'.repeat(32);
   const files = { 'jobtracker.json': '{"institutions":[],"events":[]}' };
-  let lag = 0, patches = 0;
+  let lag = 0, plag = 0, patches = 0, gets = 0, sending = 0;
   const wire = (c) => c.route('https://api.github.com/**', async (route) => {
     const q = route.request();
     if (q.headers()['authorization'] !== 'token TT') return route.fulfill({ status: 401, body: '{}' });
     if (q.method() === 'PATCH') {
-      patches++;
+      patches++; sending++;
+      if (plag) await new Promise(r => setTimeout(r, plag));
       for (const [k, v] of Object.entries(JSON.parse(q.postData()).files)) files[k] = v.content;
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     }
+    gets++;
     if (lag) await new Promise(r => setTimeout(r, lag));
     const out = {}; for (const [k, v] of Object.entries(files)) out[k] = { content: v, truncated: false };
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: GID, files: out }) });
@@ -1131,16 +1153,32 @@ section('면접 준비 페이지 (neca.html)');
     return false;
   };
   const remoteDone = () => JSON.parse(files['neca-study.json'] || '{}').done || [];
+  // 동기화 한 바퀴는 상태 문구를 '…동기화됨'/'동기화 실패' 로 바꾸며 끝난다. 그 횟수를 센다.
+  const rounds = (d) => d.evaluate(() => window.__syncRounds || 0);
+  const synced = (d, after = 0) => d.waitForFunction(
+    (n) => (window.__syncRounds || 0) > n, after, { polling: 20, timeout: 5000 });
+  // 포커스를 받으면 0.2초 뒤에 돈다 — 그 0.2초는 건너뛰고 한 바퀴가 끝나기를 기다린다
+  const pull = async (d) => {
+    const n = await rounds(d);
+    await d.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await d.clock.runFor(200); await synced(d, n);
+  };
   const device = async () => {
     const c = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     await c.clock.install();
     await wire(c);
+    await c.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
+      const s = document.getElementById('sync-state'); if (!s) return;
+      new MutationObserver(() => { if (/동기화됨|동기화 실패/.test(s.textContent))
+        window.__syncRounds = (window.__syncRounds || 0) + 1; })
+        .observe(s, { childList: true, characterData: true, subtree: true });
+    }));
     const d = await c.newPage();
     d.on('pageerror', e => nerr.push(e.message));
     await d.goto(NECA);
     await d.evaluate((g) => { localStorage.clear();
       localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: g })); }, GID);
-    await d.goto(NECA + '#learn'); await d.reload(); await d.waitForTimeout(600);
+    await d.goto(NECA + '#learn'); await d.reload(); await synced(d);
     return d;
   };
   const doneOf = (d) => d.evaluate(() => JSON.parse(localStorage.getItem('jobapply.neca.study.v1') || '{}').done || []);
@@ -1154,7 +1192,7 @@ section('면접 준비 페이지 (neca.html)');
   await pc.clock.runFor(500);
   ok('PC 진도가 Gist 에 올라간다', await until(() => remoteDone().includes('c1')), JSON.stringify(remoteDone()));
   eq('트래커 파일은 그대로다', files['jobtracker.json'], '{"institutions":[],"events":[]}');
-  await phone.evaluate(() => window.dispatchEvent(new Event('focus'))); await phone.waitForTimeout(900);
+  await pull(phone);
   ok('PC 에서 체크한 개념이 폰에 보인다', (await doneOf(phone)).includes('c1'));
   ok('폰 화면의 배지도 바뀐다', (await phone.textContent('#c1 summary')).includes('설명 가능'));
 
@@ -1176,41 +1214,49 @@ section('면접 준비 페이지 (neca.html)');
   const remote = (done) => { files['neca-study.json'] = JSON.stringify({ done, review: [], practiced: [], notes: {}, last: 'c1' }); };
   const wake = async (d) => { await d.evaluate(() => window.dispatchEvent(new Event('focus'))); };
   const base = JSON.parse(files['neca-study.json']).done;
-  await pc.goto(NECA + '#learn'); await pc.waitForTimeout(300);
+  await pc.goto(NECA + '#learn'); await settle(pc);
   await pc.fill('#search', 'PICO'); await pc.selectOption('#group', '평가 기초');
-  remote([...base, 'c6']); await wake(pc); await pc.waitForTimeout(900);
+  remote([...base, 'c6']); await pull(pc);
   ok('동기화가 반영돼도 검색어가 남는다', await pc.inputValue('#search') === 'PICO');
   ok('동기화가 반영돼도 단원 선택이 남는다', await pc.inputValue('#group') === '평가 기초');
   ok('그러면서도 다른 기기의 체크는 들어온다', (await doneOf(pc)).includes('c6'));
 
   // 요청을 보낸 뒤에 메모를 쓰기 시작해도 입력창이 새로 만들어지면 안 된다
-  await pc.goto(NECA + '#experience'); await pc.waitForTimeout(300);
+  await pc.goto(NECA + '#experience'); await settle(pc);
   await pc.evaluate(() => { document.querySelector('#view details').open = true; });
   remote([...base, 'c6', 'c8']); lag = 700;
-  await wake(pc); await pc.waitForTimeout(250);
+  let n = await rounds(pc), g = gets;
+  await wake(pc); await pc.clock.runFor(200);
+  await until(() => gets > g);   // 요청이 나간 뒤, 응답이 오기 전에 쓰기 시작한다
   await pc.click('textarea[data-note]'); await pc.keyboard.type('작성 중');
   const ta = await pc.evaluateHandle(() => document.activeElement);
-  await pc.waitForTimeout(900); lag = 0;
+  await synced(pc, n); lag = 0;
   ok('응답이 늦게 와도 쓰던 입력창이 그대로다', await pc.evaluate(el => el.isConnected && el === document.activeElement, ta));
   ok('쓰던 내용도 그대로다', (await pc.evaluate(el => el.value, ta)) === '작성 중');
 
-  // 요청이 오가는 사이에 한 체크가 다음 주기(최대 1분)까지 밀리면 안 된다
-  await pc.goto(NECA + '#learn'); await pc.waitForTimeout(400);
+  // 요청이 오가는 사이에 한 체크가 다음 주기(최대 1분)까지 밀리면 안 된다.
+  // 올릴 내용은 읽기 응답을 받은 순간 정해지므로, 끼어드는 체크는 '올리는
+  // 요청(PATCH)'이 오가는 중에 해야 한다 — 읽기 중에 하면 그 바퀴에 그냥 실려
+  // 가서, 다시 돌리는 코드(syncAgain)를 지워도 통과해 버린다.
+  await pc.goto(NECA + '#learn'); await settle(pc);
   // 화면별 검색·단원 필터는 기억된다 — 앞에서 걸어 둔 '평가 기초'를 풀어야 c11 이 보인다
-  await pc.fill('#search', ''); await pc.selectOption('#group', ''); await pc.waitForTimeout(150);
-  lag = 800; await wake(pc); await pc.waitForTimeout(200);
-  await pc.evaluate(() => document.querySelector('[data-done="c11"]').click());
-  // 모으는 1.5초를 건너뛰면 앞 요청(800ms 지연)이 아직 오가는 중이다. 그 요청이
-  // 끝나면 한 번 더 돌아(syncSoon(300)) c11 을 올려야 한다.
+  await pc.fill('#search', ''); await pc.selectOption('#group', ''); await settle(pc);
+  plag = 800; let s0 = sending;
+  await pc.evaluate(() => document.querySelector('[data-done="c12"]').click());
   await pc.clock.runFor(1500);
+  await until(() => sending > s0);   // c12 를 올리는 중
+  await pc.evaluate(() => document.querySelector('[data-done="c11"]').click());
+  await pc.clock.runFor(1500);       // 모으기가 끝났지만 아직 올리는 중이라 미뤄진다
+  plag = 0;
+  await until(() => remoteDone().includes('c12'));
+  await pc.clock.runFor(300);        // 앞 바퀴가 끝나면 0.3초 뒤 한 번 더 돈다
   ok('요청 중에 한 체크도 곧바로 올라간다', await until(() => remoteDone().includes('c11')), JSON.stringify(remoteDone()));
-  lag = 0;
 
   // 메모가 어디에 저장되는지 안내가 실제 동작과 같아야 한다
-  await pc.goto(NECA + '#experience'); await pc.waitForTimeout(300);
+  await pc.goto(NECA + '#experience'); await settle(pc);
   ok('동기화를 켜면 메모가 Gist 에도 저장된다고 안내한다', (await pc.textContent('#view .caution')).includes('GitHub Gist'));
   const solo = await open({ width: 1280, height: 900 }, 'light', {});
-  await solo.goto(NECA + '#experience'); await solo.waitForTimeout(300);
+  await solo.goto(NECA + '#experience'); await settle(solo);
   ok('동기화를 안 켜면 이 브라우저에만 저장된다고 안내한다', (await solo.textContent('#view .caution')).includes('현재 브라우저에만'));
 
   // 모바일에서도 동기화 상태가 보이고, 실패하면 다시 시도할 수 있어야 한다
@@ -1219,7 +1265,8 @@ section('면접 준비 페이지 (neca.html)');
   const mp = await mc.newPage(); mp.on('pageerror', e => nerr.push(e.message));
   await mp.goto(NECA);
   await mp.evaluate((g) => { localStorage.clear(); localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: g })); }, GID);
-  await mp.reload(); await mp.waitForTimeout(800);
+  await mp.reload();
+  await mp.waitForFunction(() => /실패/.test(document.getElementById('sync-state')?.textContent || ''), null, { polling: 20, timeout: 5000 });
   ok('모바일에서 동기화 실패가 보인다', (await shown(mp, '#sync-state')).visible && (await mp.textContent('#sync-state')).includes('실패'));
   ok('실패하면 다시 시도 버튼이 있다', (await shown(mp, '#sync-state .retry')).visible);
   eq('하단 메뉴는 기관·제도로 표시한다', (await texts(mp, 'nav a .s')).pop(), '요약');
@@ -1229,41 +1276,41 @@ section('면접 준비 페이지 (neca.html)');
 
   // 모든 카드가 같은 중요도로 보이면 무엇부터 할지 알 수 없다
   const tr = await open({ width: 1280, height: 900 }, 'light', {});
-  await tr.goto(NECA + '#learn'); await tr.waitForTimeout(300);
+  await tr.goto(NECA + '#learn'); await settle(tr);
   ok('필수 카드에 필수 배지가 붙는다', (await tr.textContent('#c1 summary')).includes('필수'));
-  await tr.selectOption('#group', '__req'); await tr.waitForTimeout(150);
+  await tr.selectOption('#group', '__req'); await settle(tr);
   eq('필수 카드만 볼 수 있다', await tr.textContent('#result'), '11개 개념');
   ok('홈에서 필수 진도를 보여준다', (await (await open({ width: 1280, height: 900 }, 'light', {})).textContent('.hero')).includes('필수 개념 0/11'));
 
   // 직무 설명은 한 곳에만 둔다 — 두 화면에 따로 적었다가 한쪽에 옛 '세 가지 축'이 남았다
   const ax = await open({ width: 1280, height: 900 }, 'light', {});
-  await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#agency'); await settle(ax);
   const agencyText = await ax.textContent('#view');
   ok('기관·제도 화면에 직무 다섯 축이 나온다', agencyText.includes('다섯 축') && agencyText.includes('선진입 기술 관리'));
   ok('옛 세 가지 축은 어디에도 없다', !(await ax.content()).includes('세 가지 축'));
-  await ax.goto(NECA + '#learn/c9'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#learn/c9'); await settle(ax);
   ok('연구원 카드에도 같은 다섯 축이 나온다', (await ax.textContent('#c9')).includes('컨설팅·대외협력') && !(await ax.textContent('#c9')).includes('{{AXES}}'));
-  await ax.fill('#search', '선진입 기술 관리'); await ax.waitForTimeout(150);
+  await ax.fill('#search', '선진입 기술 관리'); await settle(ax);
   ok('다섯 축 내용도 검색된다', (await ax.textContent('#cards')).includes('연구원과 위원회'));
   // 직무기술서가 명시한 업무는 상황 질문으로 연습한다
-  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
-  await ax.selectOption('#q-group', '__req'); await ax.waitForTimeout(150);
+  await ax.goto(NECA + '#practice'); await settle(ax);
+  await ax.selectOption('#q-group', '__req'); await settle(ax);
   eq('필수 질문만 볼 수 있다', (await ax.$$('#questions > details')).length, 16);
   ok('필수 질문에 선진입 자료 누락 질문이 있다', (await ax.textContent('#questions')).includes('누락이나 기관별 차이'));
   ok('직무 이해 핵심 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('신의료기술평가 연구원이 실제로 하는 일') && (await ax.textContent('#questions')).includes('식약처 허가와 신의료기술평가'));
   await ax.selectOption('#q-group', '');
   ok('신청자 이의·연구윤리·인재상 질문이 추가되어 있다', (await ax.textContent('#questions')).includes('문헌 선정이나 평가 결과에 강하게 이의') && (await ax.textContent('#questions')).includes('NECA 연구윤리') && (await ax.textContent('#questions')).includes('NECA 인재상'));
-  await ax.goto(NECA + '#home'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#home'); await settle(ax);
   ok('오늘의 답변 연습은 필수 질문부터 고른다', (await ax.textContent('#view')).includes('1분 자기소개'));
   // 경험은 직무와 이어지는 곳과, 거기까지는 다른 경험이라는 한계를 같이 적는다
-  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#experience'); await settle(ax);
   eq('경험 항목은 11개다', (await ax.$$('#view > details[id^="x-"]')).length, 11);
   ok('경험 화면에 직무·인재상·팀 매핑이 보인다', (await ax.textContent('#view')).includes('내 경험을 NECA 언어로 보기') && (await ax.textContent('#view')).includes('NECA 인재상으로 보기'));
   ok('경험마다 직무와 연결·구분할 한계가 있다', await ax.evaluate(() =>
     [...document.querySelectorAll('#view > details[id^="x-"]')].every(d => d.textContent.includes('직무와 연결') && d.textContent.includes('구분할 한계'))));
   // 확인된 지원서·경력 내용은 면접 답변에 구체적으로 남겨 둔다
-  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
-  await ax.goto(NECA + '#agency'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#practice'); await settle(ax);
+  await ax.goto(NECA + '#agency'); await settle(ax);
   const strategyText = await ax.textContent('#view');
   ok('2026 전략체계와 기관 전체/지원직무 구분이 반영되어 있다',
      strategyText.includes('선진입 의료기술 근거창출 5% 확대') &&
@@ -1288,13 +1335,13 @@ section('면접 준비 페이지 (neca.html)');
   ok('제출본에 없는 15시간→3시간은 어떤 답변에도 없다', await ax.evaluate(() =>
      DATA.questions.every(q => ![q.answer, ...(q.variants || []).map(v => v.answer)].some(a => /15\s*(시간|h)/.test(a)))));
   ok('협진 1분은 1차 자료 작성 단계로만 말한다', practiceText.includes('1차 자료 작성을 1분 안으로'));
-  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#experience'); await settle(ax);
   const expText = await ax.textContent('#view');
   ok('임상 경력은 2017.11~2020.04 회복간호로 구체화한다',
      expText.includes('2017.11~2020.04') && expText.includes('전신마취'));
   ok('FMEA 성과는 위험도 감소로 표현한다',
      expText.includes('72.6%') && expText.includes('80.2%') && expText.includes('치명도 감소와 실제 낙상 감소를 혼동하지 않기'));
-  await ax.goto(NECA + '#practice'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#practice'); await settle(ax);
   const finalPracticeText = await ax.textContent('#questions');
   // 임상 경력은 우대사항이라 짧은 자기소개에서도 빠지면 안 된다
   ok('자기소개에 임상·QI·대학원이 모두 들어 있다',
@@ -1325,14 +1372,14 @@ section('면접 준비 페이지 (neca.html)');
   ok('실패 경험과 공정성 답변이 추가되어 있다',
      finalPracticeText.includes('수혈이 약 30분 늦어진') &&
      finalPracticeText.includes('전부 보고하고 정정했습니다'));
-  await ax.goto(NECA + '#experience'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#experience'); await settle(ax);
   const personalizedExpText = await ax.textContent('#view');
   ok('경험 카드에 KOPS·위원회·본인증 지적 계기가 반영되어 있다',
      personalizedExpText.includes('KOPS') &&
      personalizedExpText.includes('인증준비대책운영위원회') &&
      personalizedExpText.includes('본인증 지적사항'));
 
-  await ax.goto(NECA + '#summary'); await ax.waitForTimeout(300);
+  await ax.goto(NECA + '#summary'); await settle(ax);
   const sumText = await ax.textContent('#view');
   ok('면접 직전 요약의 장단점이 답변 연습과 같다',
      sumText.includes('궁금하면 찾아보고') && sumText.includes('누락 걱정') && !sumText.includes('장점: 협업능력'));
@@ -1340,10 +1387,10 @@ section('면접 준비 페이지 (neca.html)');
 
   // 지시서 v3 — 제출서류 대조 질문, 꼬리질문 근거, 경험↔질문 연결
   const v3 = await open({ width: 1280, height: 900 }, 'light', {});
-  await v3.goto(NECA + '#practice'); await v3.waitForTimeout(300);
-  await v3.selectOption('#q-group', '제출서류 대조'); await v3.waitForTimeout(150);
+  await v3.goto(NECA + '#practice'); await settle(v3);
+  await v3.selectOption('#q-group', '제출서류 대조'); await settle(v3);
   eq('제출서류 대조 질문 8개가 필터로 모인다', (await v3.$$('#questions > details')).length, 8);
-  await v3.goto(NECA + '#practice/q43'); await v3.waitForTimeout(400);
+  await v3.goto(NECA + '#practice/q43'); await settle(v3);
   ok('꼬리질문 근거는 기본으로 접혀 있다', await v3.evaluate(() => {
     const b = document.querySelector('#q43 details.basis'); return !!b && !b.open; }));
   ok('경험 질문 근거는 내 행동·판단 이유·결과 근거·한계로 나온다', await v3.evaluate(() =>
@@ -1352,26 +1399,26 @@ section('면접 준비 페이지 (neca.html)');
     document.querySelector('#q44 details.basis').textContent.includes('[본인 확인 후 작성]')));
   ok('상황 질문 근거는 확인할 사실·판단 기준·조치·보고 범위로 나온다', await v3.evaluate(() =>
     ['확인할 사실', '판단 기준', '필요한 조치', '보고 및 협의 범위'].every(l => document.querySelector('#q12 details.basis').textContent.includes(l))));
-  await v3.click('#q43 a[href="#experience/x-e10"]'); await v3.waitForTimeout(400);
+  await v3.click('#q43 a[href="#experience/x-e10"]'); await settle(v3);
   ok('관련 경험 링크를 누르면 그 경험이 펼쳐진다', await v3.evaluate(() =>
     location.hash === '#experience/x-e10' && document.getElementById('x-e10').open));
   ok('경험에서 이 경험으로 답할 질문을 보여준다', await v3.evaluate(() =>
     document.getElementById('x-e10').textContent.includes('이 경험으로 답할 질문') &&
     !!document.querySelector('#x-e10 a[href="#practice/q43"]')));
   eq('지표 코칭 챗봇 경험이 추가되어 있다', await v3.evaluate(() => !!document.getElementById('x-e11')), true);
-  await v3.goto(NECA + '#home'); await v3.waitForTimeout(300);
+  await v3.goto(NECA + '#home'); await settle(v3);
   ok('홈의 cue 칩이 → 로 나뉘어 나온다', (await v3.$$('.cue-flow .cue-chip')).length >= 3);
-  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  await v3.goto(NECA + '#summary'); await settle(v3);
   const v3sum = await v3.textContent('#view');
   ok('요약 화면은 혼동하지 않을 여덟 가지와 보고율 구분을 보여준다',
      v3sum.includes('혼동하지 않을 여덟 가지') && v3sum.includes('보고율 감소 ≠ 안전해짐') && v3sum.includes('치명도 감소 ≠ 실제 낙상 감소'));
   ok('요약의 자동화 줄은 15h→3h 를 성과로 쓰지 않는다', /15h→3h는 말하지 않음/.test(v3sum) && !v3sum.includes('CP 월보고 15h→3h(엑셀)'));
-  await v3.goto(NECA + '#agency'); await v3.waitForTimeout(300);
+  await v3.goto(NECA + '#agency'); await settle(v3);
   ok('기관·제도에 공부 순서가 있다', (await v3.textContent('#view')).includes('공고·직무기술서·면접 안내 → 제출서류 사실 확인'));
   ok('경험 화면의 인재상 줄에도 15h→3h 가 없다', !(await v3.content()).includes('CP 보고 15h→3h'));
 
   // 지시서 v3 §3-6·§3-7 — 평가 항목별 답변 표와 연구비 질문
-  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  await v3.goto(NECA + '#summary'); await settle(v3);
   ok('요약 화면에 평가 항목별로 꺼낼 답변 표가 있다', await v3.evaluate(() => {
     const h = [...document.querySelectorAll('#view h2')].find(x => x.textContent === '평가 항목별로 꺼낼 답변');
     const box = h && h.closest('section');
@@ -1379,7 +1426,7 @@ section('면접 준비 페이지 (neca.html)');
       box.textContent.includes('NECA의 실제 채점표가 아니며'); }));
   ok('공공가치 사례 3개가 질문으로 이어진다', await v3.evaluate(() =>
     ['q43', 'q6', 'q31'].every(id => !!document.querySelector('#view ol a[href="#practice/' + id + '"]'))));
-  await v3.goto(NECA + '#practice/q51'); await v3.waitForTimeout(400);
+  await v3.goto(NECA + '#practice/q51'); await settle(v3);
   ok('연구비·예산 질문(q51)이 있다', await v3.evaluate(() => !!document.getElementById('q51') && document.getElementById('q51').open));
   ok('경험형 근거의 한계 칸은 재발 대비까지 적게 되어 있다', await v3.evaluate(() =>
     document.querySelector('#q25 details.basis').textContent.includes('한계·재발 대비')));
@@ -1393,7 +1440,7 @@ section('면접 준비 페이지 (neca.html)');
   ok('네 문항 모두 20~40초 분량이다', gap.every(([, n]) => n >= 130 && n <= 250), JSON.stringify(gap));
   ok('새 답변에 확신 없는 말투가 없다', await v3.evaluate(() =>
     ['q52', 'q53', 'q54', 'q55'].every(id => !/것 같습니다/.test(DATA.questions.find(x => x.id === id).answer))));
-  await v3.goto(NECA + '#summary'); await v3.waitForTimeout(300);
+  await v3.goto(NECA + '#summary'); await settle(v3);
   ok('평가 항목 표에서 새 질문으로 이동할 수 있다', await v3.evaluate(() =>
     ['q52', 'q53', 'q54', 'q55'].every(id => !!document.querySelector('#view a[href="#practice/' + id + '"]'))));
 
