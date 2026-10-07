@@ -1093,7 +1093,8 @@ if(mqNarrow.addEventListener) mqNarrow.addEventListener("change", function(){ re
 // 면접 준비 페이지가 있는 기관. 기관 이름을 바꿔도 이어지도록 id 와 이름 둘 다 본다.
 var STUDY_PAGES = [
   { id: "neca", re: /NECA|보의연|한국보건의료연구원/i, href: "./neca.html", name: "NECA" },
-  { id: "koda", re: /KODA|장기조직기증원/i, href: "./koda.html", name: "KODA" }
+  { id: "koda", re: /KODA|장기조직기증원/i, href: "./koda.html", name: "KODA" },
+  { id: "nids", re: /NIDS|의료기기안전정보원/i, href: "./nids.html", name: "NIDS" }
 ];
 function studyPageFor(it){
   for(var i = 0; i < STUDY_PAGES.length; i++){

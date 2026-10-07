@@ -1797,6 +1797,46 @@ section('면접 준비 페이지 (neca.html)');
   ok('면접 준비 페이지 오류 없음', nerr.length === 0, nerr.join(' | '));
 }
 
+/* ─────────────────────────────────────────────── */
+section('면접 준비 페이지 (nids.html)');
+// KODA 틀을 그대로 쓰되 기록·동기화·D-day 는 NIDS 것만
+{
+  const NIDS = 'file://' + join(ROOT, 'nids.html');
+  const nerr2 = [];
+  const nc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const np = await nc.newPage(); np.on('pageerror', e => nerr2.push(e.message));
+  await np.goto(NIDS);
+  await np.evaluate(() => { localStorage.clear(); localStorage.setItem('jobtracker.v1', JSON.stringify({
+    institutions: [{ id: 'nids', name: 'NIDS (의료기기안전정보원)', color: '#17707D', status: 'active' },
+                   { id: 'koda', name: 'KODA (장기조직기증원)', color: '#9C4370', status: 'active' }],
+    events: [{ id: 'n', inst: 'nids', label: '면접', start: '2026-11-17', end: '2026-11-19' },
+             { id: 'k', inst: 'koda', label: '면접', start: '2026-10-15', end: '2026-10-16' }] })); });
+  await np.reload();
+  eq('D-day 는 NIDS 면접 일정을 읽는다', await np.textContent('.dday'), 'D-49');
+  for (const r of ['learn', 'practice', 'experience', 'agency', 'summary']) { await np.goto(NIDS + '#' + r); await settle(np); }
+  eq('NIDS 페이지가 오류 없이 열린다', nerr2, []);
+  eq('문서 제목은 NIDS 로 시작한다', (await np.title()).startsWith('NIDS · '), true);
+  const nq = await np.evaluate(() => DATA.questions.map(q => ({ id: q.id, src: q.src, len: q.answer.replace(/\s/g, '').length, todo: q.answer.startsWith('['), a: q.answer })));
+  ok('NIDS 답변 초안은 250자 이내다(자기소개 제외)', nq.filter(q => q.id !== 'q1' && !q.todo).every(q => q.len <= 250), JSON.stringify(nq.filter(q => q.len > 250).map(q => q.id)));
+  ok('NIDS 질문에 “기출” 표시가 없다', nq.every(q => q.src && !q.src.includes('기출')));
+  ok('KODA 내용이 섞이지 않았다', !nq.some(q => /기증|유가족|장기구득|교육운영팀/.test(q.a)));
+  const said2 = nq.map(q => q.a).join('\n');
+  ok('NIDS 답변에 조항 번호·학력·본인 실수 문장이 없다', !/제\s?\d+조|대학원|석사|제가 산출한 결과가 잘못/.test(said2));
+  const nsrc = (await import('node:fs')).readFileSync(join(ROOT, 'nids.html'), 'utf8');
+  ok('NIDS 페이지에 전화번호가 없다', !/\b0\d{1,2}-\d{3,4}-\d{4}\b/.test(nsrc));
+  ok('홈페이지에 없는 핵심가치·인재상을 만들어 쓰지 않는다', (await np.evaluate(() => DATA.cards.map(c => c.body).join(''))).includes('핵심가치·인재상·경영목표·전략과제는 홈페이지에 없습니다'));
+  await np.goto(NIDS + '#home'); await settle(np);
+  await np.click('[data-check="chk-apply"]'); await np.reload(); await settle(np);
+  const ks = await np.evaluate(() => ({ n: JSON.parse(localStorage.getItem('jobapply.nids.study.v1')).done, k: localStorage.getItem('jobapply.koda.study.v1') }));
+  ok('NIDS 체크는 NIDS 기록에만 남고 새로고침해도 유지된다', ks.n.includes('chk-apply') && ks.k === null, JSON.stringify(ks));
+  ok('Gist 파일도 nids-study.json 으로 따로 쓴다', nsrc.includes("SYNC_FILE='nids-study.json'") && !nsrc.includes('koda-study.json'));
+  await nc.close();
+  await boot(p, { institutions: [INST('nids', 'NIDS (의료기기안전정보원)', '#17707D')], events: [
+    { id: 'a', inst: 'nids', label: '면접', start: '2026-11-17', end: '2026-11-19' }] });
+  ok('트래커에서 NIDS 는 nids.html 로 이어진다', await p.evaluate(() =>
+    document.querySelector('.pipe .study-link')?.getAttribute('href') === './nids.html'));
+}
+
 section('런타임 오류');
 ok('콘솔/런타임 오류 없음', runtimeErrors.length === 0, runtimeErrors.join(' | ').slice(0, 300));
 
