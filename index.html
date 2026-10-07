@@ -767,7 +767,7 @@ var SEEDS = {
   // 한국의료기기안전정보원 2026 제4차 직원채용 — 6급 주임연구원(의료기기 부작용 분석·평가).
   // '인성검사'·'증빙서류 등록'은 전형 순서표에 없는 이름이라 같은 날 발표가 있으면 그 뒤로 본다.
   nids2026: {
-    institution: { id:"nids", name:"의료기기안전정보원", color:"#17707D", status:"active",
+    institution: { id:"nids", name:"NIDS (의료기기안전정보원)", color:"#17707D", status:"active",
                    url:"https://dware.intojob.co.kr/main/nids.jsp" },
     events: [
       {id:"nids1", inst:"nids", label:"서류마감", start:"2026-10-19", end:"2026-10-19",
@@ -900,9 +900,14 @@ var LS_UI = "jobtracker.ui.v2";
 function loadLocal(){
   try{ var r = localStorage.getItem(LS); return r ? JSON.parse(r) : null; }catch(e){ return null; }
 }
+// 시드로 넣은 이름을 나중에 고친 경우. 사용자가 직접 바꾼 이름은 건드리지 않도록
+// 예전 시드 이름 그대로일 때만 바꾼다.
+var NAME_FIX = { nids: ["의료기기안전정보원", "NIDS (의료기기안전정보원)"] };
 function migrate(s){
   if(s && s.institutions) s.institutions.forEach(function(it){
     if(COLOR_FIX[it.color]) it.color = COLOR_FIX[it.color];
+    var nf = NAME_FIX[it.id];
+    if(nf && it.name === nf[0]) it.name = nf[1];
     var info = INST_INFO[it.id];
     if(info){
       if(!it.place) it.place = info.place;
