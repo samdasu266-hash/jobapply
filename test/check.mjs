@@ -85,6 +85,28 @@ const texts = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s)].ma
 const INST = (id, name, color, extra = {}) => ({ id, name, color, status: 'active', ...extra });
 
 const browser = await chromium.launch();
+// 페이지는 '오늘'을 기준으로 달력·다가오는 일정·D-day 를 그린다. 실제 날짜를
+// 쓰면 달이 바뀌는 날 멀쩡한 검사가 줄줄이 깨진다(10월 1일에 실제로 그랬다).
+// 모든 컨텍스트의 '지금'을 이 날로 옮긴다. 시간은 그대로 흐른다.
+const NOW = Date.parse('2026-09-29T03:00:00Z');
+const newContext = browser.newContext.bind(browser);
+// 처음 뜰 때 카드가 투명에서 올라오는 효과가 있다. 그 사이에 '보이는가'를
+// 재면 들쭉날쭉하므로 기본은 '동작 줄이기'로 띄운다(효과 자체는 따로 검사).
+browser.newContext = async (opts) => {
+  const c = await newContext({ reducedMotion: 'reduce', ...opts });
+  // 웹폰트(Pretendard)는 CDN 에서 온다. 검사는 오프라인에서도 돌아야 하므로
+  // 빈 스타일시트로 대신한다 — 글꼴은 시스템 글꼴로 내려앉는다.
+  await c.route('https://cdn.jsdelivr.net/**', r => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  await c.addInitScript((now) => {
+    const D = Date, off = now - D.now();
+    class F extends D {
+      constructor(...a) { if (a.length) super(...a); else super(D.now() + off); }
+      static now() { return D.now() + off; }
+    }
+    window.Date = F;
+  }, NOW);
+  return c;
+};
 const ctx = await browser.newContext({ viewport: { width: 1200, height: 950 } });
 const p = await ctx.newPage();
 const runtimeErrors = [];
@@ -189,8 +211,8 @@ ok('되살리면 탈락 배지가 붙어 있다', (await texts(p, '.pipe .badge'
 /* ─────────────────────────────────────────────── */
 section('제출 일정에는 합격·불합격이 없다');
 // 서류마감에 '불합격'을 물어봐야 답이 없다 — 냈는가 아닌가만 남는다.
-// 반대로 결과 일정에 '제출완료'는 뜻이 없다. 그래서 일정마다 켤 수 있는
-// 표시는 하나뿐이고, 메뉴도 그 하나만 내놓는다.
+// 반대로 결과 일정에 '제출완료'는 뜻이 없다. 그래서 일정 종류마다 켤 수
+// 있는 표시가 정해져 있고(결과·발표만 합격/불합격 둘), 메뉴도 그것만 내놓는다.
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 's1', inst: 'a', label: '서류마감', start: '2026-10-01', end: '2026-10-01' },
   { id: 's2', inst: 'a', label: '면접',     start: '2026-11-01', end: '2026-11-01' },
@@ -225,18 +247,102 @@ await menuFor('증빙서류 등록');
 eq('등록 일정도 제출완료로 본다', await p.textContent('#rmenuSet'), '제출완료');
 await menuFor('면접');
 eq('그 밖의 일정은 불합격만 물어본다', await p.textContent('#rmenuSet'), '불합격');
+ok('면접 자체에는 합격이 없다', !(await shown(p, '#rmenuPass')).visible);
 await p.keyboard.press('Escape'); await settle(p);
 
-// 예전 데이터의 '합격'과, 종류가 안 맞는 표시는 지울 수도 없는 값으로 남는다
+// 종류가 안 맞는 표시는 지울 수도 없는 값으로 남는다
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
-  { id: 'o1', inst: 'a', label: '면접결과', start: '2026-10-01', end: '2026-10-01', result: '합격' },
+  { id: 'o1', inst: 'a', label: '면접', start: '2026-10-01', end: '2026-10-01', result: '합격' },
+  { id: 'o4', inst: 'a', label: '면접결과', start: '2026-10-02', end: '2026-10-02', result: '합격' },
   { id: 'o2', inst: 'a', label: '서류마감', start: '2026-10-05', end: '2026-10-05', result: '불합격' },
   { id: 'o3', inst: 'a', label: '필기시험', start: '2026-10-09', end: '2026-10-09', result: '불합격' },
 ]});
 const kept = await store(p);
-ok("예전 '합격'은 털어낸다", !kept.events.find(e => e.id === 'o1').result);
+ok("결과 일정이 아닌 곳의 '합격'은 털어낸다", !kept.events.find(e => e.id === 'o1').result);
+eq("결과 일정의 '합격'은 남긴다", kept.events.find(e => e.id === 'o4').result, '합격');
 ok("제출 일정의 '불합격'도 털어낸다", !kept.events.find(e => e.id === 'o2').result);
 eq('맞는 표시는 그대로 둔다', kept.events.find(e => e.id === 'o3').result, '불합격');
+
+/* ─────────────────────────────────────────────── */
+section('합격을 찍기 전에는 다음 단계를 띄우지 않는다');
+// 서류결과가 나오지도 않았는데 인적성·면접·최종발표가 줄줄이 떠 있으면
+// 다가오는 일정이 내 일정이 아니라 '혹시 붙으면' 일정으로 찬다.
+// 합격 표시가 생긴 10/7 이전 결과는 따로 다루므로(아래), 여기서는 '오늘'을
+// 10/20 으로 옮겨 그 뒤의 결과만 쓴다.
+{
+  const gc = await browser.newContext({ viewport: { width: 1200, height: 950 } });
+  await gc.addInitScript(() => {
+    const D = Date, off = Date.parse('2026-10-20T03:00:00Z') - D.now();
+    class F extends D {
+      constructor(...a) { if (a.length) super(...a); else super(D.now() + off); }
+      static now() { return D.now() + off; }
+    }
+    window.Date = F;
+  });
+  const g = await gc.newPage();
+  const cardOf = (title, name) => g.evaluate(([t, n]) => {
+    document.querySelectorAll('.up-card[data-probe]').forEach(c => delete c.dataset.probe);
+    const c = [...document.querySelectorAll('.up-card')].find(x =>
+      x.querySelector('.up-title').textContent === t && x.querySelector('.up-inst').textContent.startsWith(n));
+    if (c) c.dataset.probe = '1'; return !!c;
+  }, [title, name]);
+  const cards = () => g.evaluate(() => [...document.querySelectorAll('.up-card')].map(c =>
+    c.querySelector('.up-inst').textContent + ' ' + c.querySelector('.up-title').textContent));
+  await boot(g, { institutions: [INST('k', 'K', '#2E6F5E'), INST('b', 'B', '#3A5A8C'), INST('n', 'N', '#8C3A5A')], events: [
+    { id: 'k1', inst: 'k', label: '서류결과',   start: '2026-10-28', end: '2026-10-28' },
+    { id: 'k2', inst: 'k', label: '인적성검사', start: '2026-10-28', end: '2026-11-02' },
+    { id: 'k3', inst: 'k', label: '면접',       start: '2026-11-05', end: '2026-11-06' },
+    { id: 'k4', inst: 'k', label: '최종발표',   start: '2026-11-12', end: '2026-11-12' },
+    { id: 'b1', inst: 'b', label: '면접',       start: '2026-10-26', end: '2026-10-26' },
+    { id: 'n1', inst: 'n', label: '서류결과',   start: '2026-10-12', end: '2026-10-12' },
+    { id: 'n2', inst: 'n', label: '면접',       start: '2026-10-23', end: '2026-10-23' },
+  ]});
+  eq('결과 전에는 결과 일정만 뜬다', await cards(), ['N 서류결과', 'B 면접', 'K 서류결과']);
+  ok('숨긴 건수를 알려준다', (await g.textContent('#upHint')).includes('합격 표시 전 4건 숨김'),
+     await g.textContent('#upHint'));
+  ok('발표일이 지났는데 표시가 없으면 그 결과 카드가 남아 있다', await g.evaluate(() =>
+    [...document.querySelectorAll('.up-card')].find(c => c.querySelector('.up-inst').textContent === 'N')
+      .querySelector('.up-dday').textContent === '결과 표시 필요'));
+  // 같은 날 시작해도 전형 순서상 인적성은 서류결과 뒤다
+  await cardOf('서류결과', 'K'); await g.click('.up-card[data-probe="1"]'); await settle(g);
+  ok('결과 일정 메뉴에는 합격이 있다', (await shown(g, '#rmenuPass')).visible);
+  eq('불합격도 그대로 있다', await g.textContent('#rmenuSet'), '불합격');
+  await g.click('#rmenuPass'); await settle(g);
+  const st1 = await store(g);
+  eq('합격이 기록된다', st1.events.find(e => e.id === 'k1').result, '합격');
+  eq('합격은 기관 상태를 바꾸지 않는다', st1.institutions.find(i => i.id === 'k').status, 'active');
+  eq('합격을 찍으면 다음 단계가 뜬다', await cards(),
+     ['N 서류결과', 'B 면접', 'K 서류결과', 'K 인적성검사', 'K 면접', 'K 최종발표']);
+  ok('합격한 결과 카드는 합격으로 보인다', await g.evaluate(() =>
+    [...document.querySelectorAll('.up-card.pass .up-result')].some(r => r.textContent === '합격')));
+  await cardOf('서류결과', 'N'); await g.click('.up-card[data-probe="1"]'); await settle(g);
+  await g.click('#rmenuPass'); await settle(g);
+  ok('지난 결과에 합격을 찍으면 결과 카드는 빠지고 다음 단계가 뜬다', await g.evaluate(() => {
+    const n = [...document.querySelectorAll('.up-card')].filter(c => c.querySelector('.up-inst').textContent === 'N');
+    return n.length === 1 && n[0].querySelector('.up-title').textContent === '면접'; }));
+  ok('다 풀리면 숨김 안내도 사라진다', !(await g.textContent('#upHint')).includes('숨김'));
+
+  // 차수가 다르면 다른 전형이다 — 1차 결과가 2차 일정을 막지 않는다
+  await boot(g, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+    { id: 'r1', inst: 'a', label: '서류결과', start: '2026-10-24', end: '2026-10-24', round: '1차' },
+    { id: 'r2', inst: 'a', label: '면접',     start: '2026-10-31', end: '2026-10-31', round: '2차' },
+  ]});
+  eq('다른 차수의 결과는 막지 않는다', await cards(), ['A (1차) 서류결과', 'A (2차) 면접']);
+
+  // 합격 표시가 생기기 전(10/7 이전)에는 불합격만 찍을 수 있었다. 그때 아무
+  // 표시 없이 지나간 결과까지 '결과 표시 필요'로 쏟아지면 안 된다.
+  await boot(g, { institutions: [INST('a', 'A', '#2E6F5E'), INST('z', 'Z', '#8C3A5A', { status: 'rejected' })], events: [
+    { id: 'p1', inst: 'a', label: '필기결과', start: '2026-09-21', end: '2026-09-21' },
+    { id: 'p2', inst: 'a', label: '면접',     start: '2026-10-22', end: '2026-10-22' },
+    { id: 'p3', inst: 'a', label: '면접결과', start: '2026-10-07', end: '2026-10-07' },
+    { id: 'p4', inst: 'z', label: '서류결과', start: '2026-09-20', end: '2026-09-20' },
+  ]});
+  const mig = await store(g);
+  eq('10/7 전에 지나간 결과는 합격으로 채운다', mig.events.find(e => e.id === 'p1').result, '합격');
+  ok('10/7 부터는 직접 찍어야 한다', !mig.events.find(e => e.id === 'p3').result);
+  ok('탈락한 기관의 결과는 채우지 않는다', !mig.events.find(e => e.id === 'p4').result);
+  await gc.close();
+}
 
 /* ─────────────────────────────────────────────── */
 section('차수(회차) 이력 관리');
@@ -348,10 +454,11 @@ eq('다시 접힌다', (await texts(p, '.pipe .step')).length, 2);
 // 전부 지난 기관은 마지막 단계를 보여준다 (빈 줄이 되지 않게)
 await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
   { id: 'q1', inst: 'a', label: '서류마감', start: '2026-08-20', end: '2026-08-20' },
+  // 10/7 이전 결과라 합격(✓)으로 채워진다 — 아래 '합격을 찍기 전에는…' 참고
   { id: 'q2', inst: 'a', label: '서류결과', start: '2026-09-01', end: '2026-09-01' },
 ]});
 eq('앞으로 남은 단계가 없으면 마지막 단계를 보여준다',
-   await texts(p, '.pipe .step'), ['서류결과 9/1(화)', '+1']);
+   await texts(p, '.pipe .step'), ['✓ 서류결과 9/1(화)', '+1']);
 
 /* ─────────────────────────────────────────────── */
 section('필터');
@@ -469,7 +576,8 @@ await boot(p, {
   events: [
     { id: 'e1', inst: 'a', label: '면접',       start: '2026-10-06', end: '2026-10-06' },
     { id: 'e2', inst: 'a', label: '서류마감',   start: '2026-10-01', end: '2026-10-01' },
-    { id: 'e3', inst: 'a', label: '서류결과',   start: '2026-10-08', end: '2026-10-08', place: 'https://apply.example.com/result' },
+    // 합격을 찍어 둬야 뒤 단계(인적성·필기)도 다가오는 일정에 뜬다
+    { id: 'e3', inst: 'a', label: '서류결과',   start: '2026-10-08', end: '2026-10-08', place: 'https://apply.example.com/result', result: '합격' },
     { id: 'e4', inst: 'a', label: '인적성검사', start: '2026-10-10', end: '2026-10-12', place: 'https://hr.example.com/test' },
     { id: 'e5', inst: 'a', label: '필기시험',   start: '2026-10-17', end: '2026-10-17', place: '서울 소재 고사장' },
   ],
@@ -923,6 +1031,59 @@ if (KEEP) {
 }
 
 /* ─────────────────────────────────────────────── */
+section('테마 전환과 움직임');
+// 기기 설정과 상관없이 라이트·다크를 고를 수 있고, 면접 준비 페이지도 따라간다
+{
+  const bgDark = (pg) => pg.evaluate(() => {
+    const [r, g, b] = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);
+    return (r + g + b) / 3 < 60; });
+  const tc = await browser.newContext({ viewport: { width: 1200, height: 950 }, colorScheme: 'light', reducedMotion: 'no-preference' });
+  const tp = await tc.newPage();
+  await tp.goto(PAGE);
+  await tp.evaluate(() => localStorage.clear()); await tp.reload();
+  eq('처음에는 기기 설정을 따른다', await tp.textContent('#themeBtn'), '자동');
+  ok('라이트 기기에서 자동이면 밝다', !(await bgDark(tp)));
+  await tp.click('#themeBtn'); await tp.click('#themeBtn'); await settle(tp);
+  eq('두 번 누르면 다크', await tp.textContent('#themeBtn'), '다크');
+  ok('라이트 기기에서도 다크로 바뀐다', await bgDark(tp));
+  await tp.reload();
+  ok('새로고침해도 다크가 남는다', await bgDark(tp) && (await tp.textContent('#themeBtn')) === '다크');
+  const np = await tc.newPage(); await np.goto('file://' + join(ROOT, 'neca.html'));
+  ok('면접 준비 페이지도 같은 테마를 쓴다', await bgDark(np));
+  eq('면접 준비 페이지에도 전환 버튼이 있다', await np.textContent('#theme-btn'), '다크');
+  await np.click('#theme-btn'); await settle(np);
+  eq('면접 준비 페이지에서 바꾸면 자동으로 돌아간다', await np.textContent('#theme-btn'), '자동');
+  ok('자동으로 돌리면 저장값을 지운다', (await np.evaluate(() => localStorage.getItem('jobapply.theme.v1'))) === null);
+  await np.close();
+  const dc = await browser.newContext({ viewport: { width: 1200, height: 950 }, colorScheme: 'dark' });
+  const dp2 = await dc.newPage();
+  await dp2.goto(PAGE); await dp2.evaluate(() => localStorage.setItem('jobapply.theme.v1', 'light')); await dp2.reload();
+  ok('다크 기기에서도 라이트를 고르면 밝다', !(await bgDark(dp2)));
+  await dc.close();
+
+  // 처음 뜰 때만 올라오는 애니메이션 — 끝나면 떼어서 카드가 반투명으로 남지 않는다
+  await tp.evaluate(() => localStorage.clear()); await tp.reload();
+  ok('첫 화면에는 등장 효과가 걸린다', await tp.evaluate(() => document.documentElement.classList.contains('intro') &&
+     getComputedStyle(document.querySelector('.up-card')).animationName === 'rise'));
+  await tp.waitForFunction(() => !document.documentElement.classList.contains('intro'), null, { timeout: 3000 });
+  ok('등장 효과가 끝나면 카드가 완전히 보인다', await tp.evaluate(() =>
+    [...document.querySelectorAll('.up-card')].every(c => getComputedStyle(c).opacity === '1')));
+  const rc = await browser.newContext({ viewport: { width: 1200, height: 950 } });
+  const rp = await rc.newPage(); await rp.goto(PAGE);
+  ok('동작 줄이기를 켜면 등장 효과가 없다', await rp.evaluate(() =>
+    getComputedStyle(document.querySelector('.up-card')).animationName === 'none'));
+  await rc.close();
+
+  // 합격·제출완료 색(--ok)이 정의돼 있지 않아 글자색으로 떨어지던 것
+  await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+    { id: 'g', inst: 'a', label: '서류결과', start: '2026-10-03', end: '2026-10-03', result: '합격' }] });
+  ok('합격 배지는 초록 계열이다', await p.evaluate(() => {
+    const [r, g, b] = getComputedStyle(document.querySelector('.up-result.pass')).color.match(/\d+/g).map(Number);
+    return g > r + 30 && g > b + 20; }));
+  await tc.close();
+}
+
+/* ─────────────────────────────────────────────── */
 section('기기 간 동기화 (가짜 Gist)');
 // 서버가 없어 기기마다 localStorage 가 따로 논다. 비공개 Gist 하나를 공용
 // 저장소로 두는 경로를, 브라우저 두 개와 가짜 GitHub API 로 실제로 태워 본다.
@@ -1047,7 +1208,7 @@ section('면접 준비 페이지 (neca.html)');
 {
   const NECA = 'file://' + join(ROOT, 'neca.html');
   const pad = (n) => String(n).padStart(2, '0');
-  const dayFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n);
+  const dayFromNow = (n) => { const d = new Date(NOW); d.setDate(d.getDate() + n);
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   const TRACKER = { institutions: [{ id: 'neca', name: 'NECA (보의연)', color: '#2E6F5E', status: 'active', place: '서울 광진구 능동로 400' }],
     events: [{ id: 'iv', inst: 'neca', label: '면접', start: dayFromNow(10), end: dayFromNow(12) }] };
@@ -1094,6 +1255,9 @@ section('면접 준비 페이지 (neca.html)');
   const mb = await open({ width: 390, height: 844 }, 'light', { 'jobtracker.v1': TRACKER });
   ok('모바일 본문이 화면 위쪽에서 시작한다', await mb.evaluate(() =>
      document.querySelector('#view').getBoundingClientRect().top < 120));
+  // 모바일에서 aside 의 데스크톱 top:24px 이 살아나 본문 첫 줄을 덮은 적이 있다
+  ok('모바일 머리말이 본문과 겹치지 않는다', await mb.evaluate(() =>
+     document.querySelector('#sync-state').getBoundingClientRect().bottom <= document.querySelector('#view').getBoundingClientRect().top));
   await mb.goto(NECA + '#learn'); await settle(mb);
   await mb.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })); await settle(mb);
   ok('긴 목록 끝에서도 메뉴가 화면 안에 있다', await mb.evaluate(() => {
