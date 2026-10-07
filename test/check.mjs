@@ -1236,10 +1236,16 @@ section('면접 준비 페이지 (koda.html)');
   await boot(p);
   const nids = await p.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')).events.filter(e => e.inst === 'nids').map(e => e.label + ' ' + e.start));
   eq('의료기기안전정보원 일정 12건이 들어간다', nids.length, 12);
+  // 예전 시드 이름은 NIDS 표기로 바뀌고, 사용자가 직접 지은 이름은 그대로 둔다
+  await boot(p, { institutions: [INST('nids', '의료기기안전정보원', '#17707D'), INST('x', '의료기기안전정보원', '#2E6F5E')], events: [] });
+  eq('예전 시드 이름만 NIDS 표기로 바뀐다', (await store(p)).institutions.map(i => i.name), ['NIDS (의료기기안전정보원)', '의료기기안전정보원']);
+  await boot(p, { institutions: [INST('nids', '정보원(내 표기)', '#17707D')], events: [] });
+  eq('직접 바꾼 이름은 건드리지 않는다', (await store(p)).institutions[0].name, '정보원(내 표기)');
+  await boot(p);
   // 다가오는 일정은 6장까지라 기관이 많으면 뒤로 밀린다 — 기관별 진행 현황에서 본다
-  ok('기관별 진행 현황에 새 기관이 보인다', (await texts(p, '.pipe-name')).includes('의료기기안전정보원'));
+  ok('기관별 진행 현황에 새 기관이 보인다', (await texts(p, '.pipe-name')).includes('NIDS (의료기기안전정보원)'));
   ok('채용 사이트 링크가 붙는다', await p.evaluate(() => [...document.querySelectorAll('.pipe')].some(x =>
-     x.querySelector('.pipe-name').textContent === '의료기기안전정보원' &&
+     x.querySelector('.pipe-name').textContent === 'NIDS (의료기기안전정보원)' &&
      [...x.querySelectorAll('a')].some(a => a.href.startsWith('https://dware.intojob.co.kr/main/nids.jsp')))));
   ok('인성검사는 방문 일정이 아니다(겹침 경고에 안 들어감)', !(await p.evaluate(() =>
      [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('인성검사')))));
