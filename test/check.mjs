@@ -1122,6 +1122,13 @@ section('면접 준비 페이지 (koda.html)');
   ok('질문마다 출처가 붙고 “기출” 표시는 없다', qd.every(q => q.src && !q.src.includes('기출')));
   ok('답변 초안은 250자 이내다(자기소개 제외)', qd.filter(q => q.id !== 'q1' && !q.todo).every(q => q.len <= 250),
      JSON.stringify(qd.filter(q => q.len > 250).map(q => q.id)));
+  // 면접에서 그대로 말하면 안 되는 표현이 답변에 남지 않게 한다
+  const said = await kp.evaluate(() => DATA.questions.map(q => q.answer).join('\n'));
+  ok('답변에 법 조항 번호가 없다(말하지 않기)', !/제\s?\d+조/.test(said));
+  ok('인계받은 오류를 본인 실수처럼 말하지 않는다', !/제가 산출한 결과가 잘못|제 산출 결과가 잘못|같은 실수가/.test(said));
+  ok('답변에 학력(대학원·석사)을 말하지 않는다', !/대학원|석사/.test(said));
+  ok('확인 전 로고송 가사를 인용하지 않는다', !/로고송/.test(said));
+  ok('본인 실수 꼬리질문이 따로 있다', await kp.evaluate(() => DATA.questions.some(q => q.id === 'q50' && /실수/.test(q.title))));
   eq('공통 12문항이 모두 필수로 있다', (await kp.evaluate(() => DATA.questions.filter(q => q.group === '공통 12문항' && q.tier === '필수').length)), 12);
   const src = (await import('node:fs')).readFileSync(join(ROOT, 'koda.html'), 'utf8');
   ok('전화번호 형태의 문자열이 없다', !/\b0\d{1,2}-\d{3,4}-\d{4}\b|1577-1458/.test(src));
