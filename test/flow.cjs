@@ -1,6 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync(__dirname+'/../neca.html','utf8');
-const js=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(js);
+// 앞쪽 <script> 는 테마를 먼저 붙이는 짧은 조각이다. 앱 본체는 마지막 것이다.
+const js=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].pop()[1];new vm.Script(js);
 const nodes={},mem={};
 function node(id){return nodes[id]??={innerHTML:'',value:'',checked:false,addEventListener(){},dispatchEvent(){},querySelectorAll(){return []},classList:{toggle(){}},appendChild(){}}}
 const ctx=vm.createContext({console,Event:class{},localStorage:{getItem:k=>mem[k]||null,setItem:(k,v)=>mem[k]=v},document:{querySelector:node,querySelectorAll:()=>[],getElementById:id=>nodes['#'+id]||null,createElement:()=>({innerHTML:'',get textContent(){return this.innerHTML.replace(/<[^>]+>/g,' ')}})},location:{hash:'#home'},window:{scrollY:0,scrollTo(){}},requestAnimationFrame:f=>f(),setTimeout:()=>1,clearTimeout(){}});

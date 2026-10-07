@@ -7,6 +7,17 @@
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>지원 전형 일정</title>
+<link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>
+// 테마(자동·라이트·다크)는 그리기 전에 붙여야 첫 화면이 깜빡이지 않는다.
+// intro 는 처음 뜰 때만 카드를 부드럽게 올린다 — 다시 그릴 때마다 움직이면 정신없다.
+(function(){
+  var r = document.documentElement;
+  try{ var v = localStorage.getItem("jobapply.theme.v1");
+    if(v === "light" || v === "dark") r.setAttribute("data-theme", v); }catch(e){}
+  r.classList.add("intro");
+})();
+</script>
 <style>
 :root{
   --bg:#F5F6F8;
@@ -17,25 +28,30 @@
   --line:#E3E6EA;
   --line-2:#EFF1F4;
   --sun:#C25A47;
+  --ok:#2F7D4F;
   --today:#16191D;
   --radius:12px;
+  --lift:0 8px 22px rgba(15,23,42,.08);
+  color-scheme:light;
 }
 :root:not([data-theme="light"]){
   @media (prefers-color-scheme: dark){
     --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
-    --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+    --line:#2C3036; --line-2:#24272C; --today:#ECEEF1; --ok:#6CC18F;
+    --lift:0 8px 22px rgba(0,0,0,.35); color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#15171A; --card:#1D2024; --ink:#ECEEF1; --ink-2:#A8AEB6; --ink-3:#8B9199;
-  --line:#2C3036; --line-2:#24272C; --today:#ECEEF1;
+  --line:#2C3036; --line-2:#24272C; --today:#ECEEF1; --ok:#6CC18F;
+  --lift:0 8px 22px rgba(0,0,0,.35); color-scheme:dark;
 }
 
 *{box-sizing:border-box;}
 html,body{max-width:100%;}
 body{
   margin:0; background:var(--bg); color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;
+  font-family:"Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
   font-size:14px; line-height:1.5;
   padding:28px 16px 80px;
   -webkit-font-smoothing:antialiased;
@@ -77,6 +93,30 @@ section{margin-bottom:26px;}
 .up-date{font-size:12px;color:var(--ink-3);margin-top:6px;}
 .up-memo{font-size:12px;color:var(--ink-2);margin-top:5px;word-break:keep-all;}
 .up-empty{color:var(--ink-3);font-size:13.5px;padding:14px 0;}
+
+/* ---------- 움직임 ----------
+   마우스를 올리면 살짝 떠오르고, 처음 뜰 때만 아래에서 올라온다. 손가락으로
+   쓰는 화면에는 hover 가 없으므로 떠오르기는 마우스가 있을 때만 건다. */
+.up-card,.pipe,.btn{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background-color .18s ease;}
+@media (hover:hover){
+  .up-card:hover{transform:translateY(-2px);box-shadow:var(--lift);}
+  .pipe:hover{box-shadow:var(--lift);}
+  .btn:hover{transform:translateY(-1px);}
+}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.intro .up-card,.intro .pipe{animation:rise .4s cubic-bezier(.2,.7,.3,1) both;}
+.intro .up-card:nth-child(2),.intro .pipe:nth-child(2){animation-delay:.04s;}
+.intro .up-card:nth-child(3),.intro .pipe:nth-child(3){animation-delay:.08s;}
+.intro .up-card:nth-child(4),.intro .pipe:nth-child(4){animation-delay:.12s;}
+.intro .up-card:nth-child(5),.intro .pipe:nth-child(5){animation-delay:.16s;}
+.intro .up-card:nth-child(n+6),.intro .pipe:nth-child(n+6){animation-delay:.2s;}
+@media (prefers-reduced-motion:reduce){
+  .up-card,.pipe,.btn{transition:none;}
+  .up-card:hover,.btn:hover{transform:none;}
+  .intro .up-card,.intro .pipe{animation:none;}
+}
+.top-actions{display:flex;gap:8px;align-items:center;}
+.theme-btn{min-width:84px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
 
 /* ---------- pipeline ---------- */
 .pipes{display:flex;flex-direction:column;gap:8px;}
@@ -376,7 +416,10 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
       <h1>지원 전형 일정</h1>
       <div class="today-label" id="todayLabel"></div>
     </div>
-    <button class="btn primary" id="openDrawer">기관·일정 관리</button>
+    <div class="top-actions">
+      <button class="btn theme-btn" id="themeBtn" type="button"></button>
+      <button class="btn primary" id="openDrawer">기관·일정 관리</button>
+    </div>
   </div>
 
   <section>
@@ -408,6 +451,7 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 
 <div class="rmenu" id="rmenu" hidden>
   <div class="rhead" id="rmenuHead"></div>
+  <button type="button" id="rmenuPass" class="pass">합격<small>다음 단계가 다가오는 일정에 뜹니다</small></button>
   <button type="button" id="rmenuSet"></button>
   <button type="button" id="rmenuClear">표시 지우기</button>
   <div class="rsep"></div>
@@ -827,9 +871,16 @@ function migrate(s){
   // YYYY-MM-DD 는 문자열 비교가 곧 날짜 비교다.
   if(s && s.events) s.events.forEach(function(e){
     if(e.start && e.end && e.end < e.start) e.end = e.start;
-    // 예전 데이터의 '합격', 그리고 제출 일정에 찍힌 '불합격'처럼 그 일정에
+    // 결과 발표가 아닌 일정의 '합격', 제출 일정에 찍힌 '불합격'처럼 그 일정에
     // 켤 수 없는 표시는 지운다. 남겨 두면 지울 수도 없는 값이 화면에 남는다.
-    if(e.result && e.result !== resultOn(e)) delete e.result;
+    if(e.result && resultsFor(e).indexOf(e.result) < 0) delete e.result;
+    // 합격 표시는 2026-10-07 에 생겼다. 그 전에 지나간 결과는 불합격만 찍을 수
+    // 있었으니, 진행 중인 기관에서 아무 표시 없이 지나간 결과는 붙은 것이다.
+    // 날짜를 못박아 둔다 — '날짜가 지나면 합격'으로 계속 돌면 직접 합격을
+    // 찍게 한 의미가 없어진다.
+    if(!e.result && e.end < PASS_SINCE && isGate(e.label) && s.institutions &&
+       s.institutions.some(function(it){ return it.id === e.inst && it.status === "active"; }))
+      e.result = PASS;
   });
   if(s && s.institutions && s.events) applySeeds(s);
   return s;
@@ -1003,9 +1054,20 @@ function necaStudyLink(){
 }
 function renderUpcoming(){
   var box = document.getElementById("upcoming");
+  var waiting = 0, held = [];
   var all = state.events.filter(function(e){
-    return isActive(e.inst) && pd(e.end) >= TODAY;
-  }).sort(function(a,b){ return pd(a.start) - pd(b.start); });
+    if(!isActive(e.inst) || pd(e.end) < TODAY) return false;
+    if(waitingOn(e)){ waiting++; held.push(e); return false; }
+    return true;
+  });
+  // 발표일이 지났는데 아직 아무 표시도 없는 결과가 다음 단계를 막고 있으면,
+  // 그 결과 카드를 남겨 둔다. 그래야 다음 단계가 왜 안 보이는지 알 수 있고
+  // 바로 눌러서 합격을 찍을 수 있다.
+  state.events.forEach(function(g){
+    if(g.result || !isGate(g.label) || !isActive(g.inst) || pd(g.end) >= TODAY) return;
+    if(held.some(function(e){ return blocks(g, e); })) all.push(g);
+  });
+  all.sort(function(a,b){ return pd(a.start) - pd(b.start); });
   // 한 기관이 카드를 두세 장씩 차지하면 정작 다른 기관 일정이 안 보인다.
   // 기관마다 가장 가까운 일정 하나를 먼저 채우고, 자리가 남을 때만
   // 나머지를 날짜 순으로 더 얹는다.
@@ -1020,21 +1082,21 @@ function renderUpcoming(){
   var hiddenCount = all.length - list.length;
 
   box.innerHTML = "";
-  if(!list.length){
-    box.innerHTML = '<div class="up-empty">다가오는 일정이 없습니다.</div>';
-    document.getElementById("upHint").textContent = "";
-    return;
-  }
   // 조용히 잘리면 뒤에 일정이 더 있다는 걸 알 수 없다. 줄을 새로 만들지 않고
   // 기존 안내 문구에 붙여 높이를 늘리지 않는다.
   document.getElementById("upHint").textContent =
-    "진행 중인 기관만" + (hiddenCount ? " · 뒤로 " + hiddenCount + "건 더" : "");
+    "진행 중인 기관만" + (hiddenCount ? " · 뒤로 " + hiddenCount + "건 더" : "")
+    + (waiting ? " · 합격 표시 전 " + waiting + "건 숨김" : "");
+  if(!list.length){
+    box.innerHTML = '<div class="up-empty">다가오는 일정이 없습니다.</div>';
+    return;
+  }
 
   list.forEach(function(e){
     var it = inst(e.inst);
     var s = pd(e.start), en = pd(e.end);
     var d = diffDays(TODAY, s);
-    var dday = d > 0 ? "D-"+d : (d === 0 ? "오늘" : "진행 중");
+    var dday = d > 0 ? "D-"+d : (d === 0 ? "오늘" : pd(e.end) < TODAY ? "결과 표시 필요" : "진행 중");
     var range = (e.start === e.end) ? kdate(s) : kdate(s)+" – "+kdate(en);
 
     var el = document.createElement("div");
@@ -1097,13 +1159,32 @@ function renderUpcoming(){
 // 이 판정이 일정 겹침 경고와 달력의 주말·공휴일 제외 양쪽에 쓰인다.
 // 제출·등록으로 끝나는 일정은 합격·불합격이 없다 — 냈는가 아닌가만 남는다.
 function isSubmit(label){ return /마감|등록|접수/.test(label); }
-// 합격·미정은 쓰지 않는다. 떨어졌는지만 남기면 되고, 제출 일정은 그마저도
-// 해당이 없다. 그래서 일정마다 켤 수 있는 표시는 늘 하나뿐이다.
-var DONE = "제출완료", FAIL = "불합격";
+// '미정'은 쓰지 않는다. 제출 일정은 냈는가만, 시험·면접은 떨어졌는가만 남긴다.
+// 결과·발표 일정에만 '합격'이 있다 — 합격을 찍어야 그 다음 단계가 다가오는
+// 일정에 뜬다(waitingOn). 발표도 안 났는데 다음 단계가 줄줄이 떠 있지 않게.
+var DONE = "제출완료", FAIL = "불합격", PASS = "합격";
+var PASS_SINCE = "2026-10-07";
+function isGate(label){ return /결과|발표/.test(label) && !isSubmit(label); }
+function resultsFor(e){ return isSubmit(e.label) ? [DONE] : isGate(e.label) ? [PASS, FAIL] : [FAIL]; }
 function resultOn(e){ return isSubmit(e.label) ? DONE : FAIL; }
-function resultMark(e){ return e.result === DONE ? "✓ " : e.result === FAIL ? "✗ " : ""; }
-function resultClass(e){ return e.result === DONE ? "pass" : e.result === FAIL ? "fail" : ""; }
-function resultHint(e){ return "눌러서 " + resultOn(e) + " 표시"; }
+function resultMark(e){ return (e.result === DONE || e.result === PASS) ? "✓ " : e.result === FAIL ? "✗ " : ""; }
+function resultClass(e){ return (e.result === DONE || e.result === PASS) ? "pass" : e.result === FAIL ? "fail" : ""; }
+function resultHint(e){ return "눌러서 " + resultsFor(e).join("·") + " 표시"; }
+
+// 아직 합격을 찍지 않은 결과 발표가 이 일정보다 앞에 있으면, 이 일정은 그
+// 결과를 기다리는 중이다. 같은 날이면 전형 순서(STAGES)로 앞뒤를 가린다.
+// 차수가 다르면 서로 다른 전형이라 막지 않는다.
+function blocks(g, e){
+  if(g === e || g.inst !== e.inst || (g.round || "") !== (e.round || "")) return false;
+  if(!isGate(g.label) || g.result === PASS) return false;
+  var gs = pd(g.start), s = pd(e.start);
+  if(gs < s) return true;
+  var gi = STAGES.indexOf(g.label), si = STAGES.indexOf(e.label);
+  return +gs === +s && gi >= 0 && si > gi;
+}
+function waitingOn(e){
+  return state.events.some(function(g){ return blocks(g, e); });
+}
 
 function needsAttendance(label){ return !/결과|발표|마감|공고|인적성|등록/.test(label); }
 
@@ -1695,6 +1776,9 @@ function openResultMenu(x, y, e){
   setB.textContent = on;
   setB.className = isSubmit(e.label) ? "pass" : "fail";
   setB.setAttribute("aria-pressed", e.result === on ? "true" : "false");
+  var passB = document.getElementById("rmenuPass");
+  passB.hidden = !isGate(e.label);
+  passB.setAttribute("aria-pressed", e.result === PASS ? "true" : "false");
   // 켜 둔 게 없으면 지울 것도 없다
   document.getElementById("rmenuClear").hidden = !e.result;
   m.hidden = false;
@@ -1770,7 +1854,7 @@ document.getElementById("rmenu").addEventListener("click", function(ev){
     return;
   }
   closeResultMenu();
-  setResult(e, b.id === "rmenuSet" ? resultOn(e) : "");
+  setResult(e, b.id === "rmenuSet" ? resultOn(e) : b.id === "rmenuPass" ? PASS : "");
 });
 
 document.getElementById("moreMonths").addEventListener("click", function(ev){
@@ -2366,6 +2450,36 @@ document.getElementById("syncOff").addEventListener("click", function(){
   note("이 기기에만 저장됨");
 });
 
+/* ---------- 테마 ---------- */
+// 자동(기기 설정) → 라이트 → 다크 순으로 돈다. 기기마다 화면 사정이 달라서
+// Gist 로 동기화하지 않고 이 브라우저에만 둔다. 면접 준비 페이지와 같은 키다.
+var THEME_KEY = "jobapply.theme.v1", THEMES = ["auto", "light", "dark"];
+var THEME_LABEL = { auto: "자동", light: "라이트", dark: "다크" };
+var THEME_ICON = {
+  auto: '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>',
+  light: '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>',
+  dark: '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z" fill="currentColor"/></svg>'
+};
+var THEME_DESC  = { auto: "기기 설정을 따름", light: "라이트", dark: "다크" };
+function themeNow(){
+  var v = document.documentElement.getAttribute("data-theme");
+  return v === "light" || v === "dark" ? v : "auto";
+}
+function renderThemeBtn(){
+  var b = document.getElementById("themeBtn"), t = themeNow();
+  b.innerHTML = THEME_ICON[t] + "<span>" + THEME_LABEL[t] + "</span>";
+  b.title = "화면 테마: " + THEME_DESC[t] + " — 눌러서 바꾸기";
+  b.setAttribute("aria-label", "화면 테마 바꾸기 (지금: " + THEME_DESC[t] + ")");
+}
+document.getElementById("themeBtn").addEventListener("click", function(){
+  var t = THEMES[(THEMES.indexOf(themeNow()) + 1) % THEMES.length];
+  var r = document.documentElement;
+  if(t === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", t);
+  try{ if(t === "auto") localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, t); }catch(e){}
+  renderThemeBtn();
+});
+renderThemeBtn();
+
 /* ---------- boot ---------- */
 state = migrate(loadLocal() || JSON.parse(JSON.stringify(DEFAULT_STATE)));
 saveLocal();
@@ -2379,6 +2493,8 @@ loadSync();
 renderSyncState();
 if(syncOn()){ note(syncLabel()); syncNow(); }
 initDb();
+// 첫 등장 애니메이션이 끝나면 떼어 낸다. 이후 다시 그릴 때는 움직이지 않는다.
+setTimeout(function(){ document.documentElement.classList.remove("intro"); }, 900);
 
 })();
 </script>
