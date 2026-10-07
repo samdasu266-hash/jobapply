@@ -1,0 +1,518 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex"><meta name="referrer" content="no-referrer"><title>NIDS 면접 준비 · Study Room</title><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"><script>
+// 테마(자동·라이트·다크)는 지원 일정 페이지와 같은 키를 쓴다. 그리기 전에 붙여야 깜빡이지 않는다.
+(()=>{try{const v=localStorage.getItem('jobapply.theme.v1');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v)}catch(e){}})();
+</script><style>
+:root{
+  color-scheme:light dark;
+  --ink:#1f2933;--muted:#667085;--bg:#f7f8fa;--card:#ffffff;--line:#e2e7ec;
+  --accent:#0064b3;--accent-hover:#00528f;--accent-soft:#eef5fb;--accent-ink:#0b4f82;
+  --green:#557f00;--green-fill:#77b800;--green-soft:#f1f8e7;--amber:#8a5a18;--amber-soft:#fff7e8;
+  --rose:#9a4858;--rose-soft:#fbf0f2;--field:#cbd5df;--stripe:#fafbfc;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){color-scheme:dark;--ink:#e8edf2;--muted:#a8b3bf;--bg:#111820;--card:#17212b;--line:#2a3540;
+  --accent:#d5e4ef;--accent-soft:#1b2a36;--accent-ink:#d9e8f2;--green:#8ad0bd;
+  --green-soft:#173028;--amber:#e3bb79;--amber-soft:#342918;--rose:#efa0ad;
+  --rose-soft:#3a2228;--field:#3b4a58;--stripe:#1a2530}
+}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark;--ink:#e8edf2;--muted:#a8b3bf;--bg:#111820;--card:#17212b;--line:#2a3540;
+  --accent:#d5e4ef;--accent-soft:#1b2a36;--accent-ink:#d9e8f2;--green:#8ad0bd;
+  --green-soft:#173028;--amber:#e3bb79;--amber-soft:#342918;--rose:#efa0ad;
+  --rose-soft:#3a2228;--field:#3b4a58;--stripe:#1a2530}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  font-size:16px;line-height:1.72;letter-spacing:-.01em;
+}
+button,input,select,textarea{font:inherit}
+button,a,input,select,summary,textarea{touch-action:manipulation}
+button{cursor:pointer}
+a{color:var(--accent);text-underline-offset:3px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{
+  outline:3px solid #b48bd0;outline-offset:3px
+}
+
+.shell{
+  max-width:1180px;margin:0 auto;display:grid;
+  grid-template-columns:190px minmax(0,1fr);gap:46px;
+  padding:28px 26px 80px;
+}
+aside{position:sticky;top:24px;align-self:start;padding-right:22px;border-right:1px solid var(--line);min-height:calc(100vh - 48px)}
+.brand{font-size:21px;font-weight:780;letter-spacing:-.04em;margin:5px 0 2px}
+.eyebrow{
+  margin:0 0 8px;font-size:11px;line-height:1.4;letter-spacing:.16em;
+  font-weight:800;color:var(--accent);text-transform:uppercase;
+}
+.small{font-size:13px;line-height:1.6;color:var(--muted)}
+.sync-state{font-size:12px;color:var(--muted);margin:7px 0 0;min-height:18px}
+.sync-state.fail{color:var(--rose)}
+.sync-state .retry{min-height:30px;padding:3px 8px;margin-left:6px;font-size:12px}
+
+nav{display:grid;gap:1px;margin:28px 0}
+nav a{
+  min-height:40px;display:flex;align-items:center;
+  padding:8px 9px 8px 12px;border-left:3px solid transparent;
+  border-radius:5px;text-decoration:none;color:var(--muted);font-weight:620;
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+nav a:hover{color:var(--ink);background:#f1f4f6}
+nav a[aria-current="page"]{
+  color:var(--accent-ink);font-weight:760;border-left-color:var(--accent);background:var(--accent-soft);
+}
+nav a .s{display:none}
+.side-foot{
+  margin-top:18px;padding:12px 13px;border:1px solid var(--line);border-radius:7px;
+  background:#f3f5f7;font-size:12px;line-height:1.65;color:var(--muted)
+}
+
+main{min-width:0}
+#view{max-width:860px;overflow-wrap:anywhere}
+h1,h2,h3,summary{word-break:keep-all;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.3;letter-spacing:-.045em;margin:6px 0 10px;font-weight:780}
+h2{font-size:20px;line-height:1.4;letter-spacing:-.03em;margin:0 0 14px;font-weight:760}
+h3{font-size:17px;line-height:1.5;letter-spacing:-.02em;margin:18px 0 8px;font-weight:720}
+p{margin:10px 0}
+p,li,td{word-break:keep-all;overflow-wrap:anywhere}
+.lead{max-width:68ch;margin:0 0 30px;color:var(--muted);line-height:1.75}
+
+button,.button{
+  min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--field);border-radius:6px;background:var(--card);
+  color:var(--ink);padding:8px 13px;text-decoration:none;font-weight:680;
+}
+button:hover,.button:hover{border-color:var(--accent);color:var(--accent)}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:#fff}
+.button.secondary{background:#f4f6f8;border-color:#d9e0e6;color:#344054}
+
+.hero{
+  background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--line);
+  border-radius:0;padding:0 0 24px;margin-bottom:28px;
+}
+.hero .eyebrow{color:var(--accent)}
+.hero p{color:var(--muted);max-width:70ch}
+
+.hero .next{
+  margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);
+  font-size:14px;color:var(--muted)
+}
+.dday{
+  display:inline-block;margin:0 8px 0 0;padding:3px 8px;
+  border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);
+  font-size:15px;line-height:1.5;font-weight:800;letter-spacing:0;vertical-align:middle;
+}
+.dday-when{
+  display:inline;color:var(--ink)!important;font-size:15px;font-weight:700;
+}
+.hero .place{font-size:14px;margin-top:6px}
+
+.home-title{font-size:30px;margin:6px 0 14px}
+.home-status{
+  display:flex;gap:9px 18px;flex-wrap:wrap;align-items:center;
+  margin:14px 0 9px;font-size:14px;color:var(--muted)
+}
+.home-status strong{color:var(--ink);font-weight:760}
+.home-progress{width:min(520px,100%);height:5px;border-radius:999px;background:#e7ebef;overflow:hidden;margin:8px 0 0}
+.home-progress>span{display:block;height:100%;border-radius:inherit;background:var(--green-fill);transition:width .25s ease}
+.study-section{
+  padding:25px 0;border-bottom:1px solid var(--line);
+}
+.study-section:first-of-type{padding-top:6px}
+.study-section.focus-card{
+  margin:4px 0 10px;padding:22px 23px;border:1px solid #d9e6f0;border-radius:8px;
+  background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.035)
+}
+.study-section.guide-callout{
+  margin-top:26px;padding:20px 22px;border:1px solid #dce7ef;border-radius:8px;
+  background:#f2f7fb
+}
+.study-section.guide-callout .study-list li{
+  position:relative;padding:8px 0 8px 28px;border-top:0
+}
+.study-section.guide-callout .study-list li::before{
+  content:'□';position:absolute;left:1px;top:8px;color:var(--accent);font-weight:800
+}
+.section-kicker{
+  display:block;margin-bottom:7px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em
+}
+.question-title{font-size:21px;line-height:1.45;margin:6px 0 7px;font-weight:770}
+.question-cue{margin:0 0 14px;color:var(--muted);font-size:14px}
+.cue-flow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0 14px}
+.cue-chip{
+  display:inline-flex;align-items:center;min-height:28px;padding:4px 9px;border-radius:6px;
+  background:#f0f3f6;color:#3f4d5a;font-size:13px;font-weight:680
+}
+.cue-arrow{color:#94a3b0;font-size:13px}
+.study-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.study-list{margin:6px 0 0;padding:0;list-style:none}
+.study-list li{margin:0}
+.study-list a{
+  display:flex;justify-content:space-between;gap:14px;padding:11px 0;
+  border-top:1px solid var(--line);text-decoration:none;font-weight:620;color:var(--ink)
+}
+.study-list a::after{content:'→';color:var(--muted)}
+
+
+.box{
+  margin:0 0 28px;padding:0 0 24px;border:0;border-bottom:1px solid var(--line);
+  background:transparent;border-radius:0;
+}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+
+progress{width:100%;height:5px;accent-color:var(--accent)}
+
+.pill{
+  display:inline-block;padding:2px 7px;border-radius:4px;background:var(--accent-soft);
+  color:var(--accent-ink);font-size:11px;line-height:1.55;font-weight:720;
+}
+.pill.req{background:var(--accent);color:var(--card)}
+.pill.ext{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.basis dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:6px 14px}.basis dt{font-weight:700;color:var(--muted)}.basis dd{margin:0}
+@media(max-width:480px){.basis dl{grid-template-columns:1fr}.basis dd{margin-bottom:6px}}
+.pill.done{background:var(--green-soft);color:var(--green);border:1px solid #dcebbf}
+.pill.star,.pill.warn{background:var(--amber-soft);color:var(--amber)}
+.pill.rose{background:var(--rose-soft);color:var(--rose)}
+
+.toolbar{
+  display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center;
+  margin:18px 0 20px;padding:0;
+}
+.toolbar input{flex:1;min-width:210px}
+.toolbar input,.toolbar select,textarea{
+  border:1px solid var(--field);background:var(--card);border-radius:6px;
+  padding:9px 10px;color:var(--ink)
+}
+.toolbar label{display:inline-flex;align-items:center;gap:7px;font-size:14px;white-space:nowrap}
+.toolbar input[type=checkbox]{width:18px;height:18px;min-width:18px;margin:0;accent-color:var(--accent)}
+
+details{
+  margin:0;border:0;border-bottom:1px solid var(--line);
+  border-radius:0;background:transparent;overflow:visible;scroll-margin-top:20px;
+}
+summary{
+  min-height:58px;display:flex;align-items:center;gap:12px;
+  padding:15px 2px;cursor:pointer;list-style:none;font-weight:690;
+}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'＋';margin-left:auto;flex:none;font-size:17px;font-weight:500;color:var(--muted)}
+details[open]>summary::after{content:'−'}
+summary .num{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;flex:none}
+summary .title{flex:1}
+summary small{font-size:12px;color:var(--muted);font-weight:500}
+summary .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+summary .badges:empty{display:none}
+.detail-body{max-width:760px;padding:4px 2px 24px;line-height:1.78}
+.detail-body>h2,.detail-body>h3{margin-top:24px}
+.detail-body>p,.verification p{margin:12px 0}
+.detail-body li{margin:7px 0}
+.detail-body details{
+  margin:14px 0;border:1px solid var(--line);border-radius:7px;background:var(--card);overflow:hidden
+}
+.detail-body details>summary{padding:12px 14px;min-height:48px}
+.detail-body details>.detail-body{padding:2px 14px 16px}
+
+.cue{
+  margin:12px 0;padding:10px 13px;border-left:3px solid var(--accent);
+  border-radius:0;background:var(--accent-soft);color:var(--accent-ink);
+  font-weight:620;line-height:1.7;
+}
+.caution{
+  margin:14px 0;padding:11px 13px;border-left:3px solid var(--amber);
+  border-radius:0;background:var(--amber-soft);color:var(--ink);font-size:14px;
+}
+
+textarea{width:100%;resize:vertical;min-height:128px;margin:8px 0;font-size:15px;line-height:1.7}
+.actions{border-top:0;padding-top:10px;margin-top:12px}
+.actions button[aria-pressed="true"]{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.save-state{font-size:12px;color:var(--muted);min-height:20px}
+.list-link{
+  display:block;padding:11px 0;border-bottom:1px solid var(--line);
+  text-decoration:none;font-weight:620;color:var(--ink)
+}
+.empty{text-align:left;padding:24px 0;color:var(--muted)}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+caption{text-align:left;font-weight:700;padding:10px 0}
+th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:12px;line-height:1.65;min-width:100px}
+th{background:var(--bg);font-weight:700}
+tbody tr:nth-child(even){background:var(--stripe)}
+.table-scroll{max-width:100%;overflow:auto;margin:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.verification{margin:26px 0}.verification table{min-width:620px}
+
+#notice{color:var(--amber);background:var(--amber-soft);padding:9px 12px;border-radius:5px;margin-bottom:16px}
+.hidden,[hidden]{display:none!important}
+.footer{max-width:760px;margin-top:38px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.skip{position:absolute;left:10px;top:-60px}
+.skip:focus{top:10px;background:var(--card);padding:10px;z-index:50}
+ul,ol{padding-left:22px}
+li{margin:5px 0}
+.source-list a{overflow-wrap:anywhere}
+
+
+
+
+
+@media(max-width:800px){
+  .shell{display:block;padding:18px 16px calc(88px + env(safe-area-inset-bottom))}
+  aside{position:relative;top:auto;border-right:0;padding-right:0;min-height:auto}
+  .theme-btn{position:absolute;top:0;right:0;margin:0}
+  aside .eyebrow,aside>.small:not(:first-child),.side-foot{display:none}
+  .brand{font-size:19px;margin-top:5px}
+  #view{max-width:none}
+  h1{font-size:25px}
+  h2{font-size:19px}
+  .home-title{font-size:27px}
+  
+  .study-section{padding:21px 0}
+  .study-section.focus-card{padding:18px 17px;margin-top:8px}
+  .study-section.guide-callout{padding:17px 16px}
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin:0;
+    padding:5px 4px calc(5px + env(safe-area-inset-bottom));
+    background:var(--card);border-top:1px solid var(--line);
+    box-shadow:0 -2px 10px rgba(0,0,0,.05)
+  }
+  nav a{
+    min-height:46px;justify-content:center;padding:4px 1px;border-left:0;border-top:2px solid transparent;
+    font-size:12px;letter-spacing:-.03em;text-align:center
+  }
+  nav a[aria-current="page"]{border-left:0;border-top-color:var(--accent)}
+  nav a .l{display:none}nav a .s{display:inline}
+  summary{padding:14px 1px}
+  .detail-body{padding-bottom:22px}
+}
+@media(max-width:480px){
+  .toolbar{gap:7px}
+  .toolbar input{flex-basis:100%}
+  
+  .study-actions .button,.study-actions button{width:100%}
+}
+@media print{
+  aside,.toolbar,button,.actions,textarea,.save-state,.footer,
+  .shell{display:block;padding:0}
+  #view{max-width:none}
+  body{background:white;color:black}
+  details{break-inside:avoid}
+  details>*{display:block!important}
+  .hero{border-bottom:1px solid #aaa}
+  .box{break-inside:avoid}
+}
+
+.personal-note{white-space:pre-wrap}
+@media(prefers-color-scheme:dark){
+ :root:not([data-theme="light"]) .primary{background:#0064b3;border-color:#0064b3;color:#fff}
+ :root:not([data-theme="light"]) .study-section.focus-card{background:var(--card);border-color:var(--line)}
+ :root:not([data-theme="light"]) .study-section.guide-callout,:root:not([data-theme="light"]) .side-foot{background:var(--accent-soft);border-color:var(--line)}
+ :root:not([data-theme="light"]) .button.secondary,:root:not([data-theme="light"]) .cue-chip{background:var(--stripe);border-color:var(--line);color:var(--ink)}
+ :root:not([data-theme="light"]) nav a:hover{background:var(--stripe)}
+ :root:not([data-theme="light"]) .home-progress{background:var(--line)}
+}
+:root[data-theme="dark"] .primary{background:#0064b3;border-color:#0064b3;color:#fff}
+ :root[data-theme="dark"] .study-section.focus-card{background:var(--card);border-color:var(--line)}
+ :root[data-theme="dark"] .study-section.guide-callout,:root[data-theme="dark"] .side-foot{background:var(--accent-soft);border-color:var(--line)}
+ :root[data-theme="dark"] .button.secondary,:root[data-theme="dark"] .cue-chip{background:var(--stripe);border-color:var(--line);color:var(--ink)}
+ :root[data-theme="dark"] nav a:hover{background:var(--stripe)}
+ :root[data-theme="dark"] .home-progress{background:var(--line)}
+/* 화면을 옮길 때 본문이 살짝 떠오르듯 나타난다. 위치는 건드리지 않고 투명도만 바꾼다 */
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+#view.enter{animation:fadein .28s ease both}
+.theme-btn{min-height:30px;padding:3px 10px;margin-top:8px;font-size:12px;font-weight:650;gap:5px}
+@media(prefers-reduced-motion:reduce){#view.enter{animation:none}}
+@media print{.personal-note{white-space:pre-wrap}}
+.selfcheck{border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin:12px 0}.selfcheck legend{font-weight:700;font-size:14px;padding:0 4px}.selfcheck label{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.5;margin:6px 0}.selfcheck input{margin-top:4px}
+.mock-clock{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;margin:6px 0 10px}#mock-time.over{color:var(--rose)}#mock-over{margin-left:8px;font-weight:600;color:var(--rose)}
+.blind-list{padding-left:18px}.blind-sen{margin:8px 0 2px;font-weight:600}#blind-text{width:100%;min-height:120px}
+</style></head><body><a class="skip" href="#main">본문으로 이동</a><div class="shell"><aside><a href="./index.html" class="small">← 지원 일정으로</a><p class="eyebrow">INTERVIEW STUDY ROOM</p><div class="brand">NIDS 면접 준비</div><div class="small">6급 주임연구원 · 부작용 분석·평가</div><p id="sync-state" class="sync-state" role="status"></p><button type="button" id="theme-btn" class="theme-btn"></button><nav aria-label="학습 메뉴"><a href="#home" data-route="home"><span class="l">오늘의 준비</span><span class="s">오늘</span></a><a href="#learn" data-route="learn"><span class="l">직무 지식</span><span class="s">지식</span></a><a href="#practice" data-route="practice"><span class="l">답변 연습</span><span class="s">연습</span></a><a href="#experience" data-route="experience"><span class="l">내 경험 정리</span><span class="s">경험</span></a><a href="#agency" data-route="agency"><span class="l">기관·제도·출처</span><span class="s">기관·제도</span></a><a href="#summary" data-route="summary"><span class="l">면접 직전 요약</span><span class="s">요약</span></a></nav><div class="side-foot">읽고, 가리고, 말해보세요.<br>동기화는 지원 일정의 기기 간 동기화 설정을 따릅니다.<br>개인 학습 자료 · 한국의료기기안전정보원 공식 사이트 아님</div></aside><main id="main" tabindex="-1"><div id="notice" hidden role="status"></div><div id="view"></div><footer class="footer">공식 자료·지원자 경험·예상 질문을 구분해 표시했습니다. “기출” 표시는 쓰지 않습니다. 학습용 예시는 실제 수행 경험이 아닙니다.</footer></main></div>
+<script>
+const DATA={"cards": [{"group": "A 기관·제도", "tier": "필수", "title": "NIDS는 어떤 기관인가?", "questions": ["q4", "q5", "q13"], "body": "<p><strong>한 문장:<\/strong> 의료기기법에 따라 설립된 식품의약품안전처 산하 기타공공기관으로, 의료기기 안전생태계 조성과 산업 역량 증진에 기여하는 전문기관입니다.<\/p><ul><li><b>설립 근거<\/b>: 의료기기법 제42조 — 신개발의료기기 동향·임상정보 등 종합적인 정보·기술 지원과 의료기기 인증 등의 업무를 위해 정보원을 둔다. 법인(재단법인 규정 준용).<\/li><li><b>미션<\/b>: 의료기기 안전생태계 조성과 산업 역량증진에 기여 · <b>비전<\/b>: 의료기기 니즈(NIDS)를 해결하는 국제적인 전문기관<\/li><li><b>4개 분야<\/b>(비전 페이지): 인증심사 · 안전관리 · 인재양성 · 규제지원<\/li><li><b>전략목표<\/b>(영문 페이지에만): NIDS for Patients — Strengthening Safety Management / for Industry — Driving Innovative Growth / for Society — Realizing Social Values<\/li><\/ul><p class=\"caution\">핵심가치·인재상·경영목표·전략과제는 홈페이지에 없습니다. 답변에서 만들어 말하지 않습니다.<\/p><p class=\"small src\"><b>출처<\/b> · 의료기기법(2026-09-15 시행본, 2026-10-07 원문 확인) 제42조 · NIDS 홈페이지(사용자 수집, 2026-10-07) — 비전·영문 페이지 · 채용공고(기타공공기관)<\/p>", "id": "c1", "n": 1}, {"group": "A 기관·제도", "tier": "필수", "title": "정보원의 법정 사업 (의료기기법 제43조)", "questions": ["q13", "q14"], "body": "<p><strong>지원 직무와 직접 닿는 두 가지:<\/strong> 제6호 <b>의료기기 부작용의 인과관계 조사·규명<\/b>, 제7호 <b>의료기기안전정보의 수집·관리·분석·평가 및 제공<\/b>.<\/p><ul><li><b>의료기기안전정보<\/b>(제7호의 정의): 의료기기로 인한 부작용 및 제조허가·인증·신고 정보 등 의료기기 안전과 관련한 각종 정보.<\/li><li>식약처장은 제7호 사업을 지원하기 위해 종합병원을 <b>의료기기안전정보 모니터링센터<\/b>로 지정할 수 있다(제43조③).<\/li><li>그 밖에: 국제규격 연구·정보·기술 지원, 신개발의료기기 임상시험 지원, 품질관리체계·허가 정보 교육(RA), 기준규격 국제화, 안전 정책 조사·연구, 식약처 위탁 업무.<\/li><\/ul><p class=\"small src\"><b>출처<\/b> · 의료기기법(2026-09-15 시행본, 2026-10-07 원문 확인) 제43조<\/p>", "id": "c2", "n": 2}, {"group": "A 기관·제도", "tier": "필수", "title": "지원 직무(6급 주임연구원)는 무엇을 하나?", "questions": ["q13", "q15", "q16"], "body": "<p><strong>첫 문장으로:<\/strong> 의료기기 부작용의 인과관계를 조사하고, 이상사례 평가위원회를 운영하며, 의료기기 안전성 정보를 분석·평가해 조치로 잇는 일입니다.<\/p><p><strong>공고 직무<\/strong>: 의료기기 부작용 분석·평가 업무 — 의료기기 부작용 인과관계조사, 이상사례 평가위원회 운영 및 의료기기 안전성 정보 분석·평가·조치.<br><strong>우대<\/strong>: 의료기기 규제과학(RA) 관련 자격증, 의료기기 품질경영시스템(QMS) 자격증, 부작용 및 인과관계 평가 또는 의료기기·의약품 감시 관련 업무 경력.<\/p><p><strong>조직상 위치<\/strong>(조직도): 원장 › <b>안전관리본부<\/b> › <b>안전정보팀<\/b>(같은 본부에 공급관리팀).<\/p><table><tr><th>안전정보팀 업무(조직도)<\/th><th>공고 직무<\/th><\/tr><tr><td>부작용 인과관계조사 / 인과관계조사 운영·절차서<\/td><td>부작용 인과관계조사<\/td><\/tr><tr><td>이상사례 평가위원회 운영, 후속조치 및 정보공개 관리<\/td><td>이상사례 평가위원회 운영<\/td><\/tr><tr><td>이상사례 등 분석·평가 및 조치적절성 평가 / 안전성정보 활용<\/td><td>안전성 정보 분석·평가·조치<\/td><\/tr><tr><td>안전성정보 수집·정제·대장 관리, 통계(주간·월간·반기), 통계집 발간<\/td><td rowspan=\"3\">함께 맞물리는 팀 업무<\/td><\/tr><tr><td>모니터링센터 운영·관리, 안전성정보 홍보물<\/td><\/tr><tr><td>실사용 정보(CDM), 인체이식 의료기기 장기추적조사, 이상사례(사망) 알림, 이물보고 이관·오보고 관리<\/td><\/tr><\/table><p class=\"caution\">개인의 최종 배치는 단정하지 않습니다 — “공고의 업무를 보면”으로 시작.<\/p><p class=\"small src\"><b>출처<\/b> · 2026 제4차 채용공고(사용자 제공) · NIDS 홈페이지(사용자 수집, 2026-10-07) — 조직도·업무분장<\/p>", "id": "c3", "n": 3}, {"group": "B 부작용·안전성정보", "tier": "필수", "title": "부작용 보고는 어떻게 흐르나?", "questions": ["q14", "q17"], "body": "<p><strong>한 문장:<\/strong> 의료기기취급자가 사망이나 심각한 부작용을 알게 되면 식약처장에게 즉시 보고하고, 식약처장은 정보원장에게 의료기기와의 인과관계 등을 분석·평가해 보고하게 할 수 있습니다.<\/p><ul><li><b>보고<\/b>: 의료기기 업체·의료기관·소비자 → 식약처(부작용 보고)<\/li><li><b>분석·평가<\/b>: 식약처 → 정보원(수집정보 제공) → 정보원 분석·평가 → 식약처에 보고서 제출<\/li><li><b>조치<\/b>: 식약처 → 업체(행정조치) / 정보원 → 업체·의료기관·소비자·모니터링센터(안전성정보 제공)<\/li><li><b>회수<\/b>: 제조업자등은 품질불량 등으로 위해 우려를 알게 되면 지체 없이 회수, 제조·수입업자는 회수계획을 미리 보고. 식약처는 심각한 부작용 우려 의료기기를 사용한 의료기관에 알리고, 의료기관은 환자에게 알린다.<\/li><\/ul><p><strong>답변 요령:<\/strong> 정보원은 <b>분석·평가하고 보고하는 곳<\/b>, 행정조치는 식약처. 이 역할 구분을 섞지 않습니다.<\/p><p class=\"small src\"><b>출처<\/b> · 의료기기법(2026-09-15 시행본, 2026-10-07 원문 확인) 제31조 · NIDS 홈페이지(사용자 수집, 2026-10-07) — 안전성 정보 수집·분석 및 평가 사업절차<\/p>", "id": "c4", "n": 4}, {"group": "B 부작용·안전성정보", "tier": "필수", "title": "인과관계 평가에서 무엇을 보나? (일반 원칙)", "questions": ["q15", "q18", "q19"], "body": "<ul><li><b>시간적 관계<\/b>: 기기 사용과 이상사례 발생의 선후·간격.<\/li><li><b>다른 원인<\/b>: 환자 기저상태, 시술·사용 방법, 동시에 쓴 다른 기기·약물.<\/li><li><b>기기 쪽 근거<\/b>: 제품 결함·오작동 확인, 같은 제품·로트의 유사 사례, 제조사 조사 결과.<\/li><li><b>사용 조건<\/b>: 사용설명서대로 썼는지, 보관·유지관리.<\/li><li><b>정보의 충분성<\/b>: 판단에 필요한 정보가 빠졌으면 단정하지 않고 추가 확인을 요청.<\/li><\/ul><p class=\"caution\">위 내용은 일반적인 인과관계 판단 요소입니다. NIDS 내부 평가 기준·등급 체계는 확인하지 못했으므로 “정보원의 기준과 절차에 따라”라고 말하고, 특정 등급 이름을 단정하지 않습니다.<\/p>", "id": "c5", "n": 5}, {"group": "B 부작용·안전성정보", "tier": "필수", "title": "이상사례 평가위원회와 조치적절성 평가", "questions": ["q16", "q20"], "body": "<ul><li>안전정보팀 업무에 <b>이상사례 평가위원회 운영, 후속조치 및 정보공개 관리<\/b>와 <b>조치적절성 평가<\/b>가 함께 적혀 있습니다.<\/li><li>위원회 운영에서 실무자가 하는 일(일반): 안건 선정·자료 준비, 쟁점 정리, 회의 진행 지원, 결과 기록, 후속조치 추적, 공개 범위 관리.<\/li><li>조치적절성 평가: 업체가 취한 조치(회수·사용설명서 개정·제품 개선 등)가 위해를 줄이는 데 충분한지 보는 일로 이해 — 세부 기준은 확인 필요.<\/li><\/ul><p><strong>내 경험 연결:<\/strong> QPS위원회·환자안전위원회 안건 발굴·자료·회의록·후속조치 관리(위원회 운영).<\/p><p class=\"small src\"><b>출처<\/b> · NIDS 홈페이지(사용자 수집, 2026-10-07) — 조직도 안전정보팀 업무<\/p>", "id": "c6", "n": 6}, {"group": "B 부작용·안전성정보", "tier": "필수", "title": "의료기기안전정보 모니터링센터", "questions": ["q21"], "body": "<p><strong>한 문장:<\/strong> 의료기관의 부작용 모니터링과 보고를 활성화하려고 식약처가 지정하고 정보원이 운영·관리하는 센터입니다(종합병원 지정, 법 제43조③).<\/p><ul><li>규모: 삼성서울병원 등 17개소(협력병원 123개) — 비전 페이지 기준.<\/li><li>센터는 판별위원회를 두고 안전성 정보를 수집하고 이상사례 원인분류·결과를 검토한 뒤 의료기기 전자민원시스템으로 보고. 자문협의회(업체·타 의료기관 등 외부 전문가).<\/li><li>운영위원회, 기술세미나, 중점사업, 의료기관 종사자 교육·소비자 홍보.<\/li><li>2026 공지: 의료기기 안전성 정보 활용 사례 경진대회(의료기관-업체 협업 개선 사례, 발표 평가 9/30, 시상식 11/19).<\/li><\/ul><p><strong>내 경험 연결:<\/strong> 병원 쪽에서 사건을 확인·분류해 보고해 본 사람 — 보고하는 쪽의 어려움을 압니다.<\/p><p class=\"small src\"><b>출처<\/b> · 의료기기법(2026-09-15 시행본, 2026-10-07 원문 확인) 제43조③ · NIDS 홈페이지(사용자 수집, 2026-10-07) — 사업 페이지·공지사항<\/p>", "id": "c7", "n": 7}, {"group": "B 부작용·안전성정보", "tier": "중요", "title": "추적관리·장기추적조사·실사용정보(CDM)", "questions": ["q22"], "body": "<ul><li><b>추적관리대상 의료기기<\/b>: 인체에 1년 이상 삽입되거나, 의료기관 밖에서 쓰는 생명유지용 기기 중 부작용·결함 시 치명적 위해가 우려돼 소재를 파악해 둘 필요가 있는 기기(법 제29조①).<\/li><li><b>장기추적조사대상<\/b>: 그중 삽입 후 부작용이 잦거나 중대한 부작용이 우려되는 기기(제29조②, 2025 신설). 안전정보팀 업무에 “인체이식 의료기기 장기추적조사 운영 및 관리”.<\/li><li><b>실사용 정보<\/b>: 의료기기 공통데이터모델(CDM) 구축·운영(안전정보팀). 2026.6 CDM 활용분석 아이디어톤 시상.<\/li><\/ul><p class=\"small src\"><b>출처<\/b> · 의료기기법(2026-09-15 시행본, 2026-10-07 원문 확인) 제29조 · NIDS 홈페이지(사용자 수집, 2026-10-07) — 조직도·보도자료<\/p>", "id": "c8", "n": 8}, {"group": "B 부작용·안전성정보", "tier": "중요", "title": "통합정보센터·표준코드(UDI)와 안전성 정보", "questions": ["q22"], "body": "<ul><li>UDI = 의료기기를 식별·관리하려고 용기·외장에 표기하는 숫자·문자 조합. <b>UDI-DI<\/b>(제품별 고유식별자, 시스템에 입력) + <b>UDI-PI<\/b>(생산단위: 제조번호·제조연월·버전).<\/li><li>통합정보시스템에 통합정보 등록·공급내역 보고 → 어느 제품이 어디로 갔는지 알 수 있음.<\/li><li><b>안전성 정보와의 연결<\/b>: 이상사례 보고에 UDI가 있으면 같은 제품·로트를 정확히 묶고, 공급내역으로 사용 기관을 찾아 알릴 범위를 정하는 데 쓸 수 있다(직무상 의미 — 실제 연계 방식은 확인 필요).<\/li><\/ul><p class=\"small src\"><b>출처<\/b> · NIDS 홈페이지(사용자 수집, 2026-10-07) — 통합정보센터 운영·관리(의료기기법 시행령 제10조의6)<\/p>", "id": "c9", "n": 9}, {"group": "A 기관·제도", "tier": "중요", "title": "연혁에서 직무와 닿는 것", "questions": ["q6", "q24"], "body": "<ul><li>2012.5 의료기기정보기술지원센터 설립 — 영문 연혁: 부작용 보고 수집·분석·평가 시작.<\/li><li>2018.6.14 한국의료기기안전정보원 출범 · 2017.1 기타공공기관 지정.<\/li><li>2019.7 통합정보센터 운영(UDI 표준코드 등록 의무).<\/li><li><b>2021.3.9 공중보건 위기대응 의료제품 부작용 분석·평가, 추적조사 등 이상사례 관리 실시.<\/b><\/li><li>2019.6 희소·긴급도입 의료기기 공급 · 2024.5 품목 갱신 · 2025.1 디지털의료제품 인증 대행.<\/li><li>최근(보도자료): 2026.7 부패방지경영시스템 인증, 2026.5 개인정보 보호 수준 평가 A등급, 2026.5 데이터 전략위원회, 2026.6 CDM 아이디어톤.<\/li><\/ul><p class=\"small src\"><b>출처<\/b> · NIDS 홈페이지(사용자 수집, 2026-10-07) — 연혁·보도자료 목록<\/p>", "id": "c10", "n": 10}, {"group": "C 데이터·위원회·소통", "tier": "필수", "title": "안전성정보 데이터: 수집·정제·통계", "questions": ["q23", "q25"], "body": "<ul><li>안전정보팀 업무: 안전성정보 수집·정제·<b>대장 관리<\/b>, 통계(주간·월간·반기), 통계집 발간, 국정감사 대응.<\/li><li>확인할 것: 같은 사건의 <b>중복 보고<\/b>(업체·의료기관·소비자), 오보고, 이물 보고 분리, 필수항목 누락, 제품 식별(품목·모델·UDI).<\/li><li>통계에서 주의: 보고 건수 증가 ≠ 위험 증가(보고 활성화의 결과일 수 있음). 분모(사용량·공급량) 없는 비교 주의.<\/li><\/ul><p><strong>내 경험 연결:<\/strong> 같은 사건도 보고 기준·기록 방식에 따라 집계가 달라짐(환자안전 보고), 지표 정의·분모 기준(성과지표).<\/p>", "id": "c11", "n": 11}, {"group": "C 데이터·위원회·소통", "tier": "중요", "title": "정보공개·민원·소통", "questions": ["q26"], "body": "<ul><li>안전정보팀 업무에 정보공개청구·국민신문고 민원 대응, 안전성정보 홍보물 제작·배포, 평가위원회 결과의 정보공개 관리.<\/li><li>공개할 때 균형: 국민 알 권리 ↔ 확인되지 않은 정보로 인한 오해·업체 피해 ↔ 환자 개인정보.<\/li><\/ul><p><strong>내 경험 연결:<\/strong> 카드뉴스·뉴스레터로 환자안전 소식을 전달(정보 전달 채널).<\/p><p class=\"small src\"><b>출처<\/b> · NIDS 홈페이지(사용자 수집, 2026-10-07) — 조직도 업무<\/p>", "id": "c12", "n": 12}], "questions": [{"id": "q1", "group": "공통 12문항", "title": "1분 자기소개를 해주세요.", "cue": "인사·번호 → 사건을 정확히 확인하고 원인을 가려 보고해 온 간호사 → 환자안전 전담 3년(확인·분류·국가 보고) → 위원회 자료·후속조치 → 원자료·산출 경로부터 확인 → 이상사례도 같은 원칙으로", "answer": "안녕하십니까. 주임연구원 지원자 ○○번입니다.\n저는 사건을 정확히 확인하고 원인을 가려 보고해 온 간호사입니다. 마취회복실에서 환자를 간호한 뒤, 질향상 부서에서 3년간 환자안전 전담인력으로 환자안전사고를 확인·분류해 국가 보고체계에 보고했습니다. QPS위원회와 환자안전위원회에서는 안건 자료부터 후속조치까지 맡았고, 지표값이 낮게 나오면 현장 문제로 단정하지 않고 원자료와 산출 경로부터 확인했습니다.\n의료기기 이상사례도 같은 원칙으로 정확히 확인하고, 평가가 조치로 이어지도록 일하겠습니다. 감사합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "환자안전사고 보고와 의료기기 이상사례 평가는 무엇이 다른가요?", "prep": "공백 제외 약 230자 · 45초 안팎. 번호만 말하고 성명·학교·학력은 말하지 않습니다. NIDS 자소서를 제출한 뒤 자소서의 핵심 문장과 맞춰 고칩니다.", "exp": ["safety", "committee", "fluoro"], "status": "검토용 초안", "basis": null, "related": [], "variants": []}, {"id": "q2", "group": "공통 12문항", "title": "지원동기를 말씀해 주세요.", "cue": "환자안전 보고(사건 확인·분류·보고) → 의료기기 이상사례도 같은 구조 → 정보원은 보고를 분석·평가해 조치로 잇는 곳 → 직무", "answer": "병원에서 환자안전사고를 확인하고 분류해 국가에 보고하면서, 보고가 쌓여도 분석과 조치로 이어지지 않으면 같은 사고가 반복된다는 것을 봤습니다. 정보원은 의료기기 이상사례를 분석·평가해 조치로 잇는 곳이라, 보고하는 쪽에서 일한 경험을 평가하는 쪽에서 쓰고 싶어 지원했습니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "왜 의약품이 아니라 의료기기인가요?", "prep": "NIDS 자소서 지원동기 문항과 줄기를 맞춥니다.", "exp": ["safety"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q3", "group": "공통 12문항", "title": "성격의 장점과 단점은?", "cue": "장점: 궁금하면 찾아보고 적용 → 단점: 마무리 때 누락 걱정 → 보완: 확인 목록", "answer": "장점은 궁금한 것을 끝까지 찾아보고 업무에 적용하는 점입니다. 반복되는 협진 자료 작업을 줄일 방법을 찾다가 1차 자료 작성을 자동화했습니다. 단점은 마무리 단계에서 놓친 것이 없을지 걱정이 커서 부담을 느끼는 점입니다. 그래서 시작할 때 할 일과 확인할 항목을 목록으로 만들어 두고 마무리 때 그 목록으로 점검합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "NECA·KODA 답변과 같은 축입니다.", "exp": ["consult"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q4", "group": "공통 12문항", "title": "우리 기관의 강점과 과제는 무엇이라고 보나요?", "cue": "강점: 인증부터 부작용·안전성정보·UDI·공급까지 의료기기 전주기 정보를 한 기관이 다룸 → 과제: 보고를 늘리고 분석이 조치로 이어지게", "answer": "인증부터 부작용 같은 안전성 정보, 표준코드와 공급내역까지 의료기기 전주기 정보를 한 기관이 다룬다는 점이 강점이라고 봅니다. 과제는 의료기관 현장의 보고가 더 활발해지고, 분석 결과가 실제 조치와 현장 교육으로 이어지게 하는 일이라고 생각합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "“단점”은 비판이 아니라 과제로. 수치는 확인한 것만.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q5", "group": "공통 12문항", "title": "우리 기관의 주요 사업은 무엇인가요?", "cue": "4개 분야: 인증심사 · 안전관리 · 인재양성(RA) · 규제지원 → 안전관리: 부작용 수집·분석·평가, 인과관계조사, 모니터링센터, 통합정보", "answer": "인증심사, 안전관리, 인재양성, 규제지원의 네 분야로 알고 있습니다. 그중 안전관리는 의료기기 부작용 등 안전성 정보를 수집·분석·평가하고 인과관계를 조사하며, 전국 모니터링센터를 운영하고 통합정보를 관리하는 일이고, 제가 지원한 직무가 여기에 속합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "홈페이지 비전 페이지의 4개 분야.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q6", "group": "공통 12문항", "title": "우리 기관 관련 최근 이슈나 소식은?", "cue": "하나만 깊게: 안전성 정보 활용 사례 경진대회(의료기관-업체 협업 개선) 또는 CDM 아이디어톤 → 내 생각: 보고가 개선으로 이어지는 구조", "answer": "의료기관과 업체가 함께 제품을 개선한 사례를 겨루는 안전성 정보 활용 사례 경진대회가 인상 깊었습니다. 보고가 평가에서 끝나지 않고 실제 제품 개선으로 이어지는 구조를 보여 주기 때문입니다. 병원에서 보고만 쌓이고 바뀌는 게 없을 때의 한계를 겪어 봐서 더 와닿았습니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "공지사항(2026-06-04) 기준. 그 밖에: 부패방지경영시스템 인증(2026.7), 개인정보 보호 수준 평가 A등급(2026.5), CDM 활용분석 아이디어톤(2026.6).", "exp": ["safety"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q7", "group": "공통 12문항", "title": "우리 기관이 나아가야 할 방향은?", "cue": "보고 활성화(모니터링센터) → 데이터 연계(UDI·공급내역·CDM)로 정확한 분석 → 결과를 현장 교육·제품 개선으로", "answer": "보고를 더 많이 받는 것과 함께, 받은 보고를 표준코드와 공급내역, 실사용 데이터와 연결해 더 정확히 분석하는 방향이 필요하다고 봅니다. 그 결과가 의료기관 교육과 제품 개선으로 돌아가야 현장이 다시 보고할 이유가 생긴다고 생각합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q8", "group": "공통 12문항", "title": "입사 후 포부(단기·중기·장기)는?", "cue": "단기: 인과관계조사·평가 절차와 기준 익히기 → 중기: 위원회 운영과 통계로 반복 사례 찾기 → 장기: 평가가 조치·교육으로 이어지게", "answer": "단기적으로는 인과관계조사와 이상사례 평가 절차, 기준을 정확히 익히겠습니다. 중기적으로는 이상사례 평가위원회 운영과 안전성정보 통계를 맡아 반복되는 사례를 찾아 정리하겠습니다. 장기적으로는 평가 결과가 조치와 의료기관 교육으로 이어지게 하는 실무자가 되겠습니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "장기근속·진학 계획은 본인 의사로만.", "exp": [], "status": "본인 확인", "basis": null, "related": [], "variants": []}, {"id": "q9", "group": "공통 12문항", "title": "무엇을 해 왔고 어떻게 기여할 수 있나요?", "cue": "보고: 환자안전사고 확인·분류·국가 보고 3년 → 위원회: 안건~후속조치 → 원인분석: 낮은 지표의 원인 구분 → 기여: 인과관계조사·위원회·통계", "answer": "세 가지를 해 왔습니다. 3년간 환자안전사고를 확인·분류해 국가 보고체계에 보고했고, QPS위원회와 환자안전위원회에서 안건부터 후속조치까지 맡았으며, 낮게 나온 지표의 원인을 원자료부터 확인해 구분했습니다. 이 경험을 인과관계조사, 평가위원회 운영, 안전성정보 통계에 바로 쓰겠습니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "셋 중 가장 자신 있는 것은?", "prep": "", "exp": ["safety", "committee", "fluoro"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q10", "group": "공통 12문항", "title": "마지막으로 하고 싶은 말은?", "cue": "감사 → 한 문장 다짐(보고 한 건이 다음 환자를 지킨다) → 끝", "answer": "오늘 면접 기회에 감사드립니다. 보고 한 건을 정확히 평가하는 일이 다음 환자를 지키는 일이라는 마음으로, 끝까지 확인하고 조치로 잇는 주임연구원이 되겠습니다. 감사합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "20초 안. 새 정보를 넣지 않습니다.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q11", "group": "공통 12문항", "title": "본인을 한 단어로(또는 강점 하나로) 표현한다면?", "cue": "핵심가치·인재상은 홈페이지에 없음 → 직무 역량으로: “확인하는 사람” → 근거 사례 하나", "answer": "“끝까지 확인하는 사람”이라고 생각합니다. 급하게 인계받은 협진 지표에서 계산식이 마이너스 시간을 내는 것을 발견하고, 산출식을 다시 만들어 이전에 잘못 나간 결과를 전부 보고해 정정했습니다. 이상사례 평가도 결국 확인을 끝까지 하는 일이라고 생각합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "그럼 본인이 실수한 적은 없나요?", "prep": "NIDS 홈페이지에는 핵심가치·인재상이 없습니다(사용자 수집 확인). 인재상을 물으면 이 답으로. “전임자”라는 말은 쓰지 않습니다.", "exp": ["error"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q12", "group": "공통 12문항", "title": "의료기기 산업·안전관리의 현황과 전망은?", "cue": "AI·디지털의료기기 빠르게 증가(인사말) → 새 유형의 이상사례 → 데이터 기반 안전관리(UDI·CDM) → 보고 활성화와 국제 조화", "answer": "AI 기반 디지털의료기기처럼 새로운 기기가 빠르게 늘고 있어, 이상사례의 모습도 달라질 것이라고 봅니다. 그래서 표준코드와 실사용 데이터를 활용한 데이터 기반 안전관리, 의료기관 보고 활성화, 국제 기준과의 조화가 더 중요해질 것이라고 생각합니다.", "src": "공통(필수 12)", "tier": "필수", "follow": "", "prep": "기관장 인사말(AI 기반 의료기기 급증)과 연혁·사업 근거. 시장 규모 숫자는 확인 전 말하지 않습니다.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q13", "group": "직무 이해", "title": "이번 직무를 어떻게 이해하나요?", "cue": "“공고의 업무를 보면” → 인과관계조사 · 이상사례 평가위원회 · 안전성정보 분석·평가·조치 → 안전관리본부 안전정보팀 → 정보원은 평가·보고, 조치는 식약처", "answer": "공고의 업무를 보면, 의료기기 부작용의 인과관계를 조사하고 이상사례 평가위원회를 운영하며, 안전성 정보를 분석·평가해 조치로 잇는 직무로 이해합니다. 조직도의 안전관리본부 안전정보팀 업무와 같고, 정보원이 평가해 보고하면 식약처가 조치하는 구조에서 근거를 정확히 만드는 자리라고 생각합니다.", "src": "예상(공고)", "tier": "필수", "follow": "", "prep": "배치를 단정하지 않습니다.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q14", "group": "직무 이해", "title": "의료기기 부작용 보고는 어떻게 이루어지나요?", "cue": "취급자 → 식약처 즉시 보고 → 식약처가 정보원에 분석·평가 요청 → 정보원 보고 → 식약처 행정조치 / 정보원은 안전성정보 제공", "answer": "의료기기취급자가 사망이나 심각한 부작용을 알게 되면 식약처에 즉시 보고합니다. 식약처는 정보원에 의료기기와의 인과관계 등을 분석·평가하게 하고, 정보원은 그 결과를 보고합니다. 행정조치는 식약처가 하고, 정보원은 업체와 의료기관, 소비자에게 안전성 정보를 제공합니다.", "src": "예상(직무기술서)", "tier": "필수", "follow": "", "prep": "조항 번호는 말하지 않습니다(근거는 직무 지식 카드).", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q15", "group": "직무 이해", "title": "인과관계는 어떻게 평가해야 한다고 생각하나요?", "cue": "시간적 관계 → 다른 원인(환자 상태·사용 방법·다른 기기·약물) → 기기 쪽 근거(결함·유사 사례) → 정보 부족하면 단정하지 않고 추가 확인 → 정해진 기준으로", "answer": "기기 사용과 이상사례의 시간적 관계를 먼저 보고, 환자 상태나 사용 방법, 함께 쓴 다른 기기 같은 다른 원인을 가려야 한다고 생각합니다. 기기 결함이나 같은 제품의 유사 사례 같은 근거도 확인하고, 정보가 부족하면 단정하지 않고 추가로 확인한 뒤 정보원의 기준에 따라 판단하겠습니다.", "src": "예상(공고)", "tier": "필수", "follow": "", "prep": "NIDS 내부 기준·등급 이름은 단정하지 않습니다.", "exp": ["fluoro"], "status": "", "basis": {"kind": "sit", "rows": {"facts": "사용 시점·이상사례 발생 시점, 환자 상태, 사용 방법, 제품·로트, 유사 사례", "criteria": "정보원의 인과관계 평가 기준·절차", "action": "부족한 정보 추가 확인 요청, 근거별 정리", "report": "평가 결과를 위원회·식약처 보고 체계에 맞춰"}}, "related": [], "variants": []}, {"id": "q16", "group": "직무 이해", "title": "이상사례 평가위원회 운영에서 실무자가 할 일은?", "cue": "안건 선정·자료(쟁점 정리) → 회의 진행 지원·기록 → 결정 사항 후속조치 추적 → 공개 범위 관리 / 내 경험: QPS·환자안전위원회", "answer": "안건을 고르고 판단에 필요한 자료와 쟁점을 정리해 위원들이 핵심에 집중하게 돕는 일이라고 생각합니다. 회의 결과를 정확히 기록하고, 결정된 후속조치가 실제로 이행되는지 추적하고, 공개할 범위도 관리해야 합니다. 병원에서 QPS위원회와 환자안전위원회를 이렇게 운영해 왔습니다.", "src": "예상(공고)", "tier": "필수", "follow": "", "prep": "", "exp": ["committee"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q17", "group": "직무 이해", "title": "정보원의 역할과 식약처의 역할은 어떻게 다른가요?", "cue": "정보원: 수집·분석·평가·인과관계조사·정보 제공 → 식약처: 보고 접수·행정조치·회수 명령 등", "answer": "정보원은 의료기기 안전성 정보를 수집하고 분석·평가하며 부작용의 인과관계를 조사해 그 결과를 식약처에 보고하고, 업체와 의료기관에 정보를 제공합니다. 행정조치나 회수 관련 판단과 명령은 식약처가 합니다. 그래서 정보원의 평가는 근거가 정확해야 한다고 생각합니다.", "src": "예상(직무기술서)", "tier": "필수", "follow": "", "prep": "", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q18", "group": "상황", "title": "인과관계를 판단하기에 정보가 부족하면?", "cue": "추정으로 채우지 않음 → 부족한 항목 정리 → 보고자·업체에 추가 확인 요청 → 기한·기록 → 판단 보류 사유 남기기", "answer": "부족한 부분을 추정으로 채우지 않고, 무엇이 빠졌는지 항목으로 정리해 보고자나 업체에 추가 확인을 요청하겠습니다. 기한을 정해 관리하고, 그래도 확인되지 않으면 판단을 보류한 사유를 기록으로 남겨 위원회나 상급자와 함께 결정하겠습니다.", "src": "예상(직무기술서)", "tier": "필수", "follow": "", "prep": "", "exp": ["error"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q19", "group": "상황", "title": "업체가 평가 결과에 이의를 제기하면?", "cue": "이의 근거 확인 → 평가 근거 다시 검토 → 새 근거면 재검토 절차로 → 아니면 근거로 설명 → 기록", "answer": "먼저 업체가 제시한 근거를 확인하고, 평가 때 쓴 자료와 대조해 다시 검토하겠습니다. 새로운 근거라면 정해진 재검토 절차로 올리고, 그렇지 않다면 평가 근거를 들어 설명하겠습니다. 어느 경우든 과정을 기록으로 남기겠습니다.", "src": "예상(직무기술서)", "tier": "", "follow": "", "prep": "", "exp": ["fluoro"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q20", "group": "상황", "title": "평가위원회 위원들의 의견이 크게 갈리면?", "cue": "쟁점을 근거별로 정리 → 부족한 자료 보완 → 다음 회의 안건으로 → 결정 과정 기록", "answer": "의견이 갈리는 지점을 근거별로 정리해 무엇이 확인되지 않아서 갈리는지 보이게 하겠습니다. 부족한 자료를 보완해 다시 안건으로 올리고, 결정이 나면 그 과정과 근거를 기록으로 남기겠습니다. 실제로 FMEA에서 평가가 갈린 항목을 안건으로 올려 논의한 경험이 있습니다.", "src": "예상(공고)", "tier": "", "follow": "", "prep": "FMEA 경험의 세부(본인 역할)는 NECA 준비 때 정리한 대로.", "exp": ["fmea", "committee"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q21", "group": "상황", "title": "의료기관의 이상사례 보고를 늘리려면?", "cue": "보고자의 부담 줄이기(쉬운 양식·피드백) → 보고 후 결과를 돌려주기 → 교육·사례 공유 / 내 경험: 보고하는 쪽", "answer": "보고하는 쪽에 있어 보니, 보고해도 결과를 듣지 못하면 다음 보고 동기가 떨어졌습니다. 그래서 보고 방법을 쉽게 안내하고, 보고된 사례가 어떻게 평가되고 무엇이 바뀌었는지 의료기관에 돌려주는 것이 중요하다고 생각합니다. 모니터링센터 교육과 경진대회 같은 사례 공유도 같은 효과가 있다고 봅니다.", "src": "예상(직무기술서)", "tier": "필수", "follow": "", "prep": "", "exp": ["safety", "comm"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q22", "group": "상황", "title": "같은 제품의 이상사례가 여러 기관에서 비슷하게 들어오면?", "cue": "중복 여부 확인 → 제품·로트(UDI)로 묶기 → 공급 범위 확인 → 추세 보고 → 위원회 안건·조치 검토", "answer": "먼저 같은 사건이 여러 경로로 중복 보고된 것인지 확인하겠습니다. 별개의 사례라면 제품과 로트로 묶어 추세를 보고, 공급내역으로 사용 범위를 확인해 상급자에게 빨리 보고하겠습니다. 필요하면 평가위원회 안건으로 올려 조치를 검토하게 하겠습니다.", "src": "예상(직무기술서)", "tier": "", "follow": "", "prep": "표준코드·공급내역 연계 방식은 확인 필요 — “활용할 수 있다면”으로 말해도 됩니다.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q23", "group": "상황", "title": "안전성정보 통계에서 보고 건수가 갑자기 늘면?", "cue": "실제 위험 증가 vs 보고 증가 구분 → 중복·오보고 확인 → 특정 제품·기관 쏠림 → 분모 고려 → 해석과 함께 보고", "answer": "건수만 보고 위험이 커졌다고 단정하지 않겠습니다. 중복이나 오보고는 없는지, 특정 제품이나 기관에 쏠렸는지, 보고 활성화의 영향은 아닌지 먼저 확인하겠습니다. 그 결과를 해석과 함께 보고하겠습니다. 병원에서 같은 사건도 기준에 따라 집계가 달라지는 것을 겪어 봐서 이 점을 중요하게 봅니다.", "src": "예상(직무기술서)", "tier": "필수", "follow": "", "prep": "", "exp": ["safety", "kpi"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q24", "group": "상황", "title": "사망 사례가 보고되었을 때 가장 먼저 할 일은?", "cue": "정해진 긴급 알림·보고 절차대로 즉시 → 사실관계·제품 정보 확인 → 같은 제품 다른 사례 확인 → 기록", "answer": "정해진 절차에 따라 즉시 상급자와 관련 부서에 알리겠습니다. 이어서 사실관계와 제품 정보를 확인하고, 같은 제품의 다른 사례가 있는지 찾아 추가 위해를 막는 데 필요한 정보를 빨리 정리하겠습니다. 확인한 내용과 시점을 모두 기록하겠습니다.", "src": "예상(직무기술서)", "tier": "", "follow": "", "prep": "안전정보팀 업무에 “이상사례(사망) 등 알림”이 있습니다. 내부 절차를 만들어 말하지 않습니다.", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q25", "group": "상황", "title": "자료에서 오류를 발견하면?", "cue": "범위 확인 → 덮지 않고 보고 → 정정 → 재발 방지 / 사례: 인계받은 협진 지표", "answer": "오류가 어디까지 전달됐는지 먼저 확인하고, 덮지 않고 바로 보고한 뒤 정정하겠습니다. 급하게 인계받은 협진 지표에서 계산식이 마이너스 시간을 내는 것을 발견했을 때, 산출식을 다시 만들고 이전에 잘못 나간 결과를 전부 보고해 정정했습니다. 이후 같은 문제가 없도록 산출 도구를 만들었습니다.", "src": "예상(지원서)", "tier": "필수", "follow": "그럼 본인이 실수한 적은 없나요?", "prep": "“전임자”라는 말은 쓰지 않습니다.", "exp": ["error"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q26", "group": "상황", "title": "정보공개청구로 확인되지 않은 정보를 요구받으면?", "cue": "규정에 따른 공개 범위 확인 → 확인된 사실과 평가 중인 내용 구분 → 개인정보 보호 → 담당·상급자 협의", "answer": "정보공개 규정에 따라 공개할 수 있는 범위를 먼저 확인하겠습니다. 확인된 사실과 아직 평가 중인 내용을 구분해, 평가 중인 내용이 결론처럼 전달되지 않게 하고, 환자 개인정보는 철저히 보호하겠습니다. 판단이 어려우면 상급자와 협의하겠습니다.", "src": "예상(직무기술서)", "tier": "", "follow": "", "prep": "", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q27", "group": "지원서·경험 검증", "title": "환자안전사고 보고와 의료기기 이상사례 평가는 무엇이 다른가요?", "cue": "공통: 사건 확인·분류·보고 / 차이: 병원 안의 재발 방지 vs 제품과의 인과관계·전국 단위 조치 → 내 경험은 보고하는 쪽, 지원 직무는 평가하는 쪽", "answer": "둘 다 사건을 확인하고 분류해 보고한다는 점은 같습니다. 다만 환자안전 보고는 병원 안에서 재발을 막는 데 초점이 있고, 이상사례 평가는 제품과의 인과관계를 따져 전국 단위 조치로 이어진다는 점이 다릅니다. 저는 보고하는 쪽에서 일해 봤기 때문에 보고 정보의 한계를 알고 평가에 쓸 수 있습니다.", "src": "예상(지원서)", "tier": "필수", "follow": "", "prep": "", "exp": ["safety"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q28", "group": "지원서·경험 검증", "title": "환자안전 보고 업무에서 구체적으로 무엇을 했나요?", "cue": "3년 전담 → 사건 확인·분류·추가 확인·입력·보고 → 위원회 보고 → 같은 사건도 기준에 따라 집계가 달라짐", "answer": "3년 동안 환자안전 전담인력으로 보고된 사건을 확인하고 분류했고, 필요한 정보는 추가로 확인해 입력한 뒤 국가 보고체계에 보고했습니다. 결과는 위원회에 보고했습니다. 같은 사건도 보고 기준과 기록 방식에 따라 집계가 달라질 수 있어 기준을 맞추는 데 신경 썼습니다.", "src": "예상(지원서)", "tier": "필수", "follow": "다룬 사건 중 의료기기 관련 사례가 있었나요?", "prep": "의료기기 관련 사례가 있었다면 실제 기억이 분명한 것만 덧붙입니다(본인 작성).", "exp": ["safety"], "status": "본인 확인", "basis": null, "related": [], "variants": []}, {"id": "q29", "group": "지원서·경험 검증", "title": "의료기기 관련 경험이나 지식은 어느 정도인가요?", "cue": "사실대로: 임상에서 쓰는 사람(마취회복실), 영상검사 지표·장비 관련 업무 → 부족한 것(RA·QMS 등) 인정 → 학습 계획", "answer": "마취회복실에서 환자를 간호하며 의료기기를 직접 쓰는 쪽에 있었고, 질향상 부서에서는 영상검사 지표의 관리범위를 넓히며 검사 장비별 산출 기준을 다뤄 왔습니다. 허가나 품질경영 같은 규제 지식은 부족해서, 입사 전후로 체계적으로 익히겠습니다.", "src": "예상(공고)", "tier": "필수", "follow": "RA나 QMS 자격이 없는데 괜찮나요?", "prep": "우대사항(RA·QMS 자격, 부작용·감시 경력)에 해당하는 것이 있으면 사실대로 덧붙입니다. 학습 계획은 본인 작성.", "exp": ["imaging", "career"], "status": "본인 확인", "basis": null, "related": [], "variants": []}, {"id": "q30", "group": "지원서·경험 검증", "title": "위원회 운영 경험을 구체적으로 말해 보세요.", "cue": "QPS·환자안전위원회 → 안건 발굴 → 자료 취합 → 회의자료·회의록 → 후속조치 관리", "answer": "QPS위원회와 환자안전위원회에서 안건을 발굴하고 자료를 취합해 회의자료와 회의록을 만들었고, 결정된 후속조치가 이행되는지 관리했습니다. 위원들이 짧은 시간에 판단할 수 있도록 쟁점과 근거를 정리하는 데 가장 신경 썼습니다.", "src": "예상(지원서)", "tier": "필수", "follow": "", "prep": "", "exp": ["committee"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q31", "group": "지원서·경험 검증", "title": "원인을 잘못 짚을 뻔했거나, 원인을 구분해 낸 경험은?", "cue": "낮은 지표 → 현장 문제로 단정하지 않음 → 투시조영: 산출 경로(PACS 미등록) / 일반촬영: 판독 업무부하 → 원인별로 다른 해결", "answer": "일반촬영과 투시조영 지표가 낮게 나왔을 때 현장 문제로 단정하지 않고 산출 구조와 업무 과정을 다시 봤습니다. 투시조영은 판독이 PACS에 등록되지 않는 산출 경로 문제였고, 일반촬영은 판독 인력의 업무부하였습니다. 원인이 달라 해결도 달랐습니다. 인과관계 평가도 원인을 구분하는 일이라고 생각합니다.", "src": "예상(지원서)", "tier": "필수", "follow": "", "prep": "KODA 자소서 5번에 쓴 사실입니다. NIDS 자소서와 대조하세요.", "exp": ["fluoro", "xray"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q32", "group": "지원서·경험 검증", "title": "세 부서가 반대하던 일을 어떻게 풀었나요? (투시조영)", "cue": "우려: 영상의학과·내시경실·의료정보팀 → 제안 세 가지 → 세 부서 동의", "answer": "영상의학과는 소화기내과 교수님이 시행한 검사를 판독할 수 없다고 했고, 내시경실은 이미 EHR에 결과를 등록하고 있어 PACS에 한 번 더 등록할 수 없다고 했으며, 의료정보팀은 연계 후 문제와 검사코드 수기 정리 부담을 걱정했습니다. 그래서 검사코드 관리 화면, 접수 후 자동판독, 내시경실은 EHR 등록만 하는 방식을 제안해 세 부서가 동의했습니다.", "src": "예상(지원서)", "tier": "", "follow": "", "prep": "해당 검사는 ERCP. 개발 실무 담당은 물으면 사실대로.", "exp": ["fluoro"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q33", "group": "지원서·경험 검증", "title": "통계나 데이터 분석은 어느 수준인가요?", "cue": "실무: 지표 정의·분모·매월 산출·자동화 + 수기 6개월 비교 검증 → 통계 프로그램: 역학·보건통계를 공부하며 실습", "answer": "실무에서는 지표의 정의와 분모 기준을 정하고 원자료를 확인해 매월 산출했고, 반복 작업은 자동화한 뒤 수기 산출 6개월치와 비교해 검증했습니다. 통계 프로그램은 역학·보건통계를 공부하며 SPSS와 SAS로 보건의료 자료 분석을 실습한 수준입니다.", "src": "예상(공고)", "tier": "", "follow": "", "prep": "“대학원·석사”는 말하지 않습니다(학력은 블라인드 대상일 수 있음 — 공고 PDF 확인).", "exp": ["kpi", "consult", "study"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q34", "group": "지원서·경험 검증", "title": "그럼 본인이 실수한 적은 없나요?", "cue": "실제 실수 하나 → 바로 인정·보고 → 바로잡은 방법 → 바꾼 것", "answer": "[본인 작성] 예시 틀: ○○에서 제가 ○○을 놓친 적이 있습니다. 알게 된 즉시 보고하고 ○○으로 바로잡았습니다. 이후에는 ○○을 확인 목록에 넣었습니다.", "src": "예상(지원서)", "tier": "필수", "follow": "", "prep": "NECA 준비 때 정리한 “수혈 준비 확인 회신 지연” 사례를 쓸 수 있는지 확인. 실제 기억이 분명한 사례만.", "exp": ["error"], "status": "본인 확인", "basis": null, "related": [], "variants": []}, {"id": "q35", "group": "태도·상황", "title": "공공기관 직원으로서 가져야 할 직업윤리는?", "cue": "공정·투명 → 업체와의 관계에서 이해충돌 경계 → 평가는 근거로만 → 개인정보 보호", "answer": "공정하고 투명하게 일하는 것이라고 생각합니다. 특히 이상사례 평가는 업체의 이해와 직접 닿기 때문에, 어떤 관계에도 흔들리지 않고 근거로만 판단해야 하고, 환자와 보고자의 정보는 엄격히 지켜야 합니다. 저는 불리한 결과도 그대로 보고하는 것으로 이 원칙을 지켜 왔습니다.", "src": "예상(공고)", "tier": "필수", "follow": "", "prep": "기관의 클린신고센터·부패방지경영시스템 인증(2026.7)과 연결 가능.", "exp": ["error"], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q36", "group": "태도·상황", "title": "상사의 부당한 업무지시를 받으면?", "cue": "의도 확인 → 규정·근거로 의견 → 정해진 절차로 보고", "answer": "먼저 지시의 의도와 배경을 확인하겠습니다. 규정이나 평가의 공정성에 어긋난다고 판단되면 근거를 들어 정중하게 의견을 드리고, 그래도 해결되지 않으면 기관이 정한 절차에 따라 보고하겠습니다.", "src": "예상(공고)", "tier": "", "follow": "", "prep": "", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q37", "group": "태도·상황", "title": "업무가 몰리고 마감이 겹치면?", "cue": "우선순위(환자 위해 큰 것 먼저) → 상급자와 공유 → 확인 목록으로 누락 방지", "answer": "환자에게 위해가 클 수 있는 사안부터 처리하고, 마감이 겹친다는 사실은 미리 상급자와 공유해 조정하겠습니다. 바쁠수록 누락이 생기기 쉬워서, 확인 목록을 만들어 하나씩 지워 가며 처리하겠습니다.", "src": "예상(공고)", "tier": "", "follow": "", "prep": "", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q38", "group": "태도·상황", "title": "궁금한데 물어볼 사람이 없다면?", "cue": "절차서·규정·이전 기록 → 확실하지 않으면 혼자 판단하지 않음 → 확인 후 기록·공유", "answer": "먼저 업무 절차서와 규정, 이전 처리 기록을 찾아보겠습니다. 그래도 확실하지 않으면 혼자 판단해 처리하지 않고, 연락이 닿는 담당자에게 확인한 뒤 진행하겠습니다. 확인한 내용은 기록해 다음 사람도 볼 수 있게 하겠습니다.", "src": "예상(공고)", "tier": "", "follow": "", "prep": "안전정보팀은 업무별 절차서 제·개정을 관리합니다(조직도).", "exp": [], "status": "", "basis": null, "related": [], "variants": []}, {"id": "q39", "group": "태도·상황", "title": "교대·야근·주말 근무, 지방 근무 가능 여부는?", "cue": "[본인 작성]", "answer": "[본인 작성]", "src": "예상(공고)", "tier": "", "follow": "", "prep": "공고 PDF의 근무지·근무형태 확인. 실제 의사만.", "exp": [], "status": "본인 확인", "basis": null, "related": [], "variants": []}, {"id": "q40", "group": "마무리", "title": "면접관에게 할 역질문 2개", "cue": "예: 입사 후 첫 3개월에 익혀야 할 것 / 인과관계조사에서 가장 자주 부족한 정보", "answer": "[본인 작성] 예: “입사 후 첫 3개월 동안 이 직무에서 가장 먼저 익혀야 할 업무는 무엇인가요?”", "src": "예상(공고)", "tier": "", "follow": "", "prep": "", "exp": [], "status": "본인 확인", "basis": null, "related": [], "variants": []}], "experiences": [{"id": "safety", "title": "환자안전사고 확인·분류·국가 보고 (3년)", "link": "NIDS 자소서와 대조", "value": "", "job": "이상사례 수집·분석 · 통계", "facts": [["제출본", "환자안전 전담인력으로 3년간 환자안전사고를 국가 보고체계에 보고(KODA 자소서 기재).", ""], ["제출본", "같은 사건도 보고 기준과 기록 방식에 따라 집계 결과가 달라질 수 있음을 경험(KODA 자소서 기재).", ""], ["추가", "사건 확인·분류·추가 확인·입력·보고·위원회 보고(NECA 준비 때 정리).", "사용자 확인"], ["추가", "다룬 사건 중 의료기기 관련 사례.", "본인 작성"], ["제안", "지원 직무와 가장 직접 닿는 경험. “보고하는 쪽에서 일해 본 사람”으로 말하기.", ""]], "questions": ["q1", "q2", "q9", "q21", "q23", "q27", "q28"]}, {"id": "committee", "title": "위원회 운영 (QPS·환자안전위원회)", "link": "NIDS 자소서와 대조", "value": "", "job": "이상사례 평가위원회 운영", "facts": [["추가", "QPS위원회·환자안전위원회 안건 발굴, 자료 취합, 회의자료·회의록, 후속조치 관리.", "사용자 확인"], ["제안", "이상사례 평가위원회 운영(후속조치·정보공개 관리)과 그대로 대응.", ""]], "questions": ["q1", "q9", "q16", "q20", "q30"]}, {"id": "fluoro", "title": "투시조영 산출 경로 정비 (원인 구분·세 부서 협의)", "link": "KODA 자소서 3·5번", "value": "", "job": "원인 분석 · 협의", "facts": [["제출본", "투시조영 건수가 실제보다 낮게 산출 → 결과는 EHR에 있지만 PACS에 판독이 등록되지 않는 구조가 원인.", ""], ["추가", "우려: 영상의학과(소화기내과 교수 시행 검사 판독 불가) / 내시경실(EHR에 이미 등록, PACS 이중 등록 불가) / 의료정보팀(연계 후 문제·검사코드 수기 정리 부담) → 제안: 검사코드 관리 화면, 접수 후 자동판독, 내시경실은 EHR 등록만 → 세 부서 동의. 해당 검사: ERCP.", "사용자 확인"], ["제안", "“낮은 수치를 문제로 단정하지 않고 원인부터” — 인과관계 평가와 같은 태도.", ""]], "questions": ["q1", "q15", "q19", "q31", "q32"]}, {"id": "xray", "title": "일반촬영 판독 업무부하 분석", "link": "KODA 자소서 5번", "value": "", "job": "원인 구분 · 보고", "facts": [["제출본", "추가 분석으로 판독 인력 업무부하를 확인하고 지속 보고 → 외주판독 확대를 검토하는 의사결정에 참고자료로 활용.", ""], ["제안", "결정은 경영진, 본인은 분석·보고. “검토의 참고자료” 범위를 붙여 말하기.", ""]], "questions": ["q31"]}, {"id": "imaging", "title": "영상검사 지표 관리범위 확대", "link": "KODA 자소서 2·5번", "value": "", "job": "의료기기(검사 장비) 관련 지표", "facts": [["제출본", "기존 CT·MRI·초음파 3종에 핵의학 2종(PET CT, 감마카메라)과 영상 3종(일반촬영, 유방촬영, 투시조영) 추가, 신규 지표 산출 기준 설정부터 관리까지.", ""]], "questions": ["q29"]}, {"id": "kpi", "title": "성과지표 정의·산출·보고", "link": "KODA 자소서 1·2·4번", "value": "", "job": "안전성정보 통계", "facts": [["제출본", "지표별 정의·분모 기준·산출 주기를 정하고 매월 원자료를 확인해 산출, 위원회에 보고. 전산 산출값도 원자료와 산출 구조를 확인.", ""]], "questions": ["q23", "q33"]}, {"id": "consult", "title": "협진 회신 1차 자료 작성 자동화", "link": "KODA 자소서 2번", "value": "", "job": "데이터 처리 · 검증", "facts": [["제출본", "반복 자료 취합·산출 자동화로 4시간 이상 → 1분 이내(1차 자료 작성).", ""], ["추가", "수기 산출 6개월치와 도구 산출 6개월치 비교 검증.", "사용자 확인"]], "questions": ["q3", "q33"]}, {"id": "error", "title": "인계받은 협진 지표의 오류 발견·정정", "link": "추가 경험", "value": "", "job": "데이터 정확성 · 윤리", "facts": [["추가", "급하게 인계받은 협진 지표에서 기존 계산식이 마이너스 시간을 내는 것을 발견 → 산출식을 다시 만들고 이전에 잘못 나간 결과를 전부 보고해 정정 → 산출 도구 제작.", "사용자 확인"], ["제안", "본인 실수가 아니라 인계받은 오류를 바로잡은 사례. “전임자”라는 말은 쓰지 않기. 본인 실수 사례는 따로(q34).", ""]], "questions": ["q11", "q18", "q25", "q34", "q35"]}, {"id": "fmea", "title": "낙상 FMEA", "link": "KODA 자소서 4번(49명 조사)", "value": "", "job": "위험평가 · 의견 조율", "facts": [["제출본", "낙상 FMEA에서 환자 49명의 낙상위험 인식을 조사하고 간호사 평가와 비교해 환자 교육 개선 근거 마련.", ""], ["추가", "20명 평가를 취합해 의견이 갈린 항목을 안건화. 치명도 감소는 팀 개선활동의 결과(NECA 준비 때 정리).", "사용자 확인"]], "questions": ["q20"]}, {"id": "comm", "title": "정보 전달 채널 (뉴스레터·카드뉴스)", "link": "추가 경험", "value": "", "job": "안전성정보 홍보", "facts": [["추가", "반기별 뉴스레터 기획·편집, 부서 전용 카카오톡 채널로 인증·환자안전 소식을 카드뉴스로 배포.", "사용자 확인"]], "questions": ["q21"]}, {"id": "study", "title": "역학·보건통계 공부", "link": "KODA 자소서 1·4번", "value": "", "job": "통계분석", "facts": [["제출본", "조사설계와 통계방법, SPSS·SAS 보건의료 자료 분석 실습, 체계적 문헌고찰 방법 이수.", ""], ["제안", "학교명·학력(“대학원”, “석사”)은 말하지 않고 “역학·보건통계를 공부하며”로.", ""]], "questions": ["q33"]}, {"id": "career", "title": "경력 기간", "link": "경력증명서 대조용", "value": "", "job": "", "facts": [["추가", "2017.11 입사(마취회복실) → 2018.03 정규직 → 2020.05 QI팀(환자안전 전담 3년) → 2024년부터 CP·성과지표.", "사용자 확인"]], "questions": ["q29"]}], "axes": [], "notUse": ["“월별 지표 집계 15시간 → 3시간”: 근거 미확인 — 답변에 쓰지 않음", "핵심가치·인재상·경영목표: NIDS 홈페이지에 없음 — 만들어 말하지 않음"]};
+const KEY='jobapply.nids.study.v1';
+let state={done:[],review:[],notes:{},last:'c1',practiced:[],mocks:[],checks:{}};
+let storageOK=true;
+try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==='object'){state.done=Array.isArray(v.done)?v.done.filter(x=>/^chk-/.test(x)||DATA.cards.some(c=>c.id===x)):[];state.review=Array.isArray(v.review)?v.review.filter(x=>DATA.cards.some(c=>c.id===x)):[];state.notes=v.notes&&typeof v.notes==='object'&&!Array.isArray(v.notes)?v.notes:{};state.last=DATA.cards.some(c=>c.id===v.last)?v.last:'c1';state.practiced=Array.isArray(v.practiced)?v.practiced.filter(x=>DATA.questions.some(q=>q.id===x)):[];state.mocks=Array.isArray(v.mocks)?v.mocks.filter(m=>m&&typeof m.id==='string'&&Array.isArray(m.items)):[];state.checks=v.checks&&typeof v.checks==='object'&&!Array.isArray(v.checks)?v.checks:{};}}catch(e){storageOK=false;}
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function notice(){if(!storageOK){$('#notice').hidden=false;$('#notice').textContent='이 브라우저에서는 저장할 수 없습니다. 현재 화면의 변경은 새로고침하면 사라질 수 있습니다.';}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));syncSoon(1500);return true}catch(e){storageOK=false;notice();return false}}
+const SYNC_FILE='nids-study.json',BASE_KEY='jobapply.nids.base.v1';
+let syncing=false,syncAgain=false,syncTimer=null,lastSync=0,syncFailed=false;
+function syncCfg(){try{const c=JSON.parse(localStorage.getItem('jobtracker.sync.v1'));return c&&c.token&&c.gistId?c:null}catch(e){return null}}
+function syncLabel(){const c=syncCfg();if(!c)return '이 브라우저에만 저장 중';if(!lastSync)return '동기화 준비 중…';const d=new Date(lastSync);return '기기 간 동기화됨 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function showSync(){const f=document.getElementById('sync-state');if(!f)return;f.classList.toggle('fail',syncFailed);f.textContent=syncFailed?'동기화 실패 · 이 브라우저에는 저장됨 ':syncLabel();if(syncFailed){const b=document.createElement('button');b.type='button';b.className='retry';b.textContent='다시 시도';b.onclick=()=>{f.textContent='동기화 중…';syncNow()};f.appendChild(b)}}
+// 마지막 동기화 시점(base)을 기준으로 양쪽이 각각 무엇을 바꿨는지 보고 합친다.
+// 그냥 합집합을 내면 한쪽에서 해제한 체크가 다른 쪽 때문에 되살아난다.
+function mergeSet(b,m,t){b=b||[];const all=[...new Set([...m,...t])];return all.filter(x=>(m.includes(x)&&t.includes(x))||(m.includes(x)&&!b.includes(x))||(t.includes(x)&&!b.includes(x)))}
+function mergeNotes(b,m,t){b=b||{};const out={};new Set([...Object.keys(m),...Object.keys(t)]).forEach(k=>{const v=m[k]===t[k]?m[k]:m[k]===b[k]?t[k]:m[k];if(v!==undefined)out[k]=v});return out}
+function mergeById(b,m,t){m=m||[];t=t||[];const ids=mergeSet((b||[]).map(x=>x.id),m.map(x=>x.id),t.map(x=>x.id));return ids.map(id=>m.find(x=>x.id===id)||t.find(x=>x.id===id)).sort((x,y)=>x.id<y.id?-1:1)}
+function merge(b,m,t){b=b||{};return{mocks:mergeById(b.mocks,m.mocks,t.mocks),checks:mergeNotes(b.checks,m.checks||{},t.checks||{}),done:mergeSet(b.done,m.done,t.done||[]),review:mergeSet(b.review,m.review,t.review||[]),practiced:mergeSet(b.practiced,m.practiced,t.practiced||[]),notes:mergeNotes(b.notes,m.notes,t.notes||{}),last:m.last}}
+function gh(c,path,opt){opt=opt||{};opt.headers={'Authorization':'token '+c.token,'Accept':'application/vnd.github+json'};return fetch('https://api.github.com'+path,opt).then(r=>{if(!r.ok)throw new Error('GitHub '+r.status);return r.json()})}
+function syncNow(){
+  const c=syncCfg();if(!c)return Promise.resolve();
+  // 요청이 오가는 사이에 생긴 변경은 끝난 뒤 한 번 더 돌려서 올린다.
+  // 그냥 건너뛰면 다음 주기(최대 1분)까지 다른 기기에 안 간다.
+  if(syncing){syncAgain=true;return Promise.resolve()}
+  syncing=true;syncAgain=false;
+  return gh(c,'/gists/'+c.gistId).then(g=>{
+    const f=g.files&&g.files[SYNC_FILE];
+    if(f&&f.truncated&&f.raw_url)return fetch(f.raw_url).then(r=>r.json());
+    return f?JSON.parse(f.content):null;
+  }).then(remote=>{
+    let base=null;try{base=JSON.parse(localStorage.getItem(BASE_KEY))}catch(e){}
+    const mine=JSON.parse(JSON.stringify({done:state.done,review:state.review,practiced:state.practiced,notes:state.notes,last:state.last,mocks:state.mocks,checks:state.checks}));
+    const merged=remote?merge(base,mine,remote):mine;
+    const changed=JSON.stringify(merged)!==JSON.stringify(mine);
+    if(changed){Object.assign(state,merged);try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}refresh()}
+    const sent=JSON.stringify(merged);
+    const done=()=>{if(JSON.stringify(state)!==sent)syncAgain=true;try{localStorage.setItem(BASE_KEY,sent)}catch(e){}lastSync=Date.now();syncFailed=false;showSync()};
+    // '마지막으로 본 카드'는 기기마다 달라도 되니 같음 판정에서 뺀다 — 넣으면 두 기기가 번갈아 매번 쓴다
+    const core=x=>JSON.stringify([x.done,x.review,x.practiced,x.notes,x.mocks,x.checks]);
+    if(remote&&core(merged)===core(merge(null,remote,{})))return done();
+    const files={};files[SYNC_FILE]={content:JSON.stringify(merged,null,2)};
+    return gh(c,'/gists/'+c.gistId,{method:'PATCH',body:JSON.stringify({files})}).then(done);
+  }).catch(e=>{syncFailed=true;showSync()}).then(()=>{syncing=false;if(syncAgain)syncSoon(300)});
+}
+function syncSoon(ms){if(!syncCfg())return;clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,ms)}
+// 다른 기기에서 가져온 변경은 바뀐 부분만 고친다. 화면을 통째로 다시 그리면
+// 검색어·단원·필터가 초기화되고, 쓰고 있던 메모 입력창이 새로 만들어져 커서가 날아간다.
+function refresh(){
+  const [raw]=location.hash.slice(1).split('/');
+  if(!raw||raw==='home'){home();return}   // 홈에는 입력칸이 없어 다시 그려도 잃을 게 없다
+  document.querySelectorAll('#view button[data-check],#view button[data-done],#view button[data-review],#view button[data-practiced]').forEach(b=>{
+    for(const [attr,key,yes,no] of TOGGLES){const id=b.dataset[attr];if(!id)continue;const on=state[key].includes(id);b.setAttribute('aria-pressed',String(on));b.textContent=on?yes:no}});
+  document.querySelectorAll('#view details[id]').forEach(d=>{const bd=d.querySelector(':scope>summary .badges');if(!bd)return;const q=DATA.questions.find(x=>x.id===d.id);bd.innerHTML=q?qBadges(q):cardBadges(d.id)});
+  document.querySelectorAll('#view input[data-sc]').forEach(c=>{if(c===document.activeElement)return;c.checked=(state.checks[c.dataset.sc]||'0000')[+c.dataset.i]==='1'});
+  document.querySelectorAll('#view textarea[data-note]').forEach(t=>{if(t===document.activeElement)return;const v=typeof state.notes[t.dataset.note]==='string'?state.notes[t.dataset.note]:'';if(t.value!==v)t.value=v});
+}
+function heading(k,t,d){return `<p class="eyebrow">${k}</p><h1>${t}</h1><p class="lead">${d}</p>`}
+function status(t){return `<span class="pill ${/확인/.test(t)?'rose':/초안/.test(t)?'warn':''}">${t}</span>`}
+const TOGGLES=[['check','done','✓ 완료','완료로 표시'],['done','done','✓ 설명 가능','설명 가능으로 표시'],['review','review','★ 다시 보기','☆ 다시 보기'],['practiced','practiced','✓ 말로 연습함','말로 연습했어요']];
+function axesHtml(){return DATA.axes.map((a,k)=>`<p><strong>${k+1}. ${a.name}</strong><br>${a.work}<br><span class="small">준비: ${a.prep} · 공부할 곳: ${a.where}</span></p>`).join('')}
+
+const searchCache=new Map();
+function searchText(c){if(!searchCache.has(c.id)){const box=document.createElement('div');box.innerHTML=cardBody(c);searchCache.set(c.id,box.textContent||'')}return searchCache.get(c.id)}
+// 꼬리질문이 들어오면 꺼낼 근거. 답변 본문과 섞지 않으려고 따로 접어 둔다.
+const BASIS={exp:[['act','내 행동'],['why','판단 이유'],['evidence','결과 근거'],['limit','한계·재발 대비']],sit:[['facts','확인할 사실'],['criteria','판단 기준'],['action','필요한 조치'],['report','보고 및 협의 범위']]};
+function basisHtml(b){const cols=b&&BASIS[b.kind];if(!cols)return '';const r=b.rows||{};return '<details class="basis"><summary>꼬리질문 근거</summary><div class="detail-body"><dl>'+cols.map(([k,l])=>'<dt>'+l+'</dt><dd>'+esc(r[k]&&String(r[k]).trim()?r[k]:'[본인 확인 후 작성]')+'</dd>').join('')+'</dl></div></details>'}
+function expLinks(ids){const rows=(ids||[]).map(id=>DATA.experiences.find(e=>e.id===id)).filter(Boolean);return rows.length?'<div class="actions"><b>관련 경험 정리</b><ul>'+rows.map(e=>'<li><a href="#experience/x-'+esc(e.id)+'">'+esc(e.title)+'</a></li>').join('')+'</ul></div>':''}
+function relatedQuestions(ids,label='관련 질문 연습'){const rows=(ids||[]).map(id=>DATA.questions.find(q=>q.id===id)).filter(Boolean);return rows.length?`<div class="actions"><b>${label}</b><ul>${rows.map(q=>`<li><a href="#practice/${q.id}">${esc(q.title)}</a></li>`).join('')}</ul></div>`:''}
+function nextQuestion(id){const pool=DATA.questions.filter(q=>q.id!==id&&q.group!=='준비 전략'&&!state.practiced.includes(q.id));return pool.find(q=>q.tier==='필수')||pool[0]}
+function nextAction(id){const q=nextQuestion(id);return q?`<a class="button" href="#practice/${q.id}">${q.tier==='필수'?'다음 필수 질문':'다음 질문'} →</a>`:'<a class="button" href="#summary">내 답변 복습하기 →</a>'}
+function personalReview(){const rows=[...DATA.questions.map(q=>({id:q.id,title:q.title,route:'practice/'})),...DATA.experiences.map(e=>({id:e.id,title:e.title,route:'experience/x-'}))].filter(x=>typeof state.notes[x.id]==='string'&&state.notes[x.id].trim());return `<section class="box"><h2>내가 작성한 답변·경험</h2>${rows.length?rows.map(x=>`<details><summary>${esc(x.title)}</summary><div class="detail-body"><p class="personal-note">${esc(state.notes[x.id])}</p><a href="#${x.route}${x.id}">수정하러 가기 →</a></div></details>`).join(''):'<p>아직 작성한 답변이 없습니다. <a href="#practice">답변 연습</a>에서 내 답변을 적으면 여기에 모입니다.</p>'}</section>`}
+const viewMemory={};let activeRoute='';
+function rememberView(){if(!activeRoute)return;viewMemory[activeRoute]={y:window.scrollY,fields:['search','group','only-review','q-group'].map(id=>{const el=document.getElementById(id);return el?{id,value:el.value,checked:el.checked}:null}).filter(Boolean),open:[...document.querySelectorAll('#view details[id][open]')].map(el=>el.id)}}
+function restoreView(name,target){const saved=viewMemory[name];if(target||!saved)return;for(const f of saved.fields){const el=document.getElementById(f.id);if(el){el.value=f.value;el.checked=f.checked;el.dispatchEvent(new Event(f.id==='search'?'input':'change'))}}for(const id of saved.open){const el=document.getElementById(id);if(el)el.open=true}requestAnimationFrame(()=>window.scrollTo(0,saved.y))}
+
+function cardBody(c){return c.body.replace('{{AXES}}',axesHtml())}
+function cardBadges(id){const c=DATA.cards.find(x=>x.id===id)||{};return (c.tier==='필수'?'<span class="pill req">필수</span>':c.tier==='확장'?'<span class="pill ext">확장</span>':'')+(state.done.includes(id)?'<span class="pill done">✓ 설명 가능</span>':'')+(state.review.includes(id)?'<span class="pill star">★ 다시 보기</span>':'')}
+function qBadges(q){return (q.tier==='필수'?'<span class="pill req">필수</span>':'')+(q.src?'<span class="pill ext">'+esc(q.src)+'</span>':'')+(q.status?status(q.status):'')+(state.practiced.includes(q.id)?'<span class="pill done">✓ 연습함</span>':'')}
+function toggle(arr,id){state[arr]=state[arr].includes(id)?state[arr].filter(x=>x!==id):[...state[arr],id];save()}
+const WD=['일','월','화','수','목','금','토'];
+function ymd(s){const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+function kd(d){return (d.getMonth()+1)+'/'+d.getDate()+'('+WD[d.getDay()]+')'}
+function interview(){
+  try{
+    const t=JSON.parse(localStorage.getItem('jobtracker.v1'));if(!t||!t.institutions)return null;
+    const ids=t.institutions.filter(i=>i.id==='nids'||/NIDS|의료기기안전정보원/i.test(i.name||'')).map(i=>i.id);
+    const now=new Date();now.setHours(0,0,0,0);
+    const ev=(t.events||[]).filter(e=>ids.includes(e.inst)&&/면접/.test(e.label)&&!/결과|발표/.test(e.label)&&ymd(e.end||e.start)>=now)
+      .sort((a,b)=>ymd(a.start)-ymd(b.start))[0];
+    if(!ev)return null;
+    const inst=t.institutions.find(i=>i.id===ev.inst)||{};
+    const s=ymd(ev.start),e=ymd(ev.end||ev.start),d=Math.round((s-now)/864e5);
+    return{d,when:ev.start===(ev.end||ev.start)?kd(s):kd(s)+' – '+kd(e),place:ev.place||inst.place||''};
+  }catch(e){return null}
+}
+function home(){const next=DATA.questions.find(q=>q.tier==='필수'&&!state.practiced.includes(q.id))||DATA.questions.find(q=>q.group!=='준비 전략'&&!state.practiced.includes(q.id))||null;const last=DATA.cards.find(c=>c.id===state.last)||DATA.cards[0];const review=state.review.slice(0,4).map(id=>DATA.cards.find(x=>x.id===id)).filter(Boolean);const reqTotal=DATA.cards.filter(c=>c.tier==='필수').length;const reqDone=DATA.cards.filter(c=>c.tier==='필수'&&state.done.includes(c.id)).length;const reqPct=reqTotal?Math.round(reqDone/reqTotal*100):0;const cueFlow=next&&next.cue.includes('→')?'<div class="cue-flow">'+next.cue.split('→').map((x,i,a)=>'<span class="cue-chip">'+esc(x.trim())+'</span>'+(i<a.length-1?'<span class="cue-arrow">→</span>':'')).join('')+'</div>':next?'<p class="question-cue">'+esc(next.cue)+'</p>':'';$('#view').innerHTML=`<section class="hero"><p class="eyebrow">오늘의 학습</p><h1 class="home-title">NIDS 면접 준비</h1>${(()=>{const iv=interview();if(!iv)return '<p class="small">면접 일정이 등록되면 날짜와 장소가 여기에 표시됩니다.</p>';return `<div><span class="dday">${iv.d>0?'D-'+iv.d:iv.d===0?'오늘':'진행 중'}</span><span class="dday-when">${iv.when}</span></div>${iv.place?`<p class="place">${esc(iv.place)}</p>`:''}`})()}<div class="home-status"><span>필수 개념 <strong>${reqDone}/${reqTotal}</strong></span><span>전체 개념 <strong>${DATA.cards.filter(c=>state.done.includes(c.id)).length}/${DATA.cards.length}</strong></span><span>답변 연습 <strong>${state.practiced.length}/${DATA.questions.length}</strong></span></div><div class="home-progress" aria-label="필수 개념 진행률 ${reqPct}%"><span style="width:${reqPct}%"></span></div></section>${homeChecks()}<section class="study-section focus-card"><span class="section-kicker">오늘의 답변 연습 · ${esc(next?next.group:'복습')}</span><h2 class="question-title">${esc(next?next.title:'모든 질문을 한 번씩 연습했습니다')}</h2>${cueFlow}<div class="study-actions"><a class="button primary" href="${next?'#practice/'+next.id:'#summary'}">${next?'답변 연습하기 →':'내 답변 복습하기 →'}</a><a class="button secondary" href="#practice">전체 질문 보기</a><a class="button secondary" href="#practice/mock">모의면접</a></div></section><section class="study-section"><span class="section-kicker">마지막으로 본 개념</span><h2 class="question-title">${esc(last.title)}</h2><p class="question-cue">${esc(last.group)} · ${state.done.includes(last.id)?'설명 가능으로 표시됨':'아직 설명 가능으로 표시하지 않음'}</p><div class="study-actions"><a class="button primary" href="#learn/${last.id}">개념 열기 →</a>${(()=>{const nc=DATA.cards.find(c=>c.tier==='필수'&&!state.done.includes(c.id)&&c.id!==last.id)||DATA.cards.find(c=>!state.done.includes(c.id)&&c.id!==last.id);return nc?`<a class="button secondary" href="#learn/${nc.id}">다음 학습: ${esc(nc.title)}</a>`:''})()}</div></section>${review.length?`<section class="study-section"><span class="section-kicker">다시 볼 개념</span><ul class="study-list">${review.map(c=>`<li><a href="#learn/${c.id}">${esc(c.title)}</a></li>`).join('')}</ul></section>`:''}<section class="study-section guide-callout"><span class="section-kicker">답변할 때 지킬 기준</span><ul class="study-list"><li><span><b>길이</b> · 첫 문장에 답, 근거 하나, 30~40초</span></li><li><span><b>직무</b> · 인과관계조사 / 이상사례 평가위원회 / 안전성정보 분석·평가 — 정보원은 평가·보고, 조치는 식약처</span></li><li><span><b>경험 답변</b> · 제출본에 적은 것과 추가 설명을 구분, 범위(“1차 자료 작성”, “검토의 참고자료”)를 붙여서</span></li></ul></section>`}
+function learn(target){$('#view').innerHTML=heading('KNOWLEDGE','직무 지식','답을 보기 전에 먼저 설명해보세요. 아래 카드는 학습용이며, 본인의 수행 경험과 구분합니다.')+`<div class="toolbar"><input id="search" type="search" aria-label="학습 카드 검색" placeholder="부작용, 인과관계, 위원회, UDI…"><select id="group" aria-label="학습 단원"><option value="">전체 단원</option><option value="__req">필수 카드만</option>${[...new Set(DATA.cards.map(c=>c.group))].map(g=>`<option>${g}</option>`).join('')}</select><label><input type="checkbox" id="only-review" ${target==='review'?'checked':''}> 다시 보기만</label></div><p id="result" class="small" role="status"></p><div id="cards"></div>`;
+function draw(){const query=$('#search').value.trim().toLowerCase();const group=$('#group').value;const filtered=DATA.cards.filter(c=>(!query||(c.title+' '+searchText(c)).toLowerCase().includes(query))&&(!group||(group==='__req'?c.tier==='필수':c.group===group))&&(!$('#only-review').checked||state.review.includes(c.id)));$('#result').textContent=`${filtered.length}개 개념`;$('#cards').innerHTML=filtered.map(c=>`<details id="${c.id}"><summary><span class="num">${String(c.n).padStart(2,'0')}</span><span class="title">${esc(c.title)}<br><small>${c.group}</small><span class="badges">${cardBadges(c.id)}</span></span></summary><div class="detail-body">${cardBody(c)}${relatedQuestions(c.questions)}<div class="row actions"><button data-done="${c.id}" aria-pressed="${state.done.includes(c.id)}">${state.done.includes(c.id)?'✓ 설명 가능':'설명 가능으로 표시'}</button><button data-review="${c.id}" aria-pressed="${state.review.includes(c.id)}">${state.review.includes(c.id)?'★ 다시 보기':'☆ 다시 보기'}</button></div></div></details>`).join('')||'<p class="empty">해당하는 카드가 없습니다. 검색어나 필터를 바꿔보세요.</p>';$('#cards').querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{if(d.open){state.last=d.id;save()}}));}
+$('#search').addEventListener('input',draw);$('#group').addEventListener('change',draw);$('#only-review').addEventListener('change',draw);draw();openTarget(target);
+}
+function openTarget(target){const el=document.getElementById(target);if(el&&el.tagName==='DETAILS'){el.open=true;requestAnimationFrame(()=>el.scrollIntoView({block:'start'}));}}
+function noteField(id,prompt){return `<label for="note-${id}"><b>${prompt}</b></label><textarea id="note-${id}" data-note="${id}" placeholder="실제로 한 일과 확인된 내용만 적어보세요.">${esc(typeof state.notes[id]==='string'?state.notes[id]:'')}</textarea><div class="save-state" id="saved-${id}" role="status">${syncCfg()?'자동 저장 · 기기 간 동기화':'이 브라우저에 자동 저장'}</div>`}
+// ── 답변 후 자기점검 — 질문 카드와 모의면접에서 같은 네 가지를 본다. 점수가 아니라 습관 점검.
+const SELF=['질문에 대한 답을 먼저 말했나요?','직접 한 일과 배운 내용을 구분했나요?','내 행동과 결과를 구체적으로 말했나요?','모르는 부분을 과장하거나, 실제 경험을 불필요하게 축소하지 않았나요?'];
+function selfCheck(key,val,attr){const v=val||'0000';return `<fieldset class="selfcheck"><legend>답변 후 점검</legend>${SELF.map((t,i)=>`<label><input type="checkbox" ${attr}="${key}" data-i="${i}" ${v[i]==='1'?'checked':''}> ${t}</label>`).join('')}</fieldset>`}
+// ── 블라인드·표현 점검 — 단어가 나왔다고 위반으로 판정하지 않는다. 드러날 수 있는 문장을 보여 주고 직접 판단하게 한다.
+const BLIND=[
+ ['학력·학교',/(대학교|대학원|[가-힣]*대학(?!병원)|고등학교|출신\s?학교|모교|동문|학번|졸업|석사|박사|학위)/,'출신학교·학력이 드러날 수 있습니다. 학교명은 말하지 않습니다. 학력도 블라인드 대상인지 NIDS 공고문으로 확인 — “대학원”, “석사”는 말하지 않고 “역학·보건통계를 공부하며”로.'],
+ ['가족',/((제|저희|우리)\s?(가족|아버지|어머니|부모님|형|누나|오빠|언니|동생|남편|아내|아이|자녀|아들|딸)|(아버지|어머니|부모님)께서)/,'본인 가족 정보는 블라인드 대상입니다. (환자 가족·보호자처럼 업무 속 가족은 해당 없음)'],
+ ['혼인·육아',/(결혼|기혼|미혼|신혼|육아|임신|출산)/,'혼인·육아 여부가 드러날 수 있습니다.'],
+ ['나이',/(\d+\s?(살|세)(?!대|기)|\d{2,4}\s?년생|제 나이|나이가)/,'나이가 드러날 수 있습니다. 경력 기간은 괜찮습니다.'],
+ ['출신지',/(고향|출신(?!\s?학교)|에서 태어|에서 자랐)/,'출신지가 드러날 수 있습니다.'],
+ ['종교',/(교회|성당|사찰|신앙|기독교|불교|천주교|종교)/,'종교가 드러날 수 있습니다.'],
+ ['신체',/(키가|몸무게|체중|외모|신체)/,'신체 조건 언급입니다.'],
+ ['성명',/(제 이름은|이름이\s?[가-힣]{2,4}|성함)/,'면접에서는 성명 대신 지원번호만 말합니다.'],
+ ['오해 표현',/(곤조|빡세|빡센|짬|꼰대|대충|ㅋㅋ)/,'구어·속어라 오해를 살 수 있습니다. 뜻을 풀어 말해 보세요.']];
+function blindScan(text){const out=[];String(text||'').replace(/([.!?。])\s+/g,'$1\n').split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(sen=>{const hits=BLIND.filter(([,re])=>re.test(sen)).map(([cat,re,why])=>({cat,word:sen.match(re)[0],why}));if(hits.length)out.push({sen,hits})});return out}
+function blindHtml(text){if(!String(text||'').trim())return '<p class="small">점검할 답변이 없습니다. 먼저 답변을 적어 주세요.</p>';const r=blindScan(text);return (r.length?'<ul class="blind-list">'+r.map(x=>`<li><p class="blind-sen">${esc(x.sen)}</p>${x.hits.map(h=>`<p class="small"><span class="pill rose">${esc(h.cat)}</span> “${esc(h.word)}” — ${esc(h.why)}</p>`).join('')}</li>`).join('')+'</ul>':'<p class="small">드러날 가능성이 보이는 문장을 찾지 못했습니다.</p>')+'<p class="small">점수·감점 여부를 판정하지 않습니다. 블라인드 감점 기준은 NIDS 공고문(첨부 PDF)에서 확인하세요. “사실”, “교수님”, “없다” 같은 말은 문제가 아닙니다.</p>'}
+
+// ── 모의면접 — 자기소개 → 공통질문 → 개별질문 → 마무리. 실제 KODA 형식이 아니라 후기 기반 연습용.
+const MOCK_INDIV=['직무 이해','상황','지원서·경험 검증','태도·상황'];
+let mock=null,mockTimer=null;
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildMock(n,intro,outro){const fixed=(intro?1:0)+(outro?1:0),body=Math.max(1,n-fixed);const common=shuffle(DATA.questions.filter(q=>q.group==='공통 12문항'&&!['q1','q10'].includes(q.id)));const indiv=shuffle(DATA.questions.filter(q=>MOCK_INDIV.includes(q.group)&&!q.answer.startsWith('[')));const k=Math.ceil(body/2);return [...(intro?['q1']:[]),...common.slice(0,k).map(q=>q.id),...indiv.slice(0,body-k).map(q=>q.id),...(outro?['q10']:[])]}
+function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function mockRecords(){const rows=state.mocks.slice().reverse();return `<h3>지난 모의면접 기록</h3>${rows.length?'<ul class="study-list">'+rows.map(m=>{const ok=m.items.reduce((a,it)=>a+((it.c||'').split('1').length-1),0);const over=m.items.filter(it=>it.t>(it.q==='q1'?60:m.limit)).length;return `<li><span><b>${esc(new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</b> · ${m.items.length}문항 · 점검 ${ok}/${m.items.length*4}${over?` · 시간 초과 ${over}`:''}</span> <button data-mockdel="${esc(m.id)}">삭제</button></li>`}).join('')+'</ul>':'<p class="small">아직 저장된 기록이 없습니다.</p>'}`}
+function mockSetup(){clearInterval(mockTimer);mock=null;$('#mock').innerHTML=`<section class="box mock"><h2>모의면접</h2><p class="small">자기소개 → 공통질문 → 개별질문 → 마무리 순서입니다. 공통질문과 개별질문을 섞은 <b>연습용 구성</b>이며 실제 NIDS 면접 형식이 아닙니다. 시간이 지나도 답변을 끊지 않습니다.</p><div class="toolbar"><label>질문 수 <select id="mock-n"><option>5</option><option selected>7</option><option>10</option></select></label><label>답변 시간 <select id="mock-sec"><option value="30">30초</option><option value="40" selected>40초</option><option value="60">60초</option></select></label><label><input type="checkbox" id="mock-intro" checked> 1분 자기소개로 시작</label><label><input type="checkbox" id="mock-outro" checked> 마지막 할 말로 끝</label><button id="mock-start" class="primary">시작</button></div>${mockRecords()}</section>`;$('#mock-start').onclick=()=>{mock={list:buildMock(+$('#mock-n').value,$('#mock-intro').checked,$('#mock-outro').checked),limit:+$('#mock-sec').value,i:0,items:[]};mockAsk()}}
+function mockAsk(){const id=mock.list[mock.i],q=DATA.questions.find(x=>x.id===id);const lim=id==='q1'?60:mock.limit;const kind=id==='q1'?'자기소개':id==='q10'?'마무리':q.group==='공통 12문항'?'공통질문':'개별질문';mock.t0=Date.now();mock.done=false;$('#mock').innerHTML=`<section class="box mock"><p class="section-kicker">${mock.i+1} / ${mock.list.length} · ${kind}</p><h2 class="question-title" id="mock-q">${esc(q.title)}</h2><p class="mock-clock"><span id="mock-time">0:00</span> / ${mmss(lim)} <span id="mock-over" class="small" hidden>시간이 지났어요 — 마무리하세요</span></p><div id="mock-after"></div><div class="study-actions"><button id="mock-end" class="primary">답변 끝</button><button id="mock-skip">건너뛰기</button><button id="mock-stop">그만하기</button></div></section>`;
+clearInterval(mockTimer);mockTimer=setInterval(()=>{const el=document.getElementById('mock-time');if(!el||!mock){clearInterval(mockTimer);return}if(mock.done)return;const s=(Date.now()-mock.t0)/1000;el.textContent=mmss(s);const over=s>lim;el.classList.toggle('over',over);document.getElementById('mock-over').hidden=!over},250);
+$('#mock-end').onclick=()=>{if(mock.done)return mockNext();mock.done=true;const t=Math.round((Date.now()-mock.t0)/1000);mock.items.push({q:id,t,c:'0000'});$('#mock-after').innerHTML=`${selfCheck(String(mock.items.length-1),'0000','data-msc')}<details><summary>답변 방향 보기</summary><div class="detail-body"><div class="cue">${esc(q.cue)}</div>${q.follow?`<p><b>꼬리 질문</b><br>${esc(q.follow)}</p>`:''}</div></details>`;$('#mock-end').textContent=mock.i+1<mock.list.length?'다음 질문 →':'마치고 기록 저장'};
+$('#mock-skip').onclick=()=>{if(!mock.done)mock.items.push({q:id,t:0,c:'0000',skip:1});mockNext()};$('#mock-stop').onclick=mockFinish}
+function mockNext(){mock.i++;if(mock.i<mock.list.length)mockAsk();else mockFinish()}
+function mockFinish(){clearInterval(mockTimer);const items=mock.items.filter(it=>!it.skip);if(items.length){state.mocks.push({id:'m'+Date.now(),date:new Date().toISOString(),limit:mock.limit,items});save()}const done=items;mock=null;$('#mock').innerHTML=`<section class="box mock"><h2>모의면접 끝</h2>${done.length?`<div class="table-scroll"><table><thead><tr><th>질문</th><th>시간</th><th>점검</th></tr></thead><tbody>${done.map(it=>{const q=DATA.questions.find(x=>x.id===it.q);return `<tr><td><a href="#practice/${it.q}">${esc(q.title)}</a></td><td>${mmss(it.t)}</td><td>${(it.c.split('1').length-1)}/4</td></tr>`}).join('')}</tbody></table></div><p class="small">기록을 날짜별로 저장했습니다.</p>`:'<p class="small">답한 질문이 없어 기록하지 않았습니다.</p>'}<div class="study-actions"><button id="mock-again" class="primary">다시 하기</button><button id="mock-close">닫기</button></div></section>`;$('#mock-again').onclick=mockSetup;$('#mock-close').onclick=()=>{$('#mock').innerHTML=''}}
+function blindPanel(){$('#blind').innerHTML=`<section class="box"><h2>블라인드·표현 점검</h2><p class="small">답변을 붙여 넣고 “점검”을 누르세요. 쓰는 중에는 경고하지 않습니다.</p><textarea id="blind-text" placeholder="점검할 답변"></textarea><div class="study-actions"><button id="blind-run" class="primary">점검</button><button id="blind-close">닫기</button></div><div id="blind-out" role="status"></div></section>`;$('#blind-run').onclick=()=>{$('#blind-out').innerHTML=blindHtml($('#blind-text').value)};$('#blind-close').onclick=()=>{$('#blind').innerHTML=''}}
+function practice(target){$('#view').innerHTML=heading('SPEAK IN YOUR WORDS','답변 연습','자기소개는 1분, 나머지는 30~40초(250자 이내)를 목표로 합니다. 시간이 부족하면 ‘필수’ 질문부터, 특히 <b>지원서·경험 검증</b>을 먼저 소리 내어 연습하세요 — 지원서에서 나오는 꼬리질문이 가장 확실하게 나옵니다. 질문 옆 표시는 출처입니다 — ‘공통(필수 12)’은 꼭 준비할 질문이고, 모두 공고·직무·지원서 기반 예상 질문입니다(기출 아님). 답변 뒤에는 ① 답을 먼저 말했나 ② 직접 한 일과 배운 것을 구분했나 ③ 내 행동과 결과가 구체적이었나 ④ 과장도 축소도 없었나를 점검하세요.')+`<div class="toolbar"><button id="mock-open" class="primary">모의면접</button><button id="blind-open">블라인드·표현 점검</button><button id="random">질문 하나 뽑기</button><label for="q-group">유형</label><select id="q-group"><option value="">전체 질문</option><option value="__req">필수 질문만</option>${[...new Set(DATA.questions.map(q=>q.group))].map(g=>`<option>${g}</option>`).join('')}</select></div><div id="mock"></div><div id="blind"></div><div id="questions"></div>`;function draw(){const group=$('#q-group').value;$('#questions').innerHTML=DATA.questions.filter(q=>!group?(q.group!=='준비 전략'||q.id===target):(group==='__req'?q.tier==='필수':q.group===group)).map(q=>`<details id="${q.id}"><summary><span class="title">${esc(q.title)}<br><small>${q.group}</small><span class="badges">${qBadges(q)}</span></span></summary><div class="detail-body"><div class="cue">${esc(q.cue)}</div><details><summary>답변 방향 확인</summary><div class="detail-body"><p style="white-space:pre-line">${esc(q.answer)}</p></div></details>${basisHtml(q.basis)}${expLinks(q.exp)}${(q.variants||[]).map(v=>`<details><summary>${esc(v.title)}</summary><div class="detail-body"><p>${esc(v.answer)}</p></div></details>`).join('')}${q.follow?`<p><b>꼬리 질문</b><br>${esc(q.follow)}</p>`:''}${q.prep?`<div class="caution"><b>답변 전 확인</b><br>${esc(q.prep)}</div>`:''}${relatedQuestions(q.related,'비슷한 질문')}<details open><summary>내 답변 쓰기·확인</summary><div class="detail-body">${noteField(q.id,'내 답변 작성')}<div class="row"><button data-blind="${q.id}">이 답변 블라인드·표현 점검</button></div><div id="blind-${q.id}" role="status"></div>${selfCheck(q.id,state.checks[q.id],'data-sc')}</div></details><div class="actions"><button data-practiced="${q.id}" aria-pressed="${state.practiced.includes(q.id)}">${state.practiced.includes(q.id)?'✓ 말로 연습함':'말로 연습했어요'}</button>${nextAction(q.id)}</div></div></details>`).join('');}$('#q-group').addEventListener('change',draw);$('#mock-open').onclick=()=>{mockSetup();$('#mock').scrollIntoView({block:'start'})};$('#blind-open').onclick=()=>{blindPanel();$('#blind').scrollIntoView({block:'start'})};if(target==='mock'){mockSetup()}$('#random').onclick=()=>{const visible=[...$('#questions').children];visible.forEach(d=>d.open=false);openTarget(visible[Math.floor(Math.random()*visible.length)].id)};draw();openTarget(target);}
+const SCHEDULE=[['~10/19(월) 09:00','지원서 접수 마감','온라인 접수 · 분야별 중복 지원 불가'],['10/27(화)','서류합격자 발표','합격자 대상 증빙서류 제출 안내'],['~11/4(수)','1차 증빙서류 확인','지원서 기재 사항 진위 확인(학위·교육·자격증·경력·가산점)'],['11/4(수)','필기/면접 대상자 발표',''],['11/7(토)','필기시험','서울 · 정규직 5·6급'],['11/10(화)','필기합격자 발표',''],['11/10(화)~11/12(목) 14:00','인성검사','온라인 · 필기합격자(정규직)'],['11/17(화)~11/19(목)','면접심사',''],['11/25(수)','면접합격자 발표',''],['~11/27(금)','2차 증빙서류 확인',''],['12/2(수)','최종합격자 발표',''],['12/10(목)','임용예정일','']];
+const CHECKS=[['chk-apply','지원서 제출','10/19(월) 09:00 마감'],['chk-pdf','공고 PDF에서 필기 과목·직무기술서·블라인드 기준 확인','홈페이지 화면에는 없고 첨부 PDF에만 있음'],['chk-docs','1차 증빙서류 준비·제출','11/4까지 · 학위·교육·자격증·경력·가산점'],['chk-written','필기시험 준비','11/7(토) 서울'],['chk-test','인성검사 완료','11/10~11/12 14:00'],['chk-notice','면접 일시·장소·형식 안내 확인','']];
+function homeChecks(){return `<section class="study-section"><span class="section-kicker">먼저 끝낼 일 · 2026 제4차 채용 일정</span><ul class="study-list">${CHECKS.map(([id,t,d])=>`<li><span><b>${esc(t)}</b>${d?' · '+esc(d):''}</span> <button data-check="${id}" aria-pressed="${state.done.includes(id)}">${state.done.includes(id)?'✓ 완료':'완료로 표시'}</button></li>`).join('')}</ul><p class="small">체크는 “내가 준비함”입니다. 채용시스템의 제출 완료 확인과는 따로 확인하세요.</p><details><summary>전체 일정 (2026 제4차 공고)</summary><div class="detail-body"><div class="table-scroll"><table>${SCHEDULE.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td class="small">${r[2]}</td></tr>`).join('')}</table></div></div></details></section>`}
+const FACT_CLASS={'제출본':'done','추가':'warn','제안':'ext'};
+function factRows(e){return '<ul class="facts">'+e.facts.map(([k,t,st])=>`<li><span class="pill ${FACT_CLASS[k]||''}">${k==='추가'?'추가 설명':k==='제안'?'답변 제안':'제출본 기재'}</span> ${esc(t)}${st?' '+status(st):''}</li>`).join('')+'</ul>'}
+function experience(target){const labels=['상황: 어떤 문제가 있었나요?','내 역할: 직접 맡은 범위는?','한 일: 어떤 기준으로 무엇을 했나요?','결과: 어떤 자료로 확인되나요?','설명할 수 있는 범위: 무엇을 단정할 수 없나요?','연결: 통보·자료·교육 업무에 어떻게 쓰나요?'];
+const map=`<div class="table-scroll"><table><thead><tr><th>경험</th><th>직무 영역</th><th>연결</th></tr></thead><tbody>${DATA.experiences.filter(e=>e.job).map(e=>`<tr><td><a href="#experience/x-${e.id}">${esc(e.title)}</a></td><td>${esc(e.job)}</td><td>${esc(e.link)}</td></tr>`).join('')}</tbody></table></div><p class="small">NIDS 홈페이지에는 핵심가치·인재상이 없어 직무 영역으로만 연결합니다.</p>`;
+$('#view').innerHTML=heading('YOUR EXPERIENCE','내 경험 정리','사실마다 출처를 나눠 표시합니다. <b>제출본 기재</b>는 다른 기관(KODA) 자소서에 이미 적어 확인된 사실, <b>추가 설명</b>은 그 밖의 설명(확인 상태 표시), <b>답변 제안</b>은 말할 때의 요령입니다. NIDS 자소서를 제출하면 그 내용과 대조해 고칩니다.')+`<div class="caution">공개 페이지의 기본 내용에는 연락처·지원번호·병원명·지원서 원문을 넣지 않았습니다. ${syncCfg()?'작성한 메모는 이 브라우저와 <b>비공개 GitHub Gist</b>에 저장되고, 동기화를 켠 다른 기기에도 나타납니다.':'작성한 메모는 현재 브라우저에만 저장됩니다.'} 환자정보나 비공개 업무자료는 입력하지 마세요.</div>`+DATA.experiences.map(e=>`<details id="x-${e.id}"><summary>${esc(e.title)}<br><small>${esc(e.link)}${e.value?' · '+esc(e.value):''}</small></summary><div class="detail-body">${factRows(e)}${e.job?`<p><b>직무와 연결</b><br>${esc(e.job)}</p>`:''}${relatedQuestions(e.questions,'이 경험으로 답할 질문')}<details><summary>경험 작성 순서</summary><ol>${labels.map(l=>`<li>${l}</li>`).join('')}</ol></details>${noteField(e.id,'확인한 사실 · 내 말로 정리')}</div></details>`).join('')+`<section class="box"><h2>경험을 직무와 연결하기</h2>${map}</section><section class="box"><h2>쓰지 않을 수치</h2><ul>${DATA.notUse.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></section>`;openTarget(target);}
+function agency(){$('#view').innerHTML=heading('SOURCES & CONTEXT','기관·제도·출처','공식 자료(사용자가 홈페이지에서 수집, 2026-10-07)와 법령 원문을 근거로 합니다. 홈페이지에 없는 것은 “없음”으로 둡니다.')+`
+<section class="box"><h2>NIDS 한 문장</h2><p class="cue">의료기기법에 따라 설립된 식품의약품안전처 산하 기타공공기관으로, 의료기기 안전생태계 조성과 산업 역량 증진에 기여하는 전문기관입니다.</p><p><b>미션</b> 의료기기 안전생태계 조성과 산업 역량증진에 기여 · <b>비전</b> 의료기기 니즈(NIDS)를 해결하는 국제적인 전문기관</p><p class="small">기관장 인사말: “의료기기의 신속제품화를 위한 신고․인증, 부작용 등 안전성정보 수집․분석을 통하여 국민 안전에 기여” · “국민 안전과 의료기기 혁신을 선도하는 의료기기 전문기관”</p></section>
+<section class="box"><h2>의료기기법 핵심 조문 (2026-09-15 시행본, 2026-10-07 원문 확인)</h2><div class="table-scroll"><table><thead><tr><th>조문</th><th>내용</th></tr></thead><tbody>
+<tr><td>제29조</td><td>추적관리대상 의료기기(1년 이상 삽입 / 의료기관 밖 생명유지용), 장기추적조사대상 의료기기</td></tr>
+<tr><td>제31조</td><td>부작용 관리: 취급자의 즉시 보고 → 식약처장이 정보원장에게 인과관계 등 분석·평가·보고하게 할 수 있음 / 회수 / 의료기관·환자 통보</td></tr>
+<tr><td>제42조</td><td>정보원 설립(신개발의료기기 동향·임상정보 등 정보·기술 지원, 인증 업무), 법인</td></tr>
+<tr><td>제43조</td><td>정보원의 사업 — 6호 부작용 인과관계 조사·규명, 7호 의료기기안전정보 수집·관리·분석·평가·제공, ③ 모니터링센터 지정</td></tr>
+</tbody></table></div><p class="small">면접에서 조항 번호는 말하지 않습니다. 의료기기법은 2026-12-10, 2027-03-16 시행 예정 개정이 있습니다(내용 미확인). <a href="https://www.law.go.kr/법령/의료기기법" target="_blank" rel="noopener noreferrer">국가법령정보센터: 의료기기법</a></p></section>
+<section class="box"><h2>조직 (조직도)</h2><p>원장 › 경영지원본부 · 인증본부 · 디지털제품평가센터 · <b>안전관리본부(안전정보팀·공급관리팀)</b> · 규제지원본부 · 국제인증지원센터. 원장 옆 가지: 이사·감사·전문위원실.</p><p class="small">통합정보데이터팀(통합정보시스템·공급내역)은 디지털제품평가센터 소속입니다.</p></section>
+<section class="box"><h2>채용 (2026 제4차)</h2><ul><li>총 9명(정규직 7, 무기계약직 2), 분야별 중복 지원 불가. 접수 ~10/19(월) 09:00, 온라인.</li><li>6급 주임연구원: 의료기기 부작용 분석·평가 — 인과관계조사, 이상사례 평가위원회 운영, 안전성 정보 분석·평가·조치.</li><li>우대: RA 관련 자격증, QMS 자격증, 부작용·인과관계 평가 또는 의료기기·의약품 감시 업무 경력.</li><li>필기시험 11/7(토, 서울), 인성검사 11/10~12, 면접 11/17~19.</li><li class="small">직무기술서·필기 과목·블라인드 기준·면접 평가 방식은 첨부 PDF에만 있어 아직 반영하지 못했습니다.</li></ul></section>
+<section class="box"><h2>출처 확인 상태</h2><div class="table-scroll"><table><thead><tr><th>항목</th><th>출처</th><th>상태</th></tr></thead><tbody>
+<tr><td>미션·비전·4개 분야·연혁·조직도·업무분장·사업·공지·보도자료 목록·인사말</td><td>NIDS 홈페이지(사용자 수집, 화면 문구 그대로)</td><td>${status('공식 화면 · 2026-10-07')}</td></tr>
+<tr><td>전략목표(NIDS for Patients·Industry·Society)</td><td>영문 페이지에만</td><td>${status('영문만')}</td></tr>
+<tr><td>법령 조문</td><td>국가법령정보센터 원문</td><td>${status('원문 확인 · 2026-10-07')}</td></tr>
+<tr><td>6급 직무·우대·일정</td><td>2026 제4차 채용공고(사용자 제공)</td><td>${status('근거 있음')}</td></tr>
+<tr><td>핵심가치·인재상·경영목표·전략과제·ESG 비전·CI</td><td>—</td><td>${status('홈페이지에 없음')}</td></tr>
+<tr><td>직무기술서·필기 과목·블라인드·면접 평가 방식</td><td>첨부 PDF</td><td>${status('확인 필요')}</td></tr>
+<tr><td>인과관계 평가 기준·등급</td><td>—</td><td>${status('내부 기준 미확인')}</td></tr>
+</tbody></table></div></section>
+<section class="box"><h2>최근 소식 (목록 기준)</h2><ul><li>2026-06-04 공지: 의료기기 안전성 정보 활용 사례 경진대회(의료기관-업체 협업 개선 사례 · 발표 평가 9/30 · 시상 10/22 통지 · 시상식 11/19)</li><li>2026-06 CDM 활용분석 아이디어톤 시상 · 2026-05 데이터 전략위원회 · 2026-05 개인정보 보호 수준 평가 A등급 · 2026-07 부패방지경영시스템 인증</li><li>2026-05 의료기기 현장수급 모니터링센터 기능 확대 · 2026-09 을지연습 연계 희소·긴급 의료기기 긴급 공급 훈련</li></ul><p class="small">보도자료 본문은 첨부 PDF뿐이라 제목만 확인했습니다.</p></section>
+<section class="box source-list"><h2>공식 자료 링크</h2><p><a href="https://www.nids.or.kr/contents.jsp?page=NIDS-079" target="_blank" rel="noopener noreferrer">비전</a> · <a href="https://www.nids.or.kr/contents.jsp?page=NIDS-080" target="_blank" rel="noopener noreferrer">조직도</a> · <a href="https://www.nids.or.kr/contents.jsp?page=NIDS-004" target="_blank" rel="noopener noreferrer">안전성 정보 수집·분석 및 평가</a> · <a href="https://www.nids.or.kr/contents.jsp?page=NIDS-078" target="_blank" rel="noopener noreferrer">연혁</a> · <a href="https://dware.intojob.co.kr/main/nids.jsp" target="_blank" rel="noopener noreferrer">채용 사이트</a></p></section>`}
+function summary(){const pick=['safety','committee','fluoro'].map(id=>DATA.experiences.find(e=>e.id===id));$('#view').innerHTML=heading('LAST REVIEW','면접 직전 요약','새로운 내용을 늘리기보다, 알고 있는 내용을 정확하게 꺼내는 시간.')+`<div class="toolbar"><button id="print">이 요약 인쇄</button></div>${personalReview()}
+<section class="box"><h2>첫 문장 세 개</h2><ul><li><b>NIDS</b> · 식약처 산하 기타공공기관, 의료기기 안전생태계 조성과 산업 역량 증진</li><li><b>직무</b> · 안전관리본부 안전정보팀: 부작용 인과관계조사, 이상사례 평가위원회, 안전성정보 분석·평가·조치</li><li><b>나</b> · 사건을 정확히 확인하고 원인을 가려 보고해 온 간호사</li></ul></section>
+<section class="box"><h2>핵심 경험 3개 <span class="small">(제안 — 직접 고르세요)</span></h2><ul>${pick.map(e=>`<li><a href="#experience/x-${e.id}">${esc(e.title)}</a> · ${esc(e.facts[0][1])}</li>`).join('')}</ul></section>
+<section class="box"><h2>범위를 꼭 붙여 말할 표현</h2><ul><li>정보원은 <b>분석·평가·보고</b>, 행정조치는 <b>식약처</b></li><li>4시간 이상 → 1분 이내: <b>협진 회신 분석의 1차 자료 작성</b></li><li>외주판독 확대: 분석이 <b>검토의 참고자료</b>로 쓰임 — 결정은 경영진</li><li>협진 지표 오류: <b>인계받은</b> 지표의 오류를 찾아 바로잡은 사례(“전임자”라고 말하지 않기)</li><li>통계 프로그램: 역학·보건통계를 공부하며 실습한 수준(“대학원”, “석사”는 말하지 않기)</li><li>법 조항 번호는 말하지 않기 — 내용만 정확히</li></ul></section>
+<section class="box"><h2>혼동하지 않을 것</h2><ul><li>보고 건수 증가 ≠ 위험 증가</li><li>중복 보고 ≠ 별개 사례</li><li>정보원(평가) ≠ 식약처(조치)</li><li>환자안전 보고(병원 안 재발 방지) ≠ 이상사례 평가(제품과의 인과관계)</li><li>일반적 인과관계 판단 요소 ≠ NIDS 내부 기준</li><li>핵심가치·인재상은 홈페이지에 없음 — 만들어 말하지 않기</li></ul></section>
+<section class="box">${mockRecords()}<p><a class="button secondary" href="#practice/mock">모의면접 하기 →</a></p></section><section class="box"><h2>역질문 2개</h2><p class="small">답변 연습의 “면접관에게 할 역질문 2개”에 적은 내용이 위 “내가 작성한 답변”에 모입니다.</p></section>`;$('#print').onclick=()=>window.print();}
+function route(){rememberView();const [raw,target]=location.hash.slice(1).split('/');const route=['home','learn','practice','experience','agency','summary'].includes(raw)?raw:'home';document.querySelectorAll('nav a').forEach(a=>{if(a.dataset.route===route)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});if(route!==activeRoute){const v=document.getElementById('view');v.classList.remove('enter');void v.offsetWidth;v.classList.add('enter')}({home,learn,practice,experience,agency,summary})[route](target);notice();if(!target)window.scrollTo(0,0);document.title='NIDS · '+document.querySelector('nav a[aria-current] .l').textContent;activeRoute=route;restoreView(route,target);}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;for(const [attr,key,yes,no] of TOGGLES){if(b.dataset[attr]){toggle(key,b.dataset[attr]);const active=state[key].includes(b.dataset[attr]);b.setAttribute('aria-pressed',String(active));b.textContent=active?yes:no;const bd=b.closest('details')?.querySelector(':scope>summary .badges');if(bd){const q=DATA.questions.find(x=>x.id===b.dataset[attr]);bd.innerHTML=q?qBadges(q):cardBadges(b.dataset[attr]);}if(attr==='review'&&!active&&$('#only-review')?.checked){b.closest('details').remove();const n=$('#cards').querySelectorAll('details').length;$('#result').textContent=n+'개 개념';if(!n)$('#cards').innerHTML='<p class="empty">다시 볼 카드가 없습니다.</p>';}}}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.sc){const k=t.dataset.sc,v=(state.checks[k]||'0000').split('');v[+t.dataset.i]=t.checked?'1':'0';state.checks[k]=v.join('');save()}else if(t.dataset.msc&&mock){const it=mock.items[+t.dataset.msc];if(it){const v=it.c.split('');v[+t.dataset.i]=t.checked?'1':'0';it.c=v.join('')}}});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.blind){const id=b.dataset.blind;$('#blind-'+id).innerHTML=blindHtml(state.notes[id]||'')}else if(b.dataset.mockdel){if(!confirm('이 모의면접 기록을 지울까요?'))return;state.mocks=state.mocks.filter(m=>m.id!==b.dataset.mockdel);save();const box=b.closest('#mock');if(box)mockSetup();else summary()}});
+document.addEventListener('input',e=>{const id=e.target.dataset.note;if(!id)return;state.notes[id]=e.target.value;const ok=save();const el=document.getElementById('saved-'+id);if(el)el.textContent=ok?(syncCfg()?'저장됨 · 곧 다른 기기와 맞춰집니다.':'저장됨 · 이 브라우저에만 저장됩니다.'):'저장할 수 없습니다. 내용을 따로 복사해 보관하세요.';});
+// 자동(기기 설정) → 라이트 → 다크. 기기마다 다르게 두도록 Gist 로는 동기화하지 않는다.
+const THEMES=['auto','light','dark'],THEME_LABEL={auto:'자동',light:'라이트',dark:'다크'},THEME_ICON={auto:'<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>',light:'<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>',dark:'<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z" fill="currentColor"/></svg>'},THEME_DESC={auto:'기기 설정을 따름',light:'라이트',dark:'다크'};
+const themeNow=()=>{const v=document.documentElement.getAttribute('data-theme');return v==='light'||v==='dark'?v:'auto'};
+function renderThemeBtn(){const b=document.getElementById('theme-btn'),t=themeNow();b.innerHTML=THEME_ICON[t]+'<span>'+THEME_LABEL[t]+'</span>';b.title='화면 테마: '+THEME_DESC[t]+' — 눌러서 바꾸기';b.setAttribute('aria-label','화면 테마 바꾸기 (지금: '+THEME_DESC[t]+')')}
+document.getElementById('theme-btn').addEventListener('click',()=>{const t=THEMES[(THEMES.indexOf(themeNow())+1)%THEMES.length],r=document.documentElement;if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);try{if(t==='auto')localStorage.removeItem('jobapply.theme.v1');else localStorage.setItem('jobapply.theme.v1',t)}catch(e){}renderThemeBtn()});
+renderThemeBtn();
+window.addEventListener('hashchange',route);route();
+showSync();syncNow();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncSoon(200)});window.addEventListener('focus',()=>syncSoon(200));setInterval(()=>{if(document.visibilityState==='visible')syncNow()},60000);
+</script></body></html>
