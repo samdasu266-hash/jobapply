@@ -48,7 +48,7 @@ const shown = (p, sel) => p.evaluate((s) => {
 // index.html 에 시드를 추가하면 여기에도 키를 넣어야 한다. 빠뜨리면 아래
 // 가드가 무슨 일인지 바로 알려준다 — 예전에 이걸 빠뜨려 엉뚱한 항목 다섯 개가
 // 실패하는 바람에 원인을 한참 찾았다.
-const SEED_KEYS = ['nhis', 'hira2026', 'koda2026'];
+const SEED_KEYS = ['nhis', 'hira2026', 'koda2026', 'nids2026'];
 
 const boot = async (p, state, ui) => {
   await p.goto(PAGE);
@@ -1153,6 +1153,69 @@ section('면접 준비 페이지 (koda.html)');
   eq('NECA 파일은 건드리지 않는다', files['neca-study.json'], '{"done":["c1"]}');
   await gc.close();
 
+  // ── 2차: 새로고침해도 준비 체크가 남는다(불러올 때 개념 id 만 남기고 버리던 버그)
+  const k2 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await k2.clock.install();
+  const kq = await k2.newPage(); kq.on('pageerror', e => kerr.push(e.message));
+  await kq.goto(KODA); await kq.evaluate(() => localStorage.clear()); await kq.reload();
+  await kq.click('[data-check="chk-test"]'); await kq.reload(); await settle(kq);
+  eq('준비 체크는 새로고침해도 남는다', await kq.getAttribute('[data-check="chk-test"]', 'aria-pressed'), 'true');
+
+  // 모의면접: 자기소개 → 공통 → 개별 → 마무리, 시간이 지나도 끊지 않는다
+  await kq.goto(KODA + '#practice/mock'); await settle(kq);
+  await kq.selectOption('#mock-n', '5'); await kq.selectOption('#mock-sec', '30');
+  await kq.click('#mock-start'); await settle(kq);
+  eq('모의면접은 1분 자기소개로 시작한다', await kq.textContent('#mock-q'), '1분 자기소개를 해주세요.');
+  ok('자기소개는 1분이 기준이다', (await kq.textContent('.mock-clock')).includes('/ 1:00'));
+  await kq.clock.runFor(65000); await settle(kq);
+  ok('시간이 지나면 알려 주지만 답변을 끊지 않는다', (await shown(kq, '#mock-over')).visible &&
+     (await kq.textContent('#mock-q')) === '1분 자기소개를 해주세요.');
+  await kq.click('#mock-end'); await settle(kq);
+  await kq.locator('[data-msc="0"][data-i="0"]').check();
+  const order = [];
+  for (let i = 0; i < 10 && await kq.$('#mock-end'); i++) {
+    await kq.click('#mock-end'); await settle(kq);
+    const q = await kq.$('#mock-q'); if (q) order.push(await q.textContent());
+    if (await kq.$('#mock-end')) { await kq.click('#mock-end'); await settle(kq); }
+  }
+  eq('마지막 할 말로 끝난다', order[order.length - 1], '마지막으로 하고 싶은 말은?');
+  const rec = await kq.evaluate(() => JSON.parse(localStorage.getItem('jobapply.koda.study.v1')).mocks);
+  ok('모의면접 기록이 날짜와 함께 저장된다', rec.length === 1 && rec[0].items.length === 5 && !isNaN(Date.parse(rec[0].date)), JSON.stringify(rec));
+  ok('자기소개 시간(65초)과 자기점검이 함께 남는다', rec[0].items[0].t >= 65 && rec[0].items[0].c === '1000', JSON.stringify(rec[0].items[0]));
+  ok('1분을 넘긴 자기소개는 기록 목록에 시간 초과로 보인다', (await kq.textContent('#mock')).includes('1:05'));
+  await kq.goto(KODA + '#summary'); await settle(kq);
+  ok('면접 직전 요약에도 모의면접 기록이 보인다', (await kq.textContent('#view')).includes('5문항'));
+  kq.once('dialog', d => d.accept());
+  await kq.click('[data-mockdel]'); await settle(kq);
+  eq('기록을 지울 수 있다', (await kq.evaluate(() => JSON.parse(localStorage.getItem('jobapply.koda.study.v1')).mocks.length)), 0);
+
+  // 질문 카드의 답변 후 자기점검은 질문별로 남는다
+  await kq.goto(KODA + '#practice/q2'); await settle(kq);
+  await kq.locator('#q2 [data-sc="q2"][data-i="2"]').check(); await kq.reload(); await settle(kq);
+  ok('질문 카드 자기점검이 새로고침 뒤에도 남는다', await kq.isChecked('#q2 [data-sc="q2"][data-i="2"]'));
+
+  // 블라인드·표현 점검: 드러날 수 있는 문장만 짚고, 업무 속 가족·흔한 말은 짚지 않는다
+  const scan = await kq.evaluate(() => blindScan('○○대학원에서 공부했습니다. 제 아버지께서 간호사셨습니다. 고향은 남쪽입니다. 저는 32살입니다. 유가족과 기증자 가족을 생각했습니다. 세 부서와 협의했습니다. 사실 교수님께 배운 것은 없다고 봐야 합니다. 곤조가 있습니다.').map(x => x.hits.map(h => h.cat).join('+')));
+  eq('학력·가족·출신지·나이·말투만 짚는다', scan, ['학력·학교', '가족', '출신지', '나이', '오해 표현']);
+  await kq.fill('#note-q2', '저는 ○○대학교를 졸업했습니다.'); await kq.click('[data-blind="q2"]'); await settle(kq);
+  ok('답변 아래에서 바로 점검할 수 있다', (await kq.textContent('#blind-q2')).includes('학력·학교'));
+  ok('점수나 감점을 판정하지 않는다고 밝힌다', (await kq.textContent('#blind-q2')).includes('판정하지 않습니다'));
+
+  // 두 기기에서 따로 한 모의면접은 둘 다 남고, 한쪽에서 지운 기록은 되살아나지 않는다
+  const mg = await kq.evaluate(() => {
+    const r = (id) => ({ id, date: '2026-10-08T00:00:00Z', limit: 40, items: [{ q: 'q1', t: 50, c: '1111' }] });
+    const st = (x) => ({ done: [], review: [], practiced: [], notes: {}, last: 'c1', checks: {}, ...x });
+    const base = st({ mocks: [r('m1')] });
+    const pc = st({ mocks: [r('m1'), r('m2')], checks: { q2: '1000' } });   // PC: 새 기록 m2
+    const phone = st({ mocks: [r('m3')], checks: { q3: '0100' } });          // 폰: m1 지우고 m3
+    const out = merge(base, pc, phone);
+    return { ids: out.mocks.map(m => m.id), checks: out.checks };
+  });
+  eq('모의면접 기록은 양쪽 새 기록을 합치고 지운 것은 빠진다', mg.ids, ['m2', 'm3']);
+  eq('자기점검도 질문별로 합친다', mg.checks, { q2: '1000', q3: '0100' });
+  eq('2차 기능도 오류 없이 돈다', kerr, []);
+  await k2.close();
+
   // 트래커에서 기관마다 자기 준비 페이지로 이어진다
   await boot(p, { institutions: [INST('koda', 'KODA (장기조직기증원)', '#9C4370'), INST('neca', 'NECA (보의연)', '#2E6F5E')], events: [
     { id: 'a', inst: 'koda', label: '면접', start: '2026-10-15', end: '2026-10-16' },
@@ -1161,6 +1224,14 @@ section('면접 준비 페이지 (koda.html)');
     x.querySelector('.pipe-name').textContent + '→' + (x.querySelector('.study-link')?.getAttribute('href') || '')));
   ok('KODA 는 koda.html, NECA 는 neca.html 로 이어진다',
      links.includes('KODA (장기조직기증원)→./koda.html') && links.includes('NECA (보의연)→./neca.html'), JSON.stringify(links));
+  // 의료기기안전정보원 공고 일정이 시드로 들어간다
+  await boot(p);
+  const nids = await p.evaluate(() => JSON.parse(localStorage.getItem('jobtracker.v1')).events.filter(e => e.inst === 'nids').map(e => e.label + ' ' + e.start));
+  eq('의료기기안전정보원 일정 12건이 들어간다', nids.length, 12);
+  // 다가오는 일정은 6장까지라 기관이 많으면 뒤로 밀린다 — 기관별 진행 현황에서 본다
+  ok('기관별 진행 현황에 새 기관이 보인다', (await texts(p, '.pipe-name')).includes('의료기기안전정보원'));
+  ok('인성검사는 방문 일정이 아니다(겹침 경고에 안 들어감)', !(await p.evaluate(() =>
+     [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('인성검사')))));
   // 결과 발표 당일에 열리는 후속 절차(순서표에 없는 이름)도 합격 전에는 숨긴다
   await boot(p, { institutions: [INST('koda', 'KODA', '#9C4370')], events: [
     { id: 'r', inst: 'koda', label: '서류결과', start: '2026-10-07', end: '2026-10-07' },

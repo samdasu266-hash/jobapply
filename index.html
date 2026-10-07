@@ -762,6 +762,32 @@ var SEEDS = {
     ]
   },
 
+  // 한국의료기기안전정보원 2026 제4차 직원채용 — 6급 주임연구원(의료기기 부작용 분석·평가).
+  // '인성검사'·'증빙서류 등록'은 전형 순서표에 없는 이름이라 같은 날 발표가 있으면 그 뒤로 본다.
+  nids2026: {
+    institution: { id:"nids", name:"의료기기안전정보원", color:"#17707D", status:"active" },
+    events: [
+      {id:"nids1", inst:"nids", label:"서류마감", start:"2026-10-19", end:"2026-10-19",
+       memo:"10/19 09:00 마감 · 6급 주임연구원(의료기기 부작용 분석·평가)"},
+      {id:"nids2", inst:"nids", label:"서류결과", start:"2026-10-27", end:"2026-10-27",
+       memo:"합격자 대상 증빙서류 제출 안내"},
+      {id:"nids3", inst:"nids", label:"1차 증빙서류 등록", start:"2026-10-27", end:"2026-11-04",
+       memo:"지원서 기재 사항 진위 확인(학위·교육·자격증·경력·가산점) · 11/4까지"},
+      {id:"nids4", inst:"nids", label:"필기대상자 발표", start:"2026-11-04", end:"2026-11-04"},
+      {id:"nids5", inst:"nids", label:"필기시험", start:"2026-11-07", end:"2026-11-07",
+       place:"서울", memo:"토요일 · 정규직 5·6급"},
+      {id:"nids6", inst:"nids", label:"필기결과", start:"2026-11-10", end:"2026-11-10"},
+      {id:"nids7", inst:"nids", label:"인성검사", start:"2026-11-10", end:"2026-11-12",
+       memo:"온라인 · 필기합격자(정규직) 대상 · 11/12 14:00까지"},
+      {id:"nids8", inst:"nids", label:"면접", start:"2026-11-17", end:"2026-11-19"},
+      {id:"nids9", inst:"nids", label:"면접결과", start:"2026-11-25", end:"2026-11-25"},
+      {id:"nids10", inst:"nids", label:"2차 증빙서류 등록", start:"2026-11-25", end:"2026-11-27",
+       memo:"11/27까지"},
+      {id:"nids11", inst:"nids", label:"최종발표", start:"2026-12-02", end:"2026-12-02"},
+      {id:"nids12", inst:"nids", label:"입사일", start:"2026-12-10", end:"2026-12-10", memo:"임용예정일"}
+    ]
+  },
+
   // 건강보험심사평가원 2026 신규직원 채용 — 행정·심사(5급)·전산·연구 트랙.
   // 같은 공고의 심사(4급)은 일정이 다르다(서류발표 9/18, 면접 10/21~23).
   // 기관은 이미 있으므로 일정만 더해지고, 같은 라벨·같은 날짜는 건너뛴다.
@@ -1210,7 +1236,7 @@ function waitingOn(e){
   return state.events.some(function(g){ return blocks(g, e); });
 }
 
-function needsAttendance(label){ return !/결과|발표|마감|공고|인적성|등록/.test(label); }
+function needsAttendance(label){ return !/결과|발표|마감|공고|인적성|인성검사|등록/.test(label); }
 
 // 주말·공휴일을 건너뛰는 일정. 공공기관 필기시험은 토요일에 치르는 경우가
 // 많아 제외한다 (예: 건보공단 2026 하반기 필기 10/24 토).
