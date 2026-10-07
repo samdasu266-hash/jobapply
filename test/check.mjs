@@ -48,7 +48,7 @@ const shown = (p, sel) => p.evaluate((s) => {
 // index.html 에 시드를 추가하면 여기에도 키를 넣어야 한다. 빠뜨리면 아래
 // 가드가 무슨 일인지 바로 알려준다 — 예전에 이걸 빠뜨려 엉뚱한 항목 다섯 개가
 // 실패하는 바람에 원인을 한참 찾았다.
-const SEED_KEYS = ['nhis', 'hira2026'];
+const SEED_KEYS = ['nhis', 'hira2026', 'koda2026'];
 
 const boot = async (p, state, ui) => {
   await p.goto(PAGE);
@@ -1084,6 +1084,92 @@ section('테마 전환과 움직임');
 }
 
 /* ─────────────────────────────────────────────── */
+section('면접 준비 페이지 (koda.html)');
+// NECA 페이지를 틀로 삼았지만 기록·동기화는 따로 가야 한다. 한쪽 체크가
+// 다른 쪽에 섞이거나, 같은 Gist 파일을 덮어쓰면 두 면접 준비가 모두 망가진다.
+{
+  const KODA = 'file://' + join(ROOT, 'koda.html');
+  const kerr = [];
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = (n) => { const d = new Date(NOW); d.setDate(d.getDate() + n);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const kc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const kp = await kc.newPage(); kp.on('pageerror', e => kerr.push(e.message));
+  await kp.goto(KODA);
+  await kp.evaluate((ev) => { localStorage.clear(); localStorage.setItem('jobtracker.v1', JSON.stringify({
+    institutions: [{ id: 'koda', name: 'KODA (장기조직기증원)', color: '#9C4370', status: 'active' },
+                   { id: 'neca', name: 'NECA (보의연)', color: '#2E6F5E', status: 'active' }],
+    events: [{ id: 'k', inst: 'koda', label: '면접', start: ev, end: ev },
+             { id: 'n', inst: 'neca', label: '면접', start: '2026-10-08', end: '2026-10-08' }] })); }, day(16));
+  await kp.reload();
+  eq('D-day 는 KODA 면접 일정을 읽는다(NECA 일정이 아니라)', await kp.textContent('.dday'), 'D-16');
+  for (const r of ['learn', 'practice', 'experience', 'agency', 'summary']) { await kp.goto(KODA + '#' + r); await settle(kp); }
+  eq('모든 화면이 오류 없이 열린다', kerr, []);
+  const meta = await kp.evaluate(() => [document.querySelector('meta[name=robots]')?.content || '', document.querySelector('meta[name=referrer]')?.content || '']);
+  ok('검색 차단·외부 주소 숨김 설정이 있다', meta[0].includes('noindex') && meta[1] === 'no-referrer', JSON.stringify(meta));
+  eq('문서 제목은 KODA 로 시작한다', (await kp.title()).startsWith('KODA · '), true);
+
+  // 질문 데이터 규칙: '기출' 표시 없음, 출처 표시 있음, 자기소개 빼고 250자 이내
+  const qd = await kp.evaluate(() => DATA.questions.map(q => ({ id: q.id, src: q.src, len: q.answer.replace(/\s/g, '').length, todo: q.answer.startsWith('[') })));
+  ok('질문마다 출처가 붙고 “기출” 표시는 없다', qd.every(q => q.src && !q.src.includes('기출')));
+  ok('답변 초안은 250자 이내다(자기소개 제외)', qd.filter(q => q.id !== 'q1' && !q.todo).every(q => q.len <= 250),
+     JSON.stringify(qd.filter(q => q.len > 250).map(q => q.id)));
+  eq('공통 12문항이 모두 필수로 있다', (await kp.evaluate(() => DATA.questions.filter(q => q.group === '공통 12문항' && q.tier === '필수').length)), 12);
+  const src = (await import('node:fs')).readFileSync(join(ROOT, 'koda.html'), 'utf8');
+  ok('전화번호 형태의 문자열이 없다', !/\b0\d{1,2}-\d{3,4}-\d{4}\b|1577-1458/.test(src));
+  ok('지원번호 자리에는 ○○ 만 쓴다', !/지원자 \d+번/.test(src));
+
+  // 기록 분리 — KODA 체크는 KODA 키에만
+  await kp.goto(KODA + '#home'); await settle(kp);
+  await kp.click('[data-check="chk-test"]'); await settle(kp);
+  const keys = await kp.evaluate(() => ({ k: JSON.parse(localStorage.getItem('jobapply.koda.study.v1') || '{}').done || [], n: localStorage.getItem('jobapply.neca.study.v1') }));
+  ok('KODA 체크는 KODA 기록에만 남는다', keys.k.includes('chk-test') && keys.n === null, JSON.stringify(keys));
+  eq('준비 체크는 개념 수에 세지 않는다', (await kp.textContent('.home-status')).includes('전체 개념 0/'), true);
+  await kp.goto('file://' + join(ROOT, 'neca.html') + '#learn'); await settle(kp);
+  await kp.evaluate(() => document.querySelector('[data-done="c1"]').click()); await settle(kp);
+  const after = await kp.evaluate(() => JSON.parse(localStorage.getItem('jobapply.koda.study.v1')).done);
+  eq('NECA 에서 체크해도 KODA 기록은 그대로다', after, ['chk-test']);
+  await kc.close();
+
+  // 동기화 — 같은 Gist 에 자기 파일(koda-study.json)만 올린다
+  const files = { 'jobtracker.json': '{"institutions":[],"events":[]}', 'neca-study.json': '{"done":["c1"]}' };
+  const gc = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await gc.clock.install();
+  await gc.route('https://api.github.com/**', async (route) => {
+    const q = route.request();
+    if (q.method() === 'PATCH') for (const [k, v] of Object.entries(JSON.parse(q.postData()).files)) files[k] = v.content;
+    const out = {}; for (const [k, v] of Object.entries(files)) out[k] = { content: v, truncated: false };
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'g', files: out }) });
+  });
+  const gp = await gc.newPage();
+  await gp.goto(KODA);
+  await gp.evaluate(() => { localStorage.clear(); localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: 'g' })); });
+  await gp.reload(); await settle(gp);
+  await gp.click('[data-check="chk-license"]'); await gp.clock.runFor(1500);
+  // 열리자마자 빈 기록이 한 번 먼저 올라갈 수 있으니 '파일이 생겼다'가 아니라 체크가 실렸는지를 기다린다
+  const up = () => (JSON.parse(files['koda-study.json'] || '{}').done || []).includes('chk-license');
+  const t0 = Date.now(); while (!up() && Date.now() - t0 < 5000) { await gp.clock.runFor(300); await new Promise(r => setTimeout(r, 20)); }
+  ok('KODA 기록은 koda-study.json 으로 올라간다', (JSON.parse(files['koda-study.json'] || '{}').done || []).includes('chk-license'));
+  eq('NECA 파일은 건드리지 않는다', files['neca-study.json'], '{"done":["c1"]}');
+  await gc.close();
+
+  // 트래커에서 기관마다 자기 준비 페이지로 이어진다
+  await boot(p, { institutions: [INST('koda', 'KODA (장기조직기증원)', '#9C4370'), INST('neca', 'NECA (보의연)', '#2E6F5E')], events: [
+    { id: 'a', inst: 'koda', label: '면접', start: '2026-10-15', end: '2026-10-16' },
+    { id: 'b', inst: 'neca', label: '면접', start: '2026-10-08', end: '2026-10-08' }] });
+  const links = await p.evaluate(() => [...document.querySelectorAll('.pipe')].map(x =>
+    x.querySelector('.pipe-name').textContent + '→' + (x.querySelector('.study-link')?.getAttribute('href') || '')));
+  ok('KODA 는 koda.html, NECA 는 neca.html 로 이어진다',
+     links.includes('KODA (장기조직기증원)→./koda.html') && links.includes('NECA (보의연)→./neca.html'), JSON.stringify(links));
+  // 결과 발표 당일에 열리는 후속 절차(순서표에 없는 이름)도 합격 전에는 숨긴다
+  await boot(p, { institutions: [INST('koda', 'KODA', '#9C4370')], events: [
+    { id: 'r', inst: 'koda', label: '서류결과', start: '2026-10-07', end: '2026-10-07' },
+    { id: 's', inst: 'koda', label: '제출서류 등록', start: '2026-10-07', end: '2026-10-12' }] });
+  ok('결과 당일 시작하는 제출서류 등록도 합격 전에는 숨긴다',
+     !(await texts(p, '.up-title')).includes('제출서류 등록'), JSON.stringify(await texts(p, '.up-title')));
+}
+
+/* ─────────────────────────────────────────────── */
 section('기기 간 동기화 (가짜 Gist)');
 // 서버가 없어 기기마다 localStorage 가 따로 논다. 비공개 Gist 하나를 공용
 // 저장소로 두는 경로를, 브라우저 두 개와 가짜 GitHub API 로 실제로 태워 본다.
@@ -1343,6 +1429,9 @@ section('면접 준비 페이지 (neca.html)');
     await d.evaluate((g) => { localStorage.clear();
       localStorage.setItem('jobtracker.sync.v1', JSON.stringify({ token: 'TT', gistId: g })); }, GID);
     await d.goto(NECA + '#learn'); await d.reload(); await synced(d);
+    // 상태 문구는 한 바퀴의 끝보다 조금 먼저 바뀐다. 그 틈에 체크하면 '도는 중에 바뀜'으로
+    // 잡혀 0.3초 뒤 바로 올라가 버린다(1.5초 모으기 검사가 가끔 깨지던 원인). 끝까지 기다린다.
+    await settle(d);
     return d;
   };
   const doneOf = (d) => d.evaluate(() => JSON.parse(localStorage.getItem('jobapply.neca.study.v1') || '{}').done || []);

@@ -399,12 +399,12 @@ input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px;}
 .up-result.fail{color:var(--sun);}
 .save-note{font-size:11.5px;color:var(--ink-3);margin-top:16px;}
 /* Contextual study links and readable schedule cards */
-.neca-study-link{display:inline-flex;align-items:center;min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink);background:var(--bg);font-size:13px;font-weight:650;text-decoration:none;white-space:nowrap;}
-.neca-study-link:hover{border-color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;}
-.neca-study-link:focus-visible{outline:3px solid #2E6F5E;outline-offset:3px;}
-.up-card>.neca-study-link{margin-top:12px;}
+.study-link{display:inline-flex;align-items:center;min-height:36px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink);background:var(--bg);font-size:13px;font-weight:650;text-decoration:none;white-space:nowrap;}
+.study-link:hover{border-color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;}
+.study-link:focus-visible{outline:3px solid #2E6F5E;outline-offset:3px;}
+.up-card>.study-link{margin-top:12px;}
 .up-title{line-height:1.55;}.up-memo{line-height:1.65;}.pipe-head{row-gap:10px;}
-@media(max-width:560px){.neca-study-link{min-height:44px;}.up-title{font-size:16px;}}
+@media(max-width:560px){.study-link{min-height:44px;}.up-title{font-size:16px;}}
 </style>
 </head>
 <body>
@@ -750,6 +750,18 @@ var SEEDS = {
     ]
   },
 
+  // 한국장기조직기증원 2026 제4차 공고 — 이미 있는 서류결과·인적성·면접·최종발표에
+  // 빠져 있던 제출 일정만 더한다. 둘 다 서류결과(10/7) 합격을 찍어야 다가오는 일정에 뜬다.
+  koda2026: {
+    institution: { id:"koda", name:"KODA (장기조직기증원)", color:"#9C4370", status:"active" },
+    events: [
+      {id:"koda5", inst:"koda", label:"제출서류 등록", start:"2026-10-07", end:"2026-10-12",
+       memo:"10/12 18:00까지 온라인 등록 · 미제출 시 면접 응시 불가"},
+      {id:"koda6", inst:"koda", label:"임용서류 제출 마감", start:"2026-10-28", end:"2026-10-28",
+       memo:"최종합격 시 · 18:00까지"}
+    ]
+  },
+
   // 건강보험심사평가원 2026 신규직원 채용 — 행정·심사(5급)·전산·연구 트랙.
   // 같은 공고의 심사(4급)은 일정이 다르다(서류발표 9/18, 면접 10/21~23).
   // 기관은 이미 있으므로 일정만 더해지고, 같은 라벨·같은 날짜는 건너뛴다.
@@ -1043,13 +1055,22 @@ var mqNarrow = window.matchMedia("(max-width:560px)");
 function upcomingLimit(){ return mqNarrow.matches ? 4 : 6; }
 if(mqNarrow.addEventListener) mqNarrow.addEventListener("change", function(){ renderUpcoming(); });
 
-function isNecaInstitution(it){
-  return it.id === 'neca' || /NECA|보의연|한국보건의료연구원/i.test(it.name || '');
+// 면접 준비 페이지가 있는 기관. 기관 이름을 바꿔도 이어지도록 id 와 이름 둘 다 본다.
+var STUDY_PAGES = [
+  { id: "neca", re: /NECA|보의연|한국보건의료연구원/i, href: "./neca.html", name: "NECA" },
+  { id: "koda", re: /KODA|장기조직기증원/i, href: "./koda.html", name: "KODA" }
+];
+function studyPageFor(it){
+  for(var i = 0; i < STUDY_PAGES.length; i++){
+    var s = STUDY_PAGES[i];
+    if(it.id === s.id || s.re.test(it.name || "")) return s;
+  }
+  return null;
 }
-function necaStudyLink(){
+function studyLink(sp){
   var a = document.createElement('a');
-  a.href = './neca.html'; a.className = 'neca-study-link';
-  a.textContent = '면접 준비 →'; a.setAttribute('aria-label','NECA 면접 준비 자료 열기');
+  a.href = sp.href; a.className = 'study-link';
+  a.textContent = '면접 준비 →'; a.setAttribute('aria-label', sp.name + ' 면접 준비 자료 열기');
   return a;
 }
 function renderUpcoming(){
@@ -1147,7 +1168,8 @@ function renderUpcoming(){
       rb.textContent = e.result;
       el.appendChild(rb);
     }
-    if(isNecaInstitution(it) && /면접/.test(e.label) && !/결과|발표/.test(e.label)) el.appendChild(necaStudyLink());
+    var sp = studyPageFor(it);
+    if(sp && /면접/.test(e.label) && !/결과|발표/.test(e.label)) el.appendChild(studyLink(sp));
     bindResultMenu(el, e);
     box.appendChild(el);
   });
@@ -1179,8 +1201,10 @@ function blocks(g, e){
   if(!isGate(g.label) || g.result === PASS) return false;
   var gs = pd(g.start), s = pd(e.start);
   if(gs < s) return true;
+  // 같은 날이면 전형 순서(STAGES)로 가린다. 순서표에 없는 일정(증빙서류 등록처럼)은
+  // 발표 당일에 열리는 후속 절차라 결과 뒤로 본다.
   var gi = STAGES.indexOf(g.label), si = STAGES.indexOf(e.label);
-  return +gs === +s && gi >= 0 && si > gi;
+  return +gs === +s && gi >= 0 && (si < 0 || si > gi);
 }
 function waitingOn(e){
   return state.events.some(function(g){ return blocks(g, e); });
@@ -1273,7 +1297,8 @@ function renderPipes(){
     var sw = document.createElement("span"); sw.className="swatch"; sw.style.background=it.color;
     var nm = document.createElement("span"); nm.className="pipe-name"; nm.textContent = it.name;
     head.appendChild(sw); head.appendChild(nm);
-    if(isNecaInstitution(it)) head.appendChild(necaStudyLink());
+    var spg = studyPageFor(it);
+    if(spg) head.appendChild(studyLink(spg));
     if(it.status !== "active"){
       var b = document.createElement("span");
       b.className = "badge " + (it.status === "rejected" ? "rejected" : "withdrawn");
