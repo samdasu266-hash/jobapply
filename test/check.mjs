@@ -1127,7 +1127,9 @@ section('면접 준비 페이지 (koda.html)');
   ok('답변에 법 조항 번호가 없다(말하지 않기)', !/제\s?\d+조/.test(said));
   ok('인계받은 오류를 본인 실수처럼 말하지 않는다', !/제가 산출한 결과가 잘못|제 산출 결과가 잘못|같은 실수가/.test(said));
   ok('답변에 학력(대학원·석사)을 말하지 않는다', !/대학원|석사/.test(said));
-  ok('확인 전 로고송 가사를 인용하지 않는다', !/로고송/.test(said));
+  // 로고송을 인용한다면 공식 홈페이지 가사 문구 그대로여야 한다
+  const LYRIC = '누군가의 끝이 아니라 누군가의 기적';
+  ok('로고송 인용은 홈페이지 가사 그대로다', [...said.matchAll(/로고송[^“]*“([^”]*)”/g)].every(m => LYRIC.startsWith(m[1]) || m[1].startsWith(LYRIC)));
   ok('본인 실수 꼬리질문이 따로 있다', await kp.evaluate(() => DATA.questions.some(q => q.id === 'q50' && /실수/.test(q.title))));
   eq('공통 12문항이 모두 필수로 있다', (await kp.evaluate(() => DATA.questions.filter(q => q.group === '공통 12문항' && q.tier === '필수').length)), 12);
   const src = (await import('node:fs')).readFileSync(join(ROOT, 'koda.html'), 'utf8');
