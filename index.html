@@ -696,6 +696,8 @@ var INST_INFO = {
            url:"https://nibp.kr/board?bbsOid=21&menuCd=BOARD21"},
   koda:   {place:"서울 서대문구 충정로 36",
            url:"https://www.koda1458.kr/communication/recruitments"},
+  // 본사 주소는 확인 전이라 넣지 않는다(필기시험은 서울 — 일정 메모에)
+  nids:   {url:"https://dware.intojob.co.kr/main/nids.jsp"},
   hira:   {place:"강원특별자치도 원주시 혁신로 60",
            url:"https://www.hira.or.kr/re/recruit/recruitAdList.do?pgmid=HIRAA040078000000"}
 };
@@ -765,9 +767,11 @@ var SEEDS = {
   // 한국의료기기안전정보원 2026 제4차 직원채용 — 6급 주임연구원(의료기기 부작용 분석·평가).
   // '인성검사'·'증빙서류 등록'은 전형 순서표에 없는 이름이라 같은 날 발표가 있으면 그 뒤로 본다.
   nids2026: {
-    institution: { id:"nids", name:"의료기기안전정보원", color:"#17707D", status:"active" },
+    institution: { id:"nids", name:"의료기기안전정보원", color:"#17707D", status:"active",
+                   url:"https://dware.intojob.co.kr/main/nids.jsp" },
     events: [
       {id:"nids1", inst:"nids", label:"서류마감", start:"2026-10-19", end:"2026-10-19",
+       place:"https://dware.intojob.co.kr/main/nids.jsp",
        memo:"10/19 09:00 마감 · 6급 주임연구원(의료기기 부작용 분석·평가)"},
       {id:"nids2", inst:"nids", label:"서류결과", start:"2026-10-27", end:"2026-10-27",
        memo:"합격자 대상 증빙서류 제출 안내"},
@@ -1104,6 +1108,8 @@ function renderUpcoming(){
   var waiting = 0, held = [];
   var all = state.events.filter(function(e){
     if(!isActive(e.inst) || pd(e.end) < TODAY) return false;
+    // 합격·제출완료를 찍은 일정은 끝난 일이라 다가오는 일정에서 뺀다(달력·진행 현황에는 남는다)
+    if(e.result === PASS || e.result === DONE) return false;
     if(waitingOn(e)){ waiting++; held.push(e); return false; }
     return true;
   });
