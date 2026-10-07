@@ -311,16 +311,23 @@ section('합격을 찍기 전에는 다음 단계를 띄우지 않는다');
   const st1 = await store(g);
   eq('합격이 기록된다', st1.events.find(e => e.id === 'k1').result, '합격');
   eq('합격은 기관 상태를 바꾸지 않는다', st1.institutions.find(i => i.id === 'k').status, 'active');
-  eq('합격을 찍으면 다음 단계가 뜬다', await cards(),
-     ['N 서류결과', 'B 면접', 'K 서류결과', 'K 인적성검사', 'K 면접', 'K 최종발표']);
-  ok('합격한 결과 카드는 합격으로 보인다', await g.evaluate(() =>
-    [...document.querySelectorAll('.up-card.pass .up-result')].some(r => r.textContent === '합격')));
+  // 합격을 찍은 결과 카드 자체는 끝난 일이라 빠진다
+  eq('합격을 찍으면 결과 카드는 빠지고 다음 단계가 뜬다', await cards(),
+     ['N 서류결과', 'B 면접', 'K 인적성검사', 'K 면접', 'K 최종발표']);
+  ok('합격 표시는 진행 현황 단계에 남는다', (await texts(g, '.pipe .step')).some(x => x.startsWith('✓ 서류결과')));
   await cardOf('서류결과', 'N'); await g.click('.up-card[data-probe="1"]'); await settle(g);
   await g.click('#rmenuPass'); await settle(g);
   ok('지난 결과에 합격을 찍으면 결과 카드는 빠지고 다음 단계가 뜬다', await g.evaluate(() => {
     const n = [...document.querySelectorAll('.up-card')].filter(c => c.querySelector('.up-inst').textContent === 'N');
     return n.length === 1 && n[0].querySelector('.up-title').textContent === '면접'; }));
   ok('다 풀리면 숨김 안내도 사라진다', !(await g.textContent('#upHint')).includes('숨김'));
+
+  // 제출완료를 찍은 마감 일정도 끝난 일이라 빠진다(진행 현황에는 ✓ 로 남는다)
+  await boot(g, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
+    { id: 's1', inst: 'a', label: '서류마감', start: '2026-10-22', end: '2026-10-22', result: '제출완료' },
+    { id: 's2', inst: 'a', label: '면접',     start: '2026-10-30', end: '2026-10-30' }] });
+  eq('제출완료 일정은 다가오는 일정에서 빠진다', await cards(), ['A 면접']);
+  ok('제출완료는 진행 현황에 남는다', (await texts(g, '.pipe .step')).some(x => x.startsWith('✓ 서류마감')));
 
   // 차수가 다르면 다른 전형이다 — 1차 결과가 2차 일정을 막지 않는다
   await boot(g, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
@@ -576,8 +583,8 @@ await boot(p, {
   events: [
     { id: 'e1', inst: 'a', label: '면접',       start: '2026-10-06', end: '2026-10-06' },
     { id: 'e2', inst: 'a', label: '서류마감',   start: '2026-10-01', end: '2026-10-01' },
-    // 합격을 찍어 둬야 뒤 단계(인적성·필기)도 다가오는 일정에 뜬다
-    { id: 'e3', inst: 'a', label: '서류결과',   start: '2026-10-08', end: '2026-10-08', place: 'https://apply.example.com/result', result: '합격' },
+    // 결과는 다른 단계 뒤에 둔다 — 앞에 두면 합격 전까지 뒤 단계가 숨고, 합격을 찍으면 결과 카드가 빠진다
+    { id: 'e3', inst: 'a', label: '서류결과',   start: '2026-10-20', end: '2026-10-20', place: 'https://apply.example.com/result' },
     { id: 'e4', inst: 'a', label: '인적성검사', start: '2026-10-10', end: '2026-10-12', place: 'https://hr.example.com/test' },
     { id: 'e5', inst: 'a', label: '필기시험',   start: '2026-10-17', end: '2026-10-17', place: '서울 소재 고사장' },
   ],
@@ -1077,8 +1084,9 @@ section('테마 전환과 움직임');
   // 합격·제출완료 색(--ok)이 정의돼 있지 않아 글자색으로 떨어지던 것
   await boot(p, { institutions: [INST('a', 'A', '#2E6F5E')], events: [
     { id: 'g', inst: 'a', label: '서류결과', start: '2026-10-03', end: '2026-10-03', result: '합격' }] });
-  ok('합격 배지는 초록 계열이다', await p.evaluate(() => {
-    const [r, g, b] = getComputedStyle(document.querySelector('.up-result.pass')).color.match(/\d+/g).map(Number);
+  // 합격을 찍은 카드는 다가오는 일정에서 빠지므로 진행 현황의 단계 표시로 본다
+  ok('합격 표시는 초록 계열이다', await p.evaluate(() => {
+    const [r, g, b] = getComputedStyle(document.querySelector('.pipe .step.pass')).color.match(/\d+/g).map(Number);
     return g > r + 30 && g > b + 20; }));
   await tc.close();
 }
@@ -1230,6 +1238,9 @@ section('면접 준비 페이지 (koda.html)');
   eq('의료기기안전정보원 일정 12건이 들어간다', nids.length, 12);
   // 다가오는 일정은 6장까지라 기관이 많으면 뒤로 밀린다 — 기관별 진행 현황에서 본다
   ok('기관별 진행 현황에 새 기관이 보인다', (await texts(p, '.pipe-name')).includes('의료기기안전정보원'));
+  ok('채용 사이트 링크가 붙는다', await p.evaluate(() => [...document.querySelectorAll('.pipe')].some(x =>
+     x.querySelector('.pipe-name').textContent === '의료기기안전정보원' &&
+     [...x.querySelectorAll('a')].some(a => a.href.startsWith('https://dware.intojob.co.kr/main/nids.jsp')))));
   ok('인성검사는 방문 일정이 아니다(겹침 경고에 안 들어감)', !(await p.evaluate(() =>
      [...document.querySelectorAll('.cf-body')].some(e => e.textContent.includes('인성검사')))));
   // 결과 발표 당일에 열리는 후속 절차(순서표에 없는 이름)도 합격 전에는 숨긴다
